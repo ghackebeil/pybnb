@@ -9,16 +9,16 @@ else:
     import Queue
 
 from pybnb.misc import (infinity,
-                          get_gap_labels)
+                        get_gap_labels)
 from pybnb.dispatcher_proxy import (ProcessType,
-                                      DispatcherAction,
-                                      WorkerAction,
-                                      DispatcherProxy)
+                                    DispatcherAction,
+                                    WorkerAction,
+                                    DispatcherProxy)
 from pybnb.mpi_utils import Message
 from pybnb.problem import (minimize,
-                             maximize,
-                             GenericProblem,
-                             ProblemNode)
+                           maximize,
+                           GenericProblem,
+                           ProblemNode)
 
 try:
     import mpi4py

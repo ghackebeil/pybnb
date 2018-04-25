@@ -5,7 +5,7 @@ import pytest
 
 from pybnb.misc import infinity
 from pybnb.solver import (SolverResults,
-                            Solver)
+                          Solver)
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, thisdir)

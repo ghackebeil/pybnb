@@ -1,10 +1,10 @@
 import array
 
 from pybnb.problem import (new_storage_array,
-                             ProblemNode)
+                           ProblemNode)
 from pybnb.mpi_utils import (send_nothing,
-                               recv_nothing,
-                               recv_data)
+                             recv_nothing,
+                             recv_data)
 
 try:
     import mpi4py

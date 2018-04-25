@@ -5,12 +5,12 @@ import logging
 import pytest
 
 from pybnb.misc import (infinity,
-                          is_infinite,
-                          metric_fmt,
-                          get_gap_labels,
-                          as_stream,
-                          get_default_args,
-                          get_simple_logger)
+                        is_infinite,
+                        metric_fmt,
+                        get_gap_labels,
+                        as_stream,
+                        get_default_args,
+                        get_simple_logger)
 
 from six import StringIO
 

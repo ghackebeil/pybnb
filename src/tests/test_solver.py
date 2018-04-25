@@ -1,7 +1,7 @@
 import pytest
 
 from pybnb.solver import (Solver,
-                            SolverResults)
+                          SolverResults)
 
 from six import StringIO
 

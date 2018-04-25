@@ -1,7 +1,7 @@
 import array
 
 from pybnb.misc import (infinity,
-                          is_infinite)
+                        is_infinite)
 
 import numpy
 

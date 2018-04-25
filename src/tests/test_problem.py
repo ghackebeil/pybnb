@@ -3,12 +3,12 @@ import itertools
 import pytest
 
 from pybnb.misc import (infinity,
-                          is_infinite)
+                        is_infinite)
 from pybnb.problem import (minimize,
-                             maximize,
-                             ProblemNode,
-                             GenericProblem,
-                             Problem)
+                           maximize,
+                           ProblemNode,
+                           GenericProblem,
+                           Problem)
 
 class TestProblemNode(object):
 

@@ -11,7 +11,7 @@ except ImportError:
 
 if pyomo_available:
     from pybnb.pyomo_tools import (_add_tmp_component,
-                                     _create_optimality_bound)
+                                   _create_optimality_bound)
 
 @pytest.mark.skipif(not pyomo_available,
                     reason="Pyomo is not available")

@@ -2,14 +2,14 @@ import sys
 import time
 
 from pybnb.misc import (metric_fmt,
-                          as_stream,
-                          get_simple_logger)
+                        as_stream,
+                        get_simple_logger)
 from pybnb.problem import (GenericProblem,
-                             ProblemNode)
+                           ProblemNode)
 from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (Dispatcher,
-                                TreeIdLabeler,
-                                SavedDispatcherQueue)
+                              TreeIdLabeler,
+                              SavedDispatcherQueue)
 
 try:
     import mpi4py
