@@ -1,0 +1,4 @@
+solution_status: optimal
+termination_condition: optimality
+objective: 4.99999
+bound: 5.00049

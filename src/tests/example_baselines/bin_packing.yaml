@@ -1,0 +1,4 @@
+solution_status: optimal
+termination_condition: optimality
+objective: 3.0
+bound: 3.0

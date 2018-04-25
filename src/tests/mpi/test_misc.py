@@ -1,0 +1,111 @@
+import os
+import tempfile
+import logging
+
+import pytest
+from runtests.mpi import MPITest
+
+from pybnb.solver import Solver
+from pybnb.misc import get_simple_logger
+from pybnb.problem import (minimize,
+                             GenericProblem,
+                             Problem)
+from pybnb.dispatcher import (TreeIdLabeler,
+                                SavedDispatcherQueue)
+
+from six import StringIO
+
+from .common import mpi_available
+
+
+def _get_logging_baseline(size):
+    out = \
+"""[DEBUG] 0: debug
+[INFO] 0: info
+[WARNING] 0: warning
+[ERROR] 0: error"""
+    for i in range(1,size):
+        out += ("""
+[DEBUG] %d: debug
+[INFO] %d: info
+[WARNING] %d: warning
+[ERROR] %d: error""") % (i,i,i,i)
+    return out
+
+class DummyProblem(Problem):
+
+    def __init__(self):
+        super(DummyProblem, self).\
+            __init__(minimize)
+    def objective(self): return 0.0
+    def bound(self): return 0.0
+    def save_state(self, node): pass
+    def load_state(self, node): pass
+    def branch(self, parent): return ()
+
+def _logging_check(comm):
+    opt = Solver(comm=comm)
+    p = DummyProblem()
+    if opt.dispatcher:
+        assert (comm is None) or (comm.rank == 0)
+        root = p.new_node()
+        p.save_state(root)
+        root.bound = p.unbounded_objective
+        tree_id_labeler = TreeIdLabeler()
+        root.tree_id = tree_id_labeler()
+        initialize_queue = SavedDispatcherQueue(
+            states=[root._state],
+            tree_id_labeler=tree_id_labeler)
+        out = StringIO()
+        formatter = logging.Formatter("[%(levelname)s] %(message)s")
+        opt._disp.initialize(p.infeasible_objective,
+                             initialize_queue,
+                             GenericProblem(p.sense),
+                             None, None,
+                             get_simple_logger(show=True,
+                                               stream=out,
+                                               level=logging.DEBUG,
+                                               formatter=formatter),
+                             0.0)
+        opt._disp.log_debug("0: debug")
+        opt._disp.log_info("0: info")
+        opt._disp.log_warning("0: warning")
+        opt._disp.log_error("0: error")
+        if (comm is not None) and (comm.size > 1):
+            opt._disp.serve()
+    else:
+        assert comm is not None
+        if comm.size > 1:
+            for i in range(1, comm.size):
+                if comm.rank == i:
+                    opt._disp.log_debug(str(comm.rank)+": debug")
+                    opt._disp.log_info(str(comm.rank)+": info")
+                    opt._disp.log_warning(str(comm.rank)+": warning")
+                    opt._disp.log_error(str(comm.rank)+": error")
+                opt.worker_comm.Barrier()
+            if opt.root_worker:
+                opt._disp.solve_finished()
+    if comm is not None:
+        comm.Barrier()
+    if opt.dispatcher:
+        assert ('\n'.join(out.getvalue().splitlines()[4:])) == \
+                _get_logging_baseline(comm.size if comm is not None else 1)
+
+def test_logging_nocomm():
+    _logging_check(None)
+
+if mpi_available:
+
+    @MPITest(commsize=[1, 2, 4])
+    def test_bad_dispatcher_rank(comm):
+        with pytest.raises(ValueError):
+            Solver(comm=comm, dispatcher_rank=-1)
+        with pytest.raises(ValueError):
+            Solver(comm=comm, dispatcher_rank=comm.size)
+        with pytest.raises(ValueError):
+            Solver(comm=comm, dispatcher_rank=comm.size - 1.1)
+        Solver(comm=comm, dispatcher_rank=comm.size - 1)
+
+    @MPITest(commsize=[1, 2, 4])
+    def test_logging(comm):
+        _logging_check(comm)
