@@ -148,8 +148,6 @@ def _test_heaps(comm):
             pass
         elif solver.comm.rank == 3:
             pass
-        elif solver.comm.rank == 4:
-            pass
     for heap in gen_heaps(2):
         get_bound(heap)
         node_list = [None, len(heap)] + [i for i in range(len(heap))

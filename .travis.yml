@@ -37,6 +37,7 @@ install:
   - ${DOC_} pip --version
   - ${DOC_} mpirun --version
   - ${DOC_} pip install -r test_requirements.txt
+  - ${DOC_} pip install codecov
   - ${DOC_} python setup.py install
 script:
   - ${DOC_} rm -rf .coverage*
