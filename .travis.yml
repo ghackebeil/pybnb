@@ -1,0 +1,56 @@
+# travis CI config
+sudo: required
+cache: false
+language: generic
+services:
+  - docker
+env:
+  global:
+    - DH_ACCT_NAME=qkjqvazeqfjqftchxlgw
+  matrix:
+    - IMAGE_NAME=python_latest_mpich
+    - IMAGE_NAME=python_latest_openmpi
+    - IMAGE_NAME=python_2.7_mpich
+    - IMAGE_NAME=python_2.7_openmpi
+    - IMAGE_NAME=python_3.5_mpich
+    - IMAGE_NAME=python_3.5_openmpi
+    - IMAGE_NAME=python_3.6_mpich
+    - IMAGE_NAME=python_3.6_openmpi
+    - IMAGE_NAME=pypy_2_mpich
+    - IMAGE_NAME=pypy_2_openmpi
+    - IMAGE_NAME=pypy_3_mpich
+    - IMAGE_NAME=pypy_3_openmpi
+before_install:
+  - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
+  # Note that we are mounting the current directory
+  # onto the docker container and giving it a mount
+  # location with an identical name, which avoids
+  # issues with file paths in coverage reports
+  - DOC_ID_=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
+  - CI_ENV=`bash <(curl -s https://codecov.io/env)`
+  - DOC_="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME ${DOC_ID_}"
+  - ${DOC_} pwd
+  - ${DOC_} ls
+install:
+  - ${DOC_} pip install -U pip setuptools wheel
+  - ${DOC_} python --version
+  - ${DOC_} pip --version
+  - ${DOC_} mpirun --version
+  - ${DOC_} pip install -r test_requirements.txt
+  - ${DOC_} python setup.py install
+script:
+  - ${DOC_} rm -rf .coverage*
+  - ${DOC_} pytest -v --doctest-modules src/pybnb
+  - ${DOC_} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
+  - ${DOC_} mv .coverage ./.coverage.1
+  - ${DOC_} python run-mpitests.py --no-build --with-coverage --cov-report="" -v
+  - ${DOC_} mv .coverage ./.coverage.2
+  - ${DOC_} python run-mpitests.py --single --no-build --with-coverage --cov-report="" -v
+  - ${DOC_} mv .coverage ./.coverage.3
+  - ${DOC_} coverage combine
+  - ${DOC_} coverage report
+after_script:
+  - ${DOC_} find . -name "*.coverage*"
+  - ${DOC_} codecov --env DH_ACCT_NAME IMAGE_NAME
+  - docker kill ${DOC_ID_}
+  - docker ps
