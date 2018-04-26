@@ -6,7 +6,3 @@ coverage
 pytest
 pytest-coverage
 runtests
-sphinx
-sphinxcontrib-spelling
-sphinxcontrib.napoleon
-sphinx_rtd_theme

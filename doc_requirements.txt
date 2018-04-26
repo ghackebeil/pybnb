@@ -1,0 +1,5 @@
+-r test_requirements.txt
+sphinx
+sphinxcontrib-spelling
+sphinxcontrib.napoleon
+sphinx_rtd_theme
