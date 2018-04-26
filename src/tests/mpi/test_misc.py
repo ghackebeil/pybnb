@@ -96,7 +96,7 @@ def test_logging_nocomm():
 
 if mpi_available:
 
-    @MPITest(commsize=[1, 2, 4])
+    @MPITest(commsize=[1, 2, 3])
     def test_bad_dispatcher_rank(comm):
         with pytest.raises(ValueError):
             Solver(comm=comm, dispatcher_rank=-1)
@@ -106,6 +106,6 @@ if mpi_available:
             Solver(comm=comm, dispatcher_rank=comm.size - 1.1)
         Solver(comm=comm, dispatcher_rank=comm.size - 1)
 
-    @MPITest(commsize=[1, 2, 4])
+    @MPITest(commsize=[1, 2, 3])
     def test_logging(comm):
         _logging_check(comm)

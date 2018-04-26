@@ -186,6 +186,6 @@ def test_heaps_nocomm():
 
 if mpi_available:
 
-    @MPITest(commsize=[1, 2, 4])
+    @MPITest(commsize=[1, 2, 3])
     def test_heaps_comm(comm):
         _test_heaps(comm)
