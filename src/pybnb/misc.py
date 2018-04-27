@@ -6,24 +6,27 @@ import six
 infinity = float("inf")
 
 def is_infinite(x):
-    """Returns True with the given argument is equal to +inf
+    """Returns True if the given argument is equal to +inf
     or -inf.
 
-    Examples:
+    Example:
+
     >>> is_infinite(float('inf'))
     True
     >>> is_infinite(float('-inf'))
     True
     >>> is_infinite(0)
     False
+
     """
     return (x == -infinity) or \
         (x == infinity)
 
 def metric_fmt(num, unit="s", digits=1):
-    """Format and scale output with metric unit labels.
+    """Format and scale output with metric prefixes.
 
-    Examples:
+    Example:
+
     >>> metric_fmt(0)
     '0.0 s'
     >>> metric_fmt(0.002, unit='B')
@@ -32,6 +35,7 @@ def metric_fmt(num, unit="s", digits=1):
     '2.0 KB'
     >>> metric_fmt(2001, unit='B', digits=3)
     '2.001 KB'
+
     """
     if num is None:
         return "<unknown>"
@@ -85,8 +89,8 @@ def as_stream(stream, **kwds):
         stream: A stream that can be written to or a
             filename to open.
         **kwds: Additional keywords to be passed to the
-            built-in function :func:`open` when the
-            :attr:`stream` keyword is a filename
+            built-in function `open` when the
+            `stream` keyword is a filename.
 
     Returns:
         A file object that can be writtent to. If the input \
@@ -94,19 +98,20 @@ def as_stream(stream, **kwds):
         context will wrap the file object so that it will \
         not be closed upon exit of the with block.
 
-    Examples:
+    Example:
+
     >>> import tempfile
-    >>> with tempfile.NamedTemporaryFile() as f_:
+    >>> with tempfile.NamedTemporaryFile() as f
     ...     # pass a file
-    ...     with as_stream(f_) as f:
-    ...         assert f is f_
-    ...     assert not f_.closed
-    ...
-    ...     f_.close()
+    ...     with as_stream(f) as g:
+    ...         assert g is f
+    ...     assert not f.closed
+    ...     f.close()
     ...     # pass a filename
-    ...     with as_stream(f_.name) as f:
-    ...         assert not f.closed
-    ...     assert f.closed
+    ...     with as_stream(f.name) as g:
+    ...         assert not g.closed
+    ...     assert g.closed
+
     """
     if isinstance(stream, six.string_types):
         return open(stream,"w")
@@ -117,11 +122,13 @@ def get_default_args(func):
     """Get the default arguments for a function as a
     dictionary mapping argument name to default value.
 
-    Examples:
+    Example:
+
     >>> def f(a, b=None):
     ...     pass
     >>> get_default_args(f)
     {'b': None}
+
     """
     import inspect
     if six.PY3:
@@ -210,7 +217,7 @@ def get_simple_logger(filename=None,
     hide all output.
 
     Args:
-        filename (str): The name of a file to write
+        filename (`str`): The name of a file to write
             to. (default=None)
         stream: A file-like object that can be written
             to. (default=None)
@@ -218,12 +225,12 @@ def get_simple_logger(filename=None,
             print output to the console through stdout and
             stderr. (default=True)
         level: The logging level to
-            use. (default=:const:`logging.INFO`)
+            use. (default=_logging.INFO_)
         formatter: The logging formatter to
             use. (default=None)
 
     Returns:
-        A :const:`logging.Logger` object.
+        A `logging.Logger` object.
     """
     log = logging.Logger(None, level=level)
     if filename is not None:
