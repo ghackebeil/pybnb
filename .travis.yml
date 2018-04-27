@@ -38,7 +38,7 @@ install:
   - ${DOC_} mpirun --version
   - ${DOC_} pip install -r test_requirements.txt
   - ${DOC_} pip install codecov
-  - ${DOC_} python setup.py install
+  - ${DOC_} python setup.py develop
   - ${DOC_} rm -rf .coverage*
 script:
   - while sleep 9m; do echo "still running..."; done &
@@ -47,6 +47,8 @@ script:
   - kill %1
 after_script:
   - ${DOC_} find . -name "*.coverage*"
+  - ${DOC_} coverage combine
+  - ${DOC_} coverage report
   - ${DOC_} codecov --env DH_ACCT_NAME IMAGE_NAME SLIM EXAMPLES
   - docker kill ${DOC_ID_}
   - docker ps
