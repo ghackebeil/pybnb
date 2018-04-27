@@ -9,7 +9,9 @@ env:
     - DH_ACCT_NAME=qkjqvazeqfjqftchxlgw
   matrix:
     - IMAGE_NAME=python_latest_mpich
-    - IMAGE_NAME=python_latest_openmpi
+    - IMAGE_NAME=python_latest_mpich SLIM=1
+    - IMAGE_NAME=python_latest_openmpi EXAMPLES=1
+    - IMAGE_NAME=python_latest_openmpi SLIM=1
     - IMAGE_NAME=python_2.7_mpich
     - IMAGE_NAME=python_2.7_openmpi
     - IMAGE_NAME=python_3.5_mpich
@@ -26,9 +28,9 @@ before_install:
   # onto the docker container and giving it a mount
   # location with an identical name, which avoids
   # issues with file paths in coverage reports
-  - DOC_ID_=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
-  - CI_ENV=`bash <(curl -s https://codecov.io/env)`
-  - DOC_="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME ${DOC_ID_}"
+  - export DOC_ID_=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
+  - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
+  - export DOC_="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME ${DOC_ID_}"
   - ${DOC_} pwd
   - ${DOC_} ls
 install:
@@ -39,19 +41,12 @@ install:
   - ${DOC_} pip install -r test_requirements.txt
   - ${DOC_} pip install codecov
   - ${DOC_} python setup.py install
-script:
   - ${DOC_} rm -rf .coverage*
-  - ${DOC_} pytest -v --doctest-modules src/pybnb
-  - ${DOC_} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
-  - ${DOC_} mv .coverage ./.coverage.1
-  - ${DOC_} python run-mpitests.py --no-build --with-coverage -v
-  - ${DOC_} mv .coverage ./.coverage.2
-  - ${DOC_} python run-mpitests.py --single --no-build --with-coverage -v
-  - ${DOC_} mv .coverage ./.coverage.3
-  - ${DOC_} coverage combine
-  - ${DOC_} coverage report
+script:
+  - [[ -z $SLIM ]] || bash .travis/test_slim.sh
+  - [[ -n $SLIM ]] || bash .travis/test_parallel.sh
 after_script:
   - ${DOC_} find . -name "*.coverage*"
-  - ${DOC_} codecov --env DH_ACCT_NAME IMAGE_NAME
+  - ${DOC_} codecov --env DH_ACCT_NAME IMAGE_NAME SLIM EXAMPLES
   - docker kill ${DOC_ID_}
   - docker ps
