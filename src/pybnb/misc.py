@@ -165,7 +165,11 @@ def get_keyword_docs(doc):
             key, type_ = key.split()
             assert type_.startswith("(") and \
                 type_.endswith(")")
-            type_ = eval(type_[1:-1])
+            type_ = type_[1:-1]
+            if type_.startswith('`') and \
+               type_.endswith('`'):
+                type_ = type_[1:-1]
+            type_ = eval(type_)
             data[key] = {"doc": val,
                          "type": type_}
         default_ = re.search(r"\(default=.*\)",val)

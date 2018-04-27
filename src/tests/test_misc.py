@@ -10,6 +10,7 @@ from pybnb.misc import (infinity,
                         get_gap_labels,
                         as_stream,
                         get_default_args,
+                        get_keyword_docs,
                         get_simple_logger)
 
 from six import StringIO
@@ -113,6 +114,14 @@ class Test(object):
         assert get_default_args(f) == {'a':[]}
         f()
         assert get_default_args(f) == {'a':[1]}
+
+    def test_get_keyword_docs(self):
+        import pybnb.solver
+        data = get_keyword_docs(pybnb.solver.Solver.solve.__doc__)
+        kwds = get_default_args(pybnb.solver.Solver.solve)
+        for key in data:
+            if 'default' in data[key]:
+                assert data[key]['default'] == kwds[key]
 
     def test_get_simple_logger(self):
         log = get_simple_logger()
