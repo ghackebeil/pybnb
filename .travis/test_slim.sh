@@ -7,7 +7,12 @@ ${DOC_} pip uninstall -y Pyomo
 ${DOC_} pip uninstall -y Pyutilib
 ${DOC_} pip uninstall -y numba
 ${DOC_} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples
+${DOC_} find . -name "*.coverage*"
 ${DOC_} mv .coverage .coverage.slim.1
+${DOC_} find . -name "*.coverage*"
 ${DOC_} pip install Pyomo
+${DOC_} find . -name "*.coverage*"
 ${DOC_} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples
+${DOC_} find . -name "*.coverage*"
 ${DOC_} mv .coverage .coverage.slim.2
+${DOC_} find . -name "*.coverage*"
