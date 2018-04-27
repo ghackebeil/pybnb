@@ -9,7 +9,7 @@ __all__ = ('__title__',
 
 __title__ = 'pybnb'
 __summary__ = 'A parallel branch-and-bound engine for Python'
-__uri__ = 'TODO'
+__uri__ = 'https://github.com/ghackebeil/pybnb'
 __version__ = '0.1.0'
 __author__ = 'Gabriel A. Hackebeil'
 __email__ = 'gabe.hackebeil@gmail.com'
