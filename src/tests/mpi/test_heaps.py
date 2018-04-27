@@ -146,7 +146,7 @@ def _test_heaps(comm):
             pass
         elif solver.comm.rank == 1:
             pass
-        elif solver.comm.rank == 3:
+        elif solver.comm.rank == 2:
             pass
     for heap in gen_heaps(2):
         get_bound(heap)
