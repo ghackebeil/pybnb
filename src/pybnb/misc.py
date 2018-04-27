@@ -101,7 +101,7 @@ def as_stream(stream, **kwds):
     Example:
 
     >>> import tempfile
-    >>> with tempfile.NamedTemporaryFile() as f
+    >>> with tempfile.NamedTemporaryFile() as f:
     ...     # pass a file
     ...     with as_stream(f) as g:
     ...         assert g is f
