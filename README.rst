@@ -4,6 +4,9 @@ pybnb
 .. image:: https://travis-ci.org/ghackebeil/pybnb.svg?branch=master
     :target: https://travis-ci.org/ghackebeil/pybnb
 
+.. image:: https://codecov.io/gh/ghackebeil/pybnb/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/ghackebeil/pybnb
+
 A parallel branch-and-bound engine for Python.
 
 This software is copyright (c) by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
