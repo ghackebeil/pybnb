@@ -30,7 +30,7 @@ before_install:
   # issues with file paths in coverage reports
   - export DOC_ID_=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
-  - export DOC_="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME ${DOC_ID_}"
+  - export DOC_="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID_}"
   - ${DOC_} pwd
   - ${DOC_} ls
 install:
@@ -43,8 +43,8 @@ install:
   - ${DOC_} python setup.py install
   - ${DOC_} rm -rf .coverage*
 script:
-  - "[[ -z $SLIM ]] || bash .travis/test_slim.sh"
-  - "[[ -n $SLIM ]] || bash .travis/test_parallel.sh"
+  - "[[ -z $SLIM ]] || travis_wait 30 bash .travis/test_slim.sh"
+  - "[[ -n $SLIM ]] || travis_wait 30 bash .travis/test_parallel.sh"
 after_script:
   - ${DOC_} find . -name "*.coverage*"
   - ${DOC_} codecov --env DH_ACCT_NAME IMAGE_NAME SLIM EXAMPLES
