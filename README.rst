@@ -1,5 +1,5 @@
 pybnb
-=======
+=====
 
 .. image:: https://travis-ci.org/ghackebeil/pybnb.svg?branch=master
     :target: https://travis-ci.org/ghackebeil/pybnb
