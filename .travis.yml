@@ -43,8 +43,8 @@ install:
   - ${DOC_} python setup.py install
   - ${DOC_} rm -rf .coverage*
 script:
-  - [[ -z $SLIM ]] || bash .travis/test_slim.sh
-  - [[ -n $SLIM ]] || bash .travis/test_parallel.sh
+  - "[[ -z $SLIM ]] || bash .travis/test_slim.sh"
+  - "[[ -n $SLIM ]] || bash .travis/test_parallel.sh"
 after_script:
   - ${DOC_} find . -name "*.coverage*"
   - ${DOC_} codecov --env DH_ACCT_NAME IMAGE_NAME SLIM EXAMPLES
