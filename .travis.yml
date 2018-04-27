@@ -8,20 +8,18 @@ env:
   global:
     - DH_ACCT_NAME=qkjqvazeqfjqftchxlgw
   matrix:
-    - IMAGE_NAME=python_latest_mpich
-    - IMAGE_NAME=python_latest_mpich SLIM=1
-    - IMAGE_NAME=python_latest_openmpi EXAMPLES=1
-    - IMAGE_NAME=python_latest_openmpi SLIM=1
-    - IMAGE_NAME=python_2.7_mpich
-    - IMAGE_NAME=python_2.7_openmpi
-    - IMAGE_NAME=python_3.5_mpich
-    - IMAGE_NAME=python_3.5_openmpi
-    - IMAGE_NAME=python_3.6_mpich
     - IMAGE_NAME=python_3.6_openmpi
-    - IMAGE_NAME=pypy_2_mpich
-    - IMAGE_NAME=pypy_2_openmpi
-    - IMAGE_NAME=pypy_3_mpich
+    - IMAGE_NAME=python_3.6_openmpi SLIM=1
+    - IMAGE_NAME=python_3.6_openmpi EXAMPLES=1
+    - IMAGE_NAME=python_3.6_mpich
+    - IMAGE_NAME=python_3.5_openmpi
+    - IMAGE_NAME=python_3.5_mpich
+    - IMAGE_NAME=python_2.7_openmpi
+    - IMAGE_NAME=python_2.7_mpich
     - IMAGE_NAME=pypy_3_openmpi
+    - IMAGE_NAME=pypy_3_mpich
+    - IMAGE_NAME=pypy_2_openmpi
+    - IMAGE_NAME=pypy_2_mpich
 before_install:
   - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
   # Note that we are mounting the current directory
