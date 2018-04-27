@@ -22,15 +22,9 @@ env:
     - IMAGE_NAME=pypy_2_mpich
 before_install:
   - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
-  # Note that we are mounting the current directory
-  # onto the docker container and giving it a mount
-  # location with an identical name, which avoids
-  # issues with file paths in coverage reports
   - export DOC_ID_=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
   - export DOC_="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID_}"
-  - ${DOC_} pwd
-  - ${DOC_} ls
 install:
   - ${DOC_} pip install -U pip setuptools wheel
   - ${DOC_} python --version
