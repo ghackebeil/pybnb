@@ -124,11 +124,13 @@ class Test(object):
                 assert data[key]['default'] == kwds[key]
 
     def test_get_simple_logger(self):
-        log = get_simple_logger()
+        log = get_simple_logger(console=False)
         assert log.disabled
-        log = get_simple_logger(show=True)
+        log = get_simple_logger()
         assert not log.disabled
-        assert len(log.handlers) == 1
+        log = get_simple_logger(console=True)
+        assert not log.disabled
+        assert len(log.handlers) == 2
         log.info('junk')
         fid, fname = tempfile.mkstemp()
         out = StringIO()
@@ -137,10 +139,10 @@ class Test(object):
         try:
             log = get_simple_logger(filename=fname,
                                     stream=out,
-                                    show=True,
+                                    console=True,
                                     formatter=formatter,
                                     level=logging.WARNING)
-            assert len(log.handlers) == 3
+            assert len(log.handlers) == 4
             log.error('error_line')
             log.warning('warning_line')
             log.info('info_line')

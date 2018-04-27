@@ -471,9 +471,10 @@ class Solver(object):
                         states=[root._state],
                         tree_id_labeler=tree_id_labeler)
                 if log is _notset:
-                    log = get_simple_logger(show=True)
+                    log = get_simple_logger()
                 elif log is None:
-                    log = get_simple_logger(show=False)
+                    log = get_simple_logger(console=False)
+                    assert log.disabled
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,

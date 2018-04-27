@@ -1,3 +1,4 @@
+import sys
 import logging
 
 import six
@@ -189,9 +190,19 @@ def get_keyword_docs(doc):
 
     return data
 
+class _simple_stdout_filter(object):
+    def filter(self, record):
+        # only show WARNING or below
+        return record.levelno <= logging.WARNING
+
+class _simple_stderr_filter(object):
+    def filter(self, record):
+        # only show ERROR or above
+        return record.levelno >= logging.ERROR
+
 def get_simple_logger(filename=None,
                       stream=None,
-                      show=False,
+                      console=True,
                       level=logging.INFO,
                       formatter=None):
     """Get a logging object configured to write to any
@@ -201,11 +212,11 @@ def get_simple_logger(filename=None,
     Args:
         filename (str): The name of a file to write
             to. (default=None)
-        stream: A file like object that can be written
+        stream: A file-like object that can be written
             to. (default=None)
-        show (bool): Indicates whether or not to show output
-            in the console (via
-            sys.stdout). (default=None)
+        console: If True, the logger will be configured to
+            print output to the console through stdout and
+            stderr. (default=True)
         level: The logging level to
             use. (default=:const:`logging.INFO`)
         formatter: The logging formatter to
@@ -220,19 +231,25 @@ def get_simple_logger(filename=None,
         fh = logging.FileHandler(filename)
         fh.setLevel(level)
         log.addHandler(fh)
-    if show:
-        import sys
-        ch = logging.StreamHandler(sys.stdout)
-        ch.setLevel(level)
-        log.addHandler(ch)
     if stream is not None:
         ch = logging.StreamHandler(stream)
         ch.setLevel(level)
         log.addHandler(ch)
+    if console:
+        cout = logging.StreamHandler(sys.stdout)
+        cout.setLevel(level)
+        cout.addFilter(_simple_stdout_filter())
+        log.addHandler(cout)
+        cerr = logging.StreamHandler(sys.stderr)
+        cerr.setLevel(level)
+        cerr.addFilter(_simple_stderr_filter())
+        log.addHandler(cerr)
     if formatter is not None:
         for h in log.handlers:
             h.setFormatter(formatter)
-    if (filename is None) and (not show):
+    if (filename is None) and \
+       (stream is None) and \
+       (not console):
         log.disabled = True
     return log
 
@@ -250,8 +267,7 @@ def _run_command_line_solver(problem, args):
     log = None
     if bb.dispatcher:
         log = solve_kwds["log"] = get_simple_logger(
-            filename=args.log_file,
-            show=True)
+            filename=args.log_file)
     results = bb.solve(problem, **solve_kwds)
     stats = bb.collect_worker_statistics()
     if bb.dispatcher and (not log.disabled):

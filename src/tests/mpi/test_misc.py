@@ -62,7 +62,7 @@ def _logging_check(comm):
                              initialize_queue,
                              GenericProblem(p.sense),
                              None, None,
-                             get_simple_logger(show=True,
+                             get_simple_logger(console=True,
                                                stream=out,
                                                level=logging.DEBUG,
                                                formatter=formatter),
