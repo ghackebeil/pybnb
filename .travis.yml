@@ -34,6 +34,7 @@ install:
   - ${DOC} pip install codecov
   - ${DOC} python setup.py install
 ########
+  - ${DOC} ls -alh
   - ${DOC} bash -c 'echo `python -c "import runtests; print(runtests.__path__[0])"`/mpi/tester.py'
   - ${DOC} bash -c 'sed -i "s/assert(os.path.exists(self.TEST_DIR))/print(\"@@@@@@@@\", self.TEST_DIR)/g" `python -c "import runtests; print(runtests.__path__[0])"`/mpi/tester.py'
 ########
