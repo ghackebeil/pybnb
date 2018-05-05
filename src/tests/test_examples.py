@@ -86,9 +86,21 @@ def test_example(example_name, procs):
                                       "--results-file", results_filename])
         else:
             assert procs > 1
-            rc = subprocess.call(["mpirun", "-np", str(procs),
-                                  'python', filename,
-                                  "--results-file", results_filename])
+            if subprocess.call(["mpirun",
+                                "--allow-run-as-root",
+                                "--version"],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT):
+                rc = subprocess.call(["mpirun",
+                                      "-np", str(procs),
+                                      'python', filename,
+                                      "--results-file", results_filename])
+            else:
+                rc = subprocess.call(["mpirun",
+                                      "--allow-run-as-root",
+                                      "-np", str(procs),
+                                      'python', filename,
+                                      "--results-file", results_filename])
         assert rc == 0
         with open(results_filename) as f:
             results = yaml.load(f)
