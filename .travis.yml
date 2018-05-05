@@ -32,7 +32,7 @@ install:
   - ${DOC} bash -c 'export PATH=/home/user/.local/bin:"${PATH}"'
   - ${DOC} pip install --user -r test_requirements.txt
   - ${DOC} pip install --user codecov
-  - ${DOC} python setup.py develop --user
+  - ${DOC} python setup.py install --user
   - ${DOC} rm -rf .coverage*
 script:
   - while sleep 9m; do echo "still running..."; done &
