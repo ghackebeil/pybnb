@@ -8,18 +8,18 @@ env:
   global:
     - DH_ACCT_NAME=qkjqvazeqfjqftchxlgw
   matrix:
-    - IMAGE_NAME=python_3.6_openmpi
-    - IMAGE_NAME=python_3.6_openmpi SLIM=1
-    - IMAGE_NAME=python_3.6_openmpi EXAMPLES=1
-    - IMAGE_NAME=python_3.6_mpich
-    - IMAGE_NAME=python_3.5_openmpi
-    - IMAGE_NAME=python_3.5_mpich
-    - IMAGE_NAME=python_2.7_openmpi
-    - IMAGE_NAME=python_2.7_mpich
-    - IMAGE_NAME=pypy_3_openmpi
-    - IMAGE_NAME=pypy_3_mpich
-    - IMAGE_NAME=pypy_2_openmpi
-    - IMAGE_NAME=pypy_2_mpich
+    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi
+    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi SLIM=1
+    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.6-mpich
+    - IMAGE_NAME=python-mpi-builds:python_3.5-openmpi
+    - IMAGE_NAME=python-mpi-builds:python_3.5-mpich
+    - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi
+    - IMAGE_NAME=python-mpi-builds:python_2.7-mpich
+    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi
+    - IMAGE_NAME=python-mpi-builds:pypy_3-mpich
+    - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi
+    - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
 before_install:
   - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
   - export DOC_ID_=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
