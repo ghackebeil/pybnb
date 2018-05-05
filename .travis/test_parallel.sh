@@ -3,13 +3,20 @@
 set -e
 
 EXAMPLE_ARG=`[[ -z $EXAMPLES ]] || echo --run-examples`
-MPIRUN_ARG="mpirun -np 4"`${DOC} mpirun --allow-run-as-root --version 2> /dev/null || echo --allow-run-as-root`
-echo $MPIRUN_ARG
+if [ -z "$MPIRUN_ARG" ]
+then
+    if [ "$(${DOC} mpirun --allow-run-as-roots --version 2> /dev/null)" ]
+    then
+        MPIRUN_ARG="--mpirun mpirun --allow-run-as-root np 4"
+    else
+        MPIRUN_ARG="--mpirun mpirun -np 4"
+    fi
+fi
 ${DOC} mpirun --version 2> /dev/null || echo good
 ${DOC} pytest -v --doctest-modules src/pybnb
 ${DOC} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v ${EXAMPLE_ARG}
 ${DOC} mv .coverage coverage.parallel.1
-${DOC} python run-mpitests.py --mpirun="${MPIRUN_ARG}" --no-build --with-coverage -v
+${DOC} python run-mpitests.py ${MPIRUN_ARG} --no-build --with-coverage -v
 ${DOC} mv .coverage coverage.parallel.2
 ${DOC} python run-mpitests.py --single --no-build --with-coverage -v
 ${DOC} mv .coverage coverage.parallel.3
