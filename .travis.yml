@@ -27,7 +27,9 @@ before_install:
 install:
   - ${DOC} virtualenv --system-site-packages ./venv
   - ${DOC} which python
+  - ${DOC} bash -c 'echo "${PATH}"'
   - ${DOC} bash -c 'export PATH=$(pwd)/venv/bin:"${PATH}"'
+  - ${DOC} bash -c 'echo "${PATH}"'
   - ${DOC} which python
   - ${DOC} pip install -U pip setuptools wheel
   - ${DOC} python --version
