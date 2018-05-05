@@ -244,10 +244,11 @@ class Dispatcher(object):
 
         if self.comm is not None:
             # send rank of dispatcher to all workers
-            self.dispatcher_rank, self.root_worker_comm_rank, _ = \
+            self.dispatcher_rank, self.root_worker_comm_rank, wc = \
                 DispatcherProxy._init(
                     self.comm,
                     ProcessType.dispatcher)
+            wc.Free()
             assert self.dispatcher_rank == self.comm.rank
 
             # another broadcast used by the workers for which
