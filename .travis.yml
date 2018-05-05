@@ -29,7 +29,7 @@ install:
   - ${DOC} python --version
   - ${DOC} pip --version
   - ${DOC} mpirun --version
-  - ${DOC} export 'PATH=/home/user/.local/bin:"${PATH}"'
+  - ${DOC} bash -c 'export PATH=/home/user/.local/bin:"${PATH}"'
   - ${DOC} pip install --user -r test_requirements.txt
   - ${DOC} pip install --user codecov
   - ${DOC} python setup.py develop --user
