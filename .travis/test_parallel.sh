@@ -7,9 +7,9 @@ if [ -z "$MPIRUN_ARG" ]
 then
     if [ "$(${DOC} mpirun --allow-run-as-roots --version 2> /dev/null)" ]
     then
-        MPIRUN_ARG="--mpirun \"mpirun --allow-run-as-root np 4\""
+        MPIRUN_ARG='--mpirun="mpirun --allow-run-as-root np 4"'
     else
-        MPIRUN_ARG="--mpirun \"mpirun -np 4\""
+        MPIRUN_ARG='--mpirun="mpirun -np 4"'
     fi
 fi
 echo ${MPIRUN_ARG}
