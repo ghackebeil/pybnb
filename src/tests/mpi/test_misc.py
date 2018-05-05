@@ -83,7 +83,7 @@ def _logging_check(comm):
                     opt._disp.log_warning(str(comm.rank)+": warning")
                     opt._disp.log_error(str(comm.rank)+": error")
                 opt.worker_comm.Barrier()
-            if opt.root_worker:
+            if opt.is_root_worker:
                 opt._disp.solve_finished()
     if comm is not None:
         comm.Barrier()
