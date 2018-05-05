@@ -7,12 +7,12 @@ if [ -z "$MPIRUN_ARG" ]
 then
     if [ "$(${DOC} mpirun --allow-run-as-roots --version 2> /dev/null)" ]
     then
-        MPIRUN_ARG="--mpirun mpirun --allow-run-as-root np 4"
+        MPIRUN_ARG="--mpirun \"mpirun --allow-run-as-root np 4\""
     else
-        MPIRUN_ARG="--mpirun mpirun -np 4"
+        MPIRUN_ARG="--mpirun \"mpirun -np 4\""
     fi
 fi
-${DOC} mpirun --version 2> /dev/null || echo good
+echo ${MPIRUN_ARG}
 ${DOC} pytest -v --doctest-modules src/pybnb
 ${DOC} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v ${EXAMPLE_ARG}
 ${DOC} mv .coverage coverage.parallel.1
