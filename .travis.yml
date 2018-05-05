@@ -26,13 +26,16 @@ before_install:
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
   - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID}"
 install:
+  - ${DOC} virtualenv --system-site-packages ./venv
+  - ${DOC} . ./venv/activate
+  - ${DOC} which pip
+  - ${DOC} pip install -U pip setuptools wheel
   - ${DOC} python --version
   - ${DOC} pip --version
   - ${DOC} mpirun --version
-  - ${DOC} bash -c 'export PATH=/home/user/.local/bin:"${PATH}"'
-  - ${DOC} pip install --user -r test_requirements.txt
-  - ${DOC} pip install --user codecov
-  - ${DOC} python setup.py install --user
+  - ${DOC} pip install -r test_requirements.txt
+  - ${DOC} pip install codecov
+  - ${DOC} python setup.py install
   - ${DOC} rm -rf .coverage*
 script:
   - while sleep 9m; do echo "still running..."; done &
