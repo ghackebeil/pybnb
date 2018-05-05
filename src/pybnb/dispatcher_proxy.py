@@ -87,6 +87,7 @@ class DispatcherProxy(object):
         import mpi4py.MPI
         assert mpi4py.MPI.Is_initialized()
         self.comm = comm
+        self.worker_comm = None
         self.CommActionTimer = self._ActionTimer(self)
         self._status = mpi4py.MPI.Status()
         self.comm_time = 0.0
@@ -102,6 +103,11 @@ class DispatcherProxy(object):
             self.root_worker_worker_comm_rank = \
                 self.comm.bcast(self.root_worker_worker_comm_rank,
                                 root=self.root_worker_comm_rank)
+
+    def __del__(self):
+        if self.worker_comm is not None:
+            self.worker_comm.Free()
+            self.worker_comm = None
 
     def update(self, *args, **kwds):
         with self.CommActionTimer:
