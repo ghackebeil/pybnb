@@ -24,7 +24,7 @@ before_install:
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
 install:
  # start the container as root user for the install phase
-  - export DOC_ID=`docker run -d -v $(pwd):$(pwd) -w $(pwd) --user root ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
+  - export DOC_ID=`docker run -d -v $(pwd):$(pwd) -w $(pwd) --user $(id -u) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
   - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID}"
   - ${DOC} pip install -U pip setuptools wheel
   - ${DOC} python --version
