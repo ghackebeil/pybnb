@@ -1,7 +1,8 @@
 import pytest
 
 from pybnb.solver import (Solver,
-                          SolverResults)
+                          SolverResults,
+                          summarize_worker_statistics)
 
 from six import StringIO
 
@@ -37,9 +38,9 @@ class TestSolverSimple(object):
         b = Solver(comm=None)
         assert b.comm == None
         assert b.worker_comm == None
-        assert b.worker == True
-        assert b.dispatcher == True
-        assert b.root_worker == True
+        assert b.is_worker == True
+        assert b.is_dispatcher == True
+        assert b.is_root_worker == True
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()
         assert len(stats) == 7
@@ -62,5 +63,5 @@ Average Worker Timing:
    - other:            0.00%
 """
         tmp = StringIO()
-        Solver.summarize_worker_statistics(stats, stream=tmp)
+        summarize_worker_statistics(stats, stream=tmp)
         assert tmp.getvalue() == out

@@ -58,7 +58,7 @@ class TestProblems(object):
                  str(getattr(results, name))+") does "
                  "not match baseline ("+
                  str(getattr(baseline, name))+")")
-        assert solver.dispatcher
+        assert solver.is_dispatcher
         if solver._disp.queue.qsize() > 0:
             q = solver.save_dispatcher_queue()
             assert len(q) == 2

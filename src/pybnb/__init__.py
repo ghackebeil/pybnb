@@ -11,4 +11,5 @@ from pybnb.misc import infinity
 from pybnb.problem import (Problem,
                            minimize,
                            maximize)
-from pybnb.solver import Solver
+from pybnb.solver import (Solver,
+                          solve)

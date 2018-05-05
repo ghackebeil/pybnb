@@ -6,10 +6,11 @@ import six
 infinity = float("inf")
 
 def is_infinite(x):
-    """Returns True if the given argument is equal to +inf
-    or -inf.
+    """Returns True if the given argument is equal to `+inf`
+    or `-inf`.
 
-    Example:
+    Example
+    -------
 
     >>> is_infinite(float('inf'))
     True
@@ -25,7 +26,8 @@ def is_infinite(x):
 def metric_fmt(num, unit="s", digits=1):
     """Format and scale output with metric prefixes.
 
-    Example:
+    Example
+    -------
 
     >>> metric_fmt(0)
     '0.0 s'
@@ -85,20 +87,25 @@ def as_stream(stream, **kwds):
     a filename or a file object. This function is mean to be
     used in the context of a with statement.
 
-    Args:
-        stream: A stream that can be written to or a
-            filename to open.
-        **kwds: Additional keywords to be passed to the
-            built-in function `open` when the
-            `stream` keyword is a filename.
+    Parameters
+    ----------
+    stream : file-like object or string
+        An existing file-like object or the name of a file
+        to open.
+    **kwds
+        Additional keywords passed to the built-in function
+        `open` when the `stream` keyword is a filename.
 
-    Returns:
-        A file object that can be writtent to. If the input \
-        argument was originally an open file, a dummy \
-        context will wrap the file object so that it will \
+    Returns
+    -------
+    file-like object
+        A file-like object that can be writtent to. If the
+        input argument was originally an open file, a dummy
+        context will wrap the file object so that it will
         not be closed upon exit of the with block.
 
-    Example:
+    Example
+    -------
 
     >>> import tempfile
     >>> with tempfile.NamedTemporaryFile() as f:
@@ -122,7 +129,8 @@ def get_default_args(func):
     """Get the default arguments for a function as a
     dictionary mapping argument name to default value.
 
-    Example:
+    Example
+    -------
 
     >>> def f(a, b=None):
     ...     pass
@@ -143,43 +151,42 @@ def get_default_args(func):
         return dict(zip(a.args[-len(a.defaults):],a.defaults))
 
 def get_keyword_docs(doc):
-    """Parses a Google-style docstring to summarize
+    """Parses a numpy-style docstring to summarize
     information in the 'Args:' section into a dictionary."""
     import re
     import yaml
     lines = doc.splitlines()
     for i_start, line in enumerate(lines):
-        if line.strip() == "Args:":
+        if (line.strip() == "Parameters") and \
+           (lines[i_start+1].strip() == "----------"):
+            i_start = i_start + 2
             break
     else:                                              #pragma:nocover
         assert False
-    for i_stop, line in enumerate(lines):
+    for i_stop, line in enumerate(lines[i_start:],i_start):
         if i_stop <= i_start+1:
             continue
         if line.strip() == "":
             break
     else:                                              #pragma:nocover
         assert False
-    args = "\n".join(lines[i_start:i_stop])
-    args = yaml.load(args)
-    assert (len(args) == 1) and \
-        ("Args" in args)
-    data = {}
-    for key, val in args["Args"].items():
-        if key.count(" ") == 0:
-            data[key] = {"doc": val}
+    args = {}
+    assert re.match(r".+ : .+(, optional)?", lines[i_start])
+    last = lines[i_start].split(' : ')[0].strip()
+    args[last] = ""
+    i = i_start + 1
+    while i != i_stop:
+        if re.match(r".+ : .+(, optional)?", lines[i]):
+            args[last] = args[last].strip()
+            last = lines[i].split(' : ')[0].strip()
+            args[last] = ""
         else:
-            assert key.count(" ") == 1
-            key, type_ = key.split()
-            assert type_.startswith("(") and \
-                type_.endswith(")")
-            type_ = type_[1:-1]
-            if type_.startswith('`') and \
-               type_.endswith('`'):
-                type_ = type_[1:-1]
-            type_ = eval(type_)
-            data[key] = {"doc": val,
-                         "type": type_}
+            args[last] += (lines[i].strip() + " ")
+        i += 1
+    args[last] = args[last].strip()
+    data = {}
+    for key, val in args.items():
+        data[key] = {"doc": val}
         default_ = re.search(r"\(default=.*\)",val)
         if default_ is not None:
             default_ = default_.group(0)[1:-1].split("=")
@@ -212,25 +219,29 @@ def get_simple_logger(filename=None,
                       console=True,
                       level=logging.INFO,
                       formatter=None):
-    """Get a logging object configured to write to any
+    """Creates a logging object configured to write to any
     combination of a file, a stream, and the console, or
     hide all output.
 
-    Args:
-        filename (`str`): The name of a file to write
-            to. (default=None)
-        stream: A file-like object that can be written
-            to. (default=None)
-        console: If True, the logger will be configured to
-            print output to the console through stdout and
-            stderr. (default=True)
-        level: The logging level to
-            use. (default=_logging.INFO_)
-        formatter: The logging formatter to
-            use. (default=None)
+    Parameters
+    ----------
+    filename : string, optional
+        The name of a file to write to. (default=None)
+    stream : file-like object, optional
+        A file-like object to write to. (default=None)
+    console : bool, optional
+        If True, the logger will be configured to print
+        output to the console through stdout and
+        stderr. (default=True)
+    level : int, optional
+        The logging level to use. (default=logging.INFO)
+    formatter: logging.Formatter, optional
+        The logging formatter to use. (default=None)
 
-    Returns:
-        A `logging.Logger` object.
+    Returns
+    -------
+    logging.Logger
+        A logging object
     """
     log = logging.Logger(None, level=level)
     if filename is not None:
@@ -263,27 +274,13 @@ def get_simple_logger(filename=None,
 def _run_command_line_solver(problem, args):
     import pybnb
     solve_kwds = dict(vars(args))
-    del solve_kwds["log_file"]
-    del solve_kwds["results_file"]
     del solve_kwds["disable_mpi"]
     del solve_kwds["profile"]
     if args.disable_mpi:
-        bb = pybnb.Solver(comm=None)
+        results = pybnb.solve(problem, comm=None, **solve_kwds)
     else:
-        bb = pybnb.Solver()
-    log = None
-    if bb.dispatcher:
-        log = solve_kwds["log"] = get_simple_logger(
-            filename=args.log_file)
-    results = bb.solve(problem, **solve_kwds)
-    stats = bb.collect_worker_statistics()
-    if bb.dispatcher and (not log.disabled):
-        tmp = six.StringIO()
-        pybnb.Solver.\
-            summarize_worker_statistics(stats, stream=tmp)
-        log.info(tmp.getvalue())
-    if bb.dispatcher and (args.results_file is not None):
-        results.write(args.results_file)
+        results = pybnb.solve(problem, **solve_kwds)
+    return results
 
 def create_command_line_solver(problem, parser=None):
     """Convert a given problem implementation to a
@@ -329,48 +326,48 @@ def create_command_line_solver(problem, parser=None):
             solve_docs[key]["default"]
     parser.add_argument(
         "--absolute-gap",
-        type=solve_docs["absolute_gap"]["type"],
+        type=float,
         default=solve_defaults.pop("absolute_gap"),
         help=solve_docs["absolute_gap"]["doc"])
     parser.add_argument(
         "--relative-gap",
-        type=solve_docs["relative_gap"]["type"],
+        type=float,
         default=solve_defaults.pop("relative_gap"),
         help=solve_docs["relative_gap"]["doc"])
     parser.add_argument(
         "--cutoff",
-        type=solve_docs["cutoff"]["type"],
+        type=float,
         default=solve_defaults.pop("cutoff"),
         help=solve_docs["cutoff"]["doc"])
     parser.add_argument(
         "--node-limit",
-        type=solve_docs["node_limit"]["type"],
+        type=int,
         default=solve_defaults.pop("node_limit"),
         help=solve_docs["node_limit"]["doc"])
     parser.add_argument(
         "--time-limit",
-        type=solve_docs["time_limit"]["type"],
+        type=float,
         default=solve_defaults.pop("time_limit"),
         help=solve_docs["time_limit"]["doc"])
     parser.add_argument(
         "--absolute-tolerance",
-        type=solve_docs["absolute_tolerance"]["type"],
+        type=float,
         default=solve_defaults.pop("absolute_tolerance"),
         help=solve_docs["absolute_tolerance"]["doc"])
     parser.add_argument(
         "--log-interval-seconds",
-        type=solve_docs["log_interval_seconds"]["type"],
+        type=float,
         default=solve_defaults.pop("log_interval_seconds"),
         help=solve_docs["log_interval_seconds"]["doc"])
     assert len(solve_defaults) == 0, str(solve_defaults)
 
     parser.add_argument(
-        "--log-file", type=str, default=None,
+        "--log-filename", type=str, default=None,
         help=("A filename to store solver output into."))
     parser.add_argument(
-        "--results-file", type=str, default=None,
+        "--results-filename", type=str, default=None,
         help=("When set, saves the solver results into a "
-              "YAML-formated file with the given name."))
+              "YAML-formatted file with the given name."))
     parser.add_argument(
         "--disable-mpi", default=False,
         action="store_true",

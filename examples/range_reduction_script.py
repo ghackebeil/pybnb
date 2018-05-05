@@ -102,7 +102,7 @@ if __name__ == "__main__":
         description=("Run parallel branch and bound "
                      "with optimality-based range reduction "
                      "on the first few nodes"))
-    parser.add_argument("--results-file", type=str, default=None,
+    parser.add_argument("--results-filename", type=str, default=None,
                         help=("When set, saves the solver results into a "
                               "YAML-formated file with the given name."))
     args = parser.parse_args()
@@ -136,10 +136,9 @@ if __name__ == "__main__":
 
     # continue the solve without bounds tightening at the
     # remaining nodes
-    opt = pybnb.Solver(comm=comm, dispatcher_rank=0)
-    results = opt.solve(problem,
-                        best_objective=best_objective,
-                        initialize_queue=dispatcher_queue)
-
-    if opt.dispatcher and (args.results_file is not None):
-        results.write(args.results_file)
+    results = pybnb.solve(problem,
+                          comm=comm,
+                          dispatcher_rank=0,
+                          best_objective=best_objective,
+                          initialize_queue=dispatcher_queue,
+                          results_filename=args.results_filename)

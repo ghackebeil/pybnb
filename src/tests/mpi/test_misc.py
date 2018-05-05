@@ -8,10 +8,10 @@ from runtests.mpi import MPITest
 from pybnb.solver import Solver
 from pybnb.misc import get_simple_logger
 from pybnb.problem import (minimize,
-                             GenericProblem,
-                             Problem)
+                           GenericProblem,
+                           Problem)
 from pybnb.dispatcher import (TreeIdLabeler,
-                                SavedDispatcherQueue)
+                              SavedDispatcherQueue)
 
 from six import StringIO
 
@@ -46,7 +46,7 @@ class DummyProblem(Problem):
 def _logging_check(comm):
     opt = Solver(comm=comm)
     p = DummyProblem()
-    if opt.dispatcher:
+    if opt.is_dispatcher:
         assert (comm is None) or (comm.rank == 0)
         root = p.new_node()
         p.save_state(root)
@@ -87,7 +87,7 @@ def _logging_check(comm):
                 opt._disp.solve_finished()
     if comm is not None:
         comm.Barrier()
-    if opt.dispatcher:
+    if opt.is_dispatcher:
         assert ('\n'.join(out.getvalue().splitlines()[4:])) == \
                 _get_logging_baseline(comm.size if comm is not None else 1)
 
