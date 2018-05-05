@@ -21,12 +21,11 @@ env:
     - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
 before_install:
   - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
-#  - export DOC_ID=`docker run -d -v $(pwd):$(pwd) -w $(pwd) --user $(id -u) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
-  - export DOC_ID=`docker run -d -v $(pwd):$(pwd) -w $(pwd) --user root ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
-  - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID}"
 install:
-#  - ${DOC} virtualenv --system-site-packages ./venv
+ # start the container as root user for the install phase
+  - export DOC_ID=`docker run -d -v $(pwd):$(pwd) -w $(pwd) --user root ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
+  - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID}"
   - ${DOC} pip install -U pip setuptools wheel
   - ${DOC} python --version
   - ${DOC} pip --version
@@ -34,7 +33,8 @@ install:
   - ${DOC} pip install -r test_requirements.txt
   - ${DOC} pip install codecov
   - ${DOC} python setup.py install
-  - ${DOC} rm -rf .coverage*
+ # run the remainder of commands as non-root to avoid openmpi errors
+  - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES --user $(id -u) ${DOC_ID}"
 script:
   - while sleep 9m; do echo "still running..."; done &
   - "[[ -z $SLIM ]] || bash .travis/test_slim.sh"
