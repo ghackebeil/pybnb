@@ -26,7 +26,7 @@ before_install:
   - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID}"
 install:
   - ${DOC} virtualenv --system-site-packages ./venv
-  - ${DOC} bash -c 'source ./venv/bin/activate'
+  - ${DOC} . ./venv/bin/activate
   - ${DOC} pip install -U pip setuptools wheel
   - ${DOC} python --version
   - ${DOC} pip --version
