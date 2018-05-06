@@ -33,7 +33,7 @@ install:
   - ${DOC} mpirun --version
   - ${DOC} pip install -r test_requirements.txt
   - ${DOC} pip install codecov
-  - ${DOC} python setup.py install
+  - ${DOC} python setup.py develop
 script:
   - while sleep 9m; do echo "still running..."; done &
   - "[[ -z $SLIM ]] || bash .travis/test_slim.sh"
