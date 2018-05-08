@@ -1,3 +1,9 @@
+"""
+Branch-and-bound solver implementation.
+
+Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
+"""
+
 import sys
 import time
 

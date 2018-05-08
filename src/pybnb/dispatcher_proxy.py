@@ -1,3 +1,10 @@
+"""
+A proxy interface to the central dispatcher that is used by
+branch-and-bound workers.
+
+Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
+"""
+
 from pybnb.node import Node
 from pybnb.mpi_utils import (send_nothing,
                              recv_nothing,

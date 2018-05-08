@@ -1,3 +1,9 @@
+"""
+Various utility function for MPI.
+
+Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
+"""
+
 import array
 
 class Message(object):

@@ -1,3 +1,10 @@
+"""
+Various tools for implementing branch-and-bound problems
+that are based on a pyomo.kernel model.
+
+Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
+"""
+
 import array
 import collections
 import hashlib
