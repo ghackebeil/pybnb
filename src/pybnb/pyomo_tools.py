@@ -7,6 +7,7 @@ import pybnb
 import pyomo.kernel as pmo
 
 import six
+from six.moves import xrange as range
 
 try:
     import mpi4py
@@ -38,6 +39,41 @@ def _create_optimality_bound(problem,
         assert pyomo_objective.sense == pmo.maximize
         optbound.lb = best_objective_value
     return optbound
+
+def _mpi_partition(comm, items, root=0):
+    assert root >= 0
+    N = len(items)
+    if N > 0:
+        if (comm is None) or \
+           (comm.size == 1):
+            assert root == 0
+            for x in items:
+                yield x
+        else:
+            import mpi4py.MPI
+            _null = [array.array('b',[]),mpi4py.MPI.CHAR]
+            last_tag = {}
+            if comm.rank == root:
+                i = 0
+                for dest in range(1, comm.size):
+                    last_tag[dest] = i
+                    comm.Send(_null, dest, tag=i)
+                    i += 1
+                status = mpi4py.MPI.Status()
+                while i < N:
+                    comm.Recv(_null, status=status)
+                    last_tag[status.Get_source()] = i
+                    comm.Send(_null, status.Get_source(), tag=i)
+                    i += 1
+                for dest in last_tag:
+                    if last_tag[dest] < N:
+                        comm.Send(_null, dest, tag=N)
+            else:
+                status = mpi4py.MPI.Status()
+                comm.Recv(_null, source=0, status=status)
+                while status.Get_tag() < N:
+                    yield items[status.Get_tag()]
+                    comm.Sendrecv(_null, 0, recvbuf=_null, source=0, status=status)
 
 def generate_cids(model,
                   prefix=(),
@@ -218,8 +254,8 @@ class RangeReductionProblem(pybnb.Problem):
             joblist_hash = self.comm.bcast(my_joblist_hash,
                                            root=0)
             assert joblist_hash == my_joblist_hash
-        for i, cid, which in pybnb.mpi_utils.partition(self.comm,
-                                                         joblist):
+        for i, cid, which in _mpi_partition(self.comm,
+                                            joblist):
             obj = self.problem.cid_to_pyomo_object[cid]
             tmp_objective.expr = obj
             if which == 'L':
