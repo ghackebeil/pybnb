@@ -118,8 +118,9 @@ class Rosenbrock2D(PyomoProblem):
         self._ipopt.options['tol'] = 1e-9
         self._last_bound_was_feasible = False
 
-        super(Rosenbrock2D, self).\
-            __init__(pybnb.minimize)
+        # make sure the PyomoProblem initializer is called
+        # after the model is built
+        super(Rosenbrock2D, self).__init__()
 
     def check_feasible(self):
         """Check if the currently loaded solution
@@ -179,6 +180,9 @@ class Rosenbrock2D(PyomoProblem):
     #
     # Implement Problem abstract methods
     #
+
+    def sense(self):
+        return pybnb.minimize
 
     def objective(self):
         self.setup_model_for_objective()

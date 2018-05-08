@@ -17,8 +17,6 @@ class BinPacking(pybnb.Problem):
     def __init__(self, V, W,
                  pyomo_solver="ipopt",
                  pyomo_solver_io="nl"):
-        super(BinPacking, self).\
-            __init__(pybnb.minimize)
         assert V > 0
         self.V = V
         self.W = W
@@ -180,6 +178,9 @@ class BinPacking(pybnb.Problem):
     #
     # Implement Problem abstract methods
     #
+
+    def sense(self):
+        return pybnb.minimize
 
     def objective(self):
         for xij in self.model.x.components():

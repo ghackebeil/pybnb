@@ -5,13 +5,14 @@ import logging
 import pytest
 from runtests.mpi import MPITest
 
+from pybnb.common import minimize
+from pybnb.convergence_checker import ConvergenceChecker
+from pybnb.node import Node
 from pybnb.solver import Solver
-from pybnb.misc import get_simple_logger
-from pybnb.problem import (minimize,
-                           GenericProblem,
-                           Problem)
+from pybnb.problem import Problem
 from pybnb.dispatcher import (TreeIdLabeler,
                               SavedDispatcherQueue)
+from pybnb.misc import get_simple_logger
 
 from six import StringIO
 
@@ -34,9 +35,7 @@ def _get_logging_baseline(size):
 
 class DummyProblem(Problem):
 
-    def __init__(self):
-        super(DummyProblem, self).\
-            __init__(minimize)
+    def sense(self): return minimize
     def objective(self): return 0.0
     def bound(self): return 0.0
     def save_state(self, node): pass
@@ -48,7 +47,7 @@ def _logging_check(comm):
     p = DummyProblem()
     if opt.is_dispatcher:
         assert (comm is None) or (comm.rank == 0)
-        root = p.new_node()
+        root = Node()
         p.save_state(root)
         root.bound = p.unbounded_objective
         tree_id_labeler = TreeIdLabeler()
@@ -60,7 +59,7 @@ def _logging_check(comm):
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         opt._disp.initialize(p.infeasible_objective,
                              initialize_queue,
-                             GenericProblem(p.sense),
+                             ConvergenceChecker(p.sense()),
                              None, None,
                              get_simple_logger(console=True,
                                                stream=out,

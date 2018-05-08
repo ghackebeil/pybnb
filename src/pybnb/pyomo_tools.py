@@ -1,4 +1,3 @@
-import math
 import array
 import collections
 import hashlib
@@ -31,11 +30,11 @@ def _create_optimality_bound(problem,
                              pyomo_objective,
                              best_objective_value):
     optbound = pmo.constraint(body=pyomo_objective)
-    if problem.sense == pybnb.minimize:
+    if problem.sense() == pybnb.minimize:
         assert pyomo_objective.sense == pmo.minimize
         optbound.ub = best_objective_value
     else:
-        assert problem.sense == pybnb.maximize
+        assert problem.sense() == pybnb.maximize
         assert pyomo_objective.sense == pmo.maximize
         optbound.lb = best_objective_value
     return optbound
@@ -43,9 +42,9 @@ def _create_optimality_bound(problem,
 def generate_cids(model,
                   prefix=(),
                   **kwds):
-    """Generate forward and reverse mappings of
-    deterministic, unique component identifiers that are
-    safe to use serialize or use as dictionary keys."""
+    """Generate forward and reverse mappings between model
+    components and deterministic, unique identifiers that
+    are safe to serialize or use as dictionary keys."""
     object_to_cid = pmo.ComponentMap()
     cid_to_object = collections.OrderedDict()
     traversal = model.preorder_traversal(return_key=True, **kwds)
@@ -60,6 +59,9 @@ def generate_cids(model,
     return object_to_cid, cid_to_object
 
 class PyomoProblem(pybnb.Problem):
+    """An extension of the :class:`pybnb.problem.Problem`
+    base class for defining problems with a core Pyomo
+    model."""
 
     def __init__(self, *args, **kwds):
         super(PyomoProblem, self).__init__(*args, **kwds)
@@ -79,10 +81,12 @@ class PyomoProblem(pybnb.Problem):
 
     @property
     def pyomo_object_to_cid(self):
+        """The map from pyomo model object to component id."""
         return self.__pyomo_object_to_cid
 
     @property
     def cid_to_pyomo_object(self):
+        """The map from component id to pyomo model object."""
         return self.__cid_to_pyomo_object
 
     #
@@ -101,12 +105,16 @@ class PyomoProblem(pybnb.Problem):
         raise NotImplementedError()                    #pragma:nocover
 
 class RangeReductionProblem(pybnb.Problem):
+    """A specialized implementation of the
+    :class:`pybnb.problem.Problem` base class that can be
+    used to perform optimality-based range reduction on a
+    fully implemented :class:`pybnb.pyomo_tools.PyomoProblem`
+    by defining additional abstract methods."""
 
     def __init__(self,
                  problem,
                  best_objective,
                  comm=None):
-        super(RangeReductionProblem, self).__init__(problem.sense)
         assert isinstance(problem, PyomoProblem)
         self.problem = problem
         assert best_objective != self.unbounded_objective
@@ -245,10 +253,10 @@ class RangeReductionProblem(pybnb.Problem):
         """Listen for requests to run range reduction"""
         assert self.comm.size > 1
         assert self.comm.rank != root
-        orig = self.new_node()
+        orig = pybnb.node.Node()
         self.save_state(orig)
         try:
-            node = self.new_node(size=orig.size)
+            node = pybnb.node.Node(size=orig.size)
             again, self.best_objective = self.comm.bcast(
                 None,
                 root=root)
@@ -267,12 +275,15 @@ class RangeReductionProblem(pybnb.Problem):
     # Implement Problem abstract methods
     #
 
+    def sense(self):
+        return self.problem.sense()
+
     def objective(self):
         return self.best_objective
 
     def bound(self):
         # tell the listeners to start bounds tightening
-        node = self.new_node()
+        node = pybnb.node.Node()
         self.save_state(node)
         continue_loop = True
         while continue_loop:

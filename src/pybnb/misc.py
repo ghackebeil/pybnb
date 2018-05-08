@@ -1,27 +1,10 @@
-import sys
+"""
+Miscellaneous utilities used for development.
+
+Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
+"""
+
 import logging
-
-import six
-
-infinity = float("inf")
-
-def is_infinite(x):
-    """Returns True if the given argument is equal to `+inf`
-    or `-inf`.
-
-    Example
-    -------
-
-    >>> is_infinite(float('inf'))
-    True
-    >>> is_infinite(float('-inf'))
-    True
-    >>> is_infinite(0)
-    False
-
-    """
-    return (x == -infinity) or \
-        (x == infinity)
 
 def metric_fmt(num, unit="s", digits=1):
     """Format and scale output with metric prefixes.
@@ -120,6 +103,7 @@ def as_stream(stream, **kwds):
     ...     assert g.closed
 
     """
+    import six
     if isinstance(stream, six.string_types):
         return open(stream,"w")
     else:
@@ -139,6 +123,7 @@ def get_default_args(func):
 
     """
     import inspect
+    import six
     if six.PY3:
         signature = inspect.signature(func)
         return {k: v.default
@@ -152,7 +137,7 @@ def get_default_args(func):
 
 def get_keyword_docs(doc):
     """Parses a numpy-style docstring to summarize
-    information in the 'Args:' section into a dictionary."""
+    information in the 'Parameters' section into a dictionary."""
     import re
     import yaml
     lines = doc.splitlines()
@@ -254,6 +239,7 @@ def get_simple_logger(filename=None,
         ch.setLevel(level)
         log.addHandler(ch)
     if console:
+        import sys
         cout = logging.StreamHandler(sys.stdout)
         cout.setLevel(level)
         cout.addFilter(_simple_stdout_filter())

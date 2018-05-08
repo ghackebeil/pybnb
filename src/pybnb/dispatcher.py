@@ -1,3 +1,9 @@
+"""
+Branch-and-bound dispatcher implementation.
+
+Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
+"""
+
 import sys
 import time
 import array
@@ -8,17 +14,17 @@ if sys.version_info >= (3, 0):
 else:
     import Queue
 
-from pybnb.misc import (infinity,
-                        get_gap_labels)
+from pybnb.common import (minimize,
+                          maximize,
+                          infinity)
+from pybnb.misc import get_gap_labels
 from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     WorkerAction,
                                     DispatcherProxy)
+from pybnb.node import Node
+from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.mpi_utils import Message
-from pybnb.problem import (minimize,
-                           maximize,
-                           GenericProblem,
-                           ProblemNode)
 
 try:
     import mpi4py
@@ -63,16 +69,16 @@ class StatusPrinter(object):
         self._log = log
 
         percent_relative_gap_tol = 1e-6
-        if self._dispatcher.generic_problem.relative_gap_tolerance != 0:
+        if self._dispatcher.converger.relative_gap_tolerance != 0:
             percent_relative_gap_tol = 100.0 * \
-                self._dispatcher.generic_problem.relative_gap_tolerance
+                self._dispatcher.converger.relative_gap_tolerance
         rgap_label_str, rgap_number_str = \
             get_gap_labels(percent_relative_gap_tol, key="rgap")
 
         absolute_gap_tol = 1e-8
-        if self._dispatcher.generic_problem.absolute_gap_tolerance != 0:
+        if self._dispatcher.converger.absolute_gap_tolerance != 0:
             absolute_gap_tol = \
-                self._dispatcher.generic_problem.absolute_gap_tolerance
+                self._dispatcher.converger.absolute_gap_tolerance
         agap_label_str, agap_number_str = \
             get_gap_labels(absolute_gap_tol, key="agap", format='g')
 
@@ -168,9 +174,9 @@ class StatusPrinter(object):
         tag = '' if (not new_objective) else '*'
         bound = self._dispatcher.get_current_bound()
         objective = self._dispatcher.best_objective
-        agap = self._dispatcher.generic_problem.\
+        agap = self._dispatcher.converger.\
                compute_absolute_gap(bound, objective)
-        rgap = self._dispatcher.generic_problem.\
+        rgap = self._dispatcher.converger.\
                compute_relative_gap(bound, objective)
         rgap *= 100.0
         if (self._print_count % 5) == 0:
@@ -222,7 +228,7 @@ class Dispatcher(object):
         # time initialize is called
         self.queue = None
         self.needs_work_queue = None
-        self.generic_problem = None
+        self.converger = None
         self.journalist = None
         self.best_objective = None
         self.node_limit = None
@@ -282,9 +288,9 @@ class Dispatcher(object):
         bound = None
         if self.queue.qsize() > 0:
             bound, data = self.queue.queue[0]
-            if self.generic_problem.sense == maximize:
+            if self.converger.sense == maximize:
                 bound = -bound
-            assert bound == ProblemNode._extract_bound(data.obj)
+            assert bound == Node._extract_bound(data.obj)
         return bound
 
     def get_current_bound(self):
@@ -295,21 +301,21 @@ class Dispatcher(object):
         bounds.extend(self.last_known_bound.values())
         if self.worst_terminal_bound is not None:
             bounds.append(self.worst_terminal_bound)
-        if self.generic_problem.sense == maximize:
+        if self.converger.sense == maximize:
             return max(bounds)
         else:
-            assert self.generic_problem.sense == minimize
+            assert self.converger.sense == minimize
             return min(bounds)
 
     def _get_work_to_send(self, dest):
         priority, data = self.queue.get_nowait()
-        bound = ProblemNode._extract_bound(data.obj)
-        if self.generic_problem.sense == maximize:
+        bound = Node._extract_bound(data.obj)
+        if self.converger.sense == maximize:
             assert bound == -priority
         else:
             assert bound == priority
         self.last_known_bound[dest] = bound
-        ProblemNode._insert_best_objective(
+        Node._insert_best_objective(
             data.obj,
             self.best_objective)
         self.has_work.add(dest)
@@ -329,7 +335,7 @@ class Dispatcher(object):
                         self.stop_cutoff):
                     if not self.queue.empty():
                         data = self._get_work_to_send(_source)
-                        assert ProblemNode._extract_best_objective(data) == \
+                        assert Node._extract_best_objective(data) == \
                             self.best_objective
                         return (self.best_objective, data)
             else:
@@ -368,20 +374,20 @@ class Dispatcher(object):
 
     def _check_update_worst_terminal_bound(self, bound):
         if (self.worst_terminal_bound is None) or \
-           self.generic_problem.bound_worsened(bound,
-                                               self.worst_terminal_bound):
+           self.converger.bound_worsened(bound,
+                                         self.worst_terminal_bound):
             self.worst_terminal_bound = bound
 
     def _check_update_best_objective(self, objective):
-        if self.generic_problem.objective_improved(objective,
-                                                   self.best_objective):
+        if self.converger.objective_improved(objective,
+                                             self.best_objective):
             self.journalist.new_objective(report=True)
             self.best_objective = objective
             # now attempt to trim down the queue to save memory
             if self.queue.qsize() > 0:
                 for ndx, (priority, data) in enumerate(self.queue.queue):
-                    bound = ProblemNode._extract_bound(data.obj)
-                    if not self.generic_problem.objective_can_improve(
+                    bound = Node._extract_bound(data.obj)
+                    if not self.converger.objective_can_improve(
                             self.best_objective,
                             bound):
                         break
@@ -392,7 +398,7 @@ class Dispatcher(object):
                     # any nodes we are throwing away (very unlikely to happen)
                     for i in range(ndx, len(self.queue.queue)):
                         self._check_update_worst_terminal_bound(
-                            ProblemNode._extract_bound(self.queue.queue[i][1].obj))
+                            Node._extract_bound(self.queue.queue[i][1].obj))
                     self.queue.queue = self.queue.queue[:ndx]
 
     def _check_convergence(self):
@@ -402,11 +408,11 @@ class Dispatcher(object):
                 self.stop_time_limit or \
                 self.stop_cutoff):
             global_bound = self.get_current_bound()
-            if (global_bound == self.generic_problem.infeasible_objective) or \
-               self.generic_problem.objective_is_optimal(self.best_objective,
-                                                         global_bound):
+            if (global_bound == self.converger.infeasible_objective) or \
+               self.converger.objective_is_optimal(self.best_objective,
+                                                   global_bound):
                 self.stop_optimality = True
-            elif self.generic_problem.cutoff_is_met(global_bound):
+            elif self.converger.cutoff_is_met(global_bound):
                 self.stop_cutoff = True
             if not (self.stop_optimality or \
                     self.stop_cutoff):
@@ -419,11 +425,11 @@ class Dispatcher(object):
                         self.stop_time_limit = True
 
     def _add_to_queue(self, state):
-        bound = priority = ProblemNode._extract_bound(state)
-        if self.generic_problem.sense == maximize:
+        bound = priority = Node._extract_bound(state)
+        if self.converger.sense == maximize:
             priority = -priority
-        if self.generic_problem.objective_can_improve(self.best_objective,
-                                                      bound):
+        if self.converger.objective_can_improve(self.best_objective,
+                                                bound):
             self.queue.put((priority,_ProtectCompare(state)))
             return True, bound
         else:
@@ -499,7 +505,7 @@ class Dispatcher(object):
     def initialize(self,
                    best_objective,
                    initialize_queue,
-                   generic_problem,
+                   converger,
                    node_limit,
                    time_limit,
                    log,
@@ -512,8 +518,8 @@ class Dispatcher(object):
             (time_limit >= 0)
         self.queue = Queue.PriorityQueue()
         self.needs_work_queue = Queue.Queue()
-        self.generic_problem = generic_problem
-        self.best_objective = generic_problem.infeasible_objective
+        self.converger = converger
+        self.best_objective = converger.infeasible_objective
         self.node_limit = None
         if node_limit is not None:
             self.node_limit = int(node_limit)
@@ -544,7 +550,7 @@ class Dispatcher(object):
         self.journalist.log_info("Running branch & bound (worker count: %d)"
                                  % (len(self.worker_ranks)))
         for state in initialize_queue.states:
-            assert ProblemNode._has_tree_id(state)
+            assert Node._has_tree_id(state)
             self._add_to_queue(state)
         self._check_update_best_objective(best_objective)
         self.journalist.tick()
@@ -566,9 +572,9 @@ class Dispatcher(object):
         self._check_update_best_objective(best_objective)
         if len(node_states):
             for state in node_states:
-                if not ProblemNode._has_tree_id(state):
-                    ProblemNode._insert_tree_id(state,
-                                                self.tree_id_labeler())
+                if not Node._has_tree_id(state):
+                    Node._insert_tree_id(state,
+                                         self.tree_id_labeler())
                 added, bound_ = self._add_to_queue(state)
                 if not added:
                     self._check_update_worst_terminal_bound(bound_)

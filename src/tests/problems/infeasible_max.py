@@ -5,8 +5,6 @@ class InfeasibleMax(pybnb.Problem):
     def __init__(self,
                  branching_abstol=0.001,
                  fixed_objective=None):
-        super(InfeasibleMax, self).\
-            __init__(pybnb.maximize)
         if fixed_objective is None:
             fixed_objective = self.infeasible_objective
         assert branching_abstol > 0
@@ -18,6 +16,9 @@ class InfeasibleMax(pybnb.Problem):
     #
     # Implement Problem abstract methods
     #
+
+    def sense(self):
+        return pybnb.maximize
 
     def objective(self):
         return self._fixed_objective

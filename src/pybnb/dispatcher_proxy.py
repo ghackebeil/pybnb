@@ -1,10 +1,9 @@
-import array
-
-from pybnb.problem import (new_storage_array,
-                           ProblemNode)
+from pybnb.node import Node
 from pybnb.mpi_utils import (send_nothing,
                              recv_nothing,
                              recv_data)
+
+import numpy
 
 try:
     import mpi4py
@@ -123,7 +122,7 @@ class DispatcherProxy(object):
             for udata in node_states:
                 size += 1
                 size += len(udata)
-        data = new_storage_array(size)
+        data = numpy.empty(size, dtype=float)
         data[0] = best_objective
         assert float(data[0]) == best_objective
         data[1] = previous_bound
@@ -154,7 +153,7 @@ class DispatcherProxy(object):
             return float(data[0]), None
         assert tag == WorkerAction.work
         state = recv_data(self.comm, self._status)
-        best_objective = ProblemNode._extract_best_objective(state)
+        best_objective = Node._extract_best_objective(state)
         return best_objective, state
 
 

@@ -4,8 +4,6 @@ class ZeroObjectiveMax(pybnb.Problem):
 
     def __init__(self,
                  branching_abstol=0.001):
-        super(ZeroObjectiveMax, self).\
-            __init__(pybnb.maximize)
         assert branching_abstol > 0
         self._branching_abstol = branching_abstol
         self._xL = 0
@@ -14,6 +12,9 @@ class ZeroObjectiveMax(pybnb.Problem):
     #
     # Implement Problem abstract methods
     #
+
+    def sense(self):
+        return pybnb.maximize
 
     def objective(self):
         return 0.0

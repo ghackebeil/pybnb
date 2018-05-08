@@ -2,11 +2,7 @@ import os
 import tempfile
 import logging
 
-import pytest
-
-from pybnb.misc import (infinity,
-                        is_infinite,
-                        metric_fmt,
+from pybnb.misc import (metric_fmt,
                         get_gap_labels,
                         as_stream,
                         get_default_args,
@@ -29,20 +25,6 @@ class Test(object):
         assert metric_fmt(1000000.23, digits=4) == "1.0000 Ms"
         assert metric_fmt(0.23334, digits=1) == "233.3 ms"
         assert metric_fmt(0.23334, digits=2) == "233.34 ms"
-
-    def test_is_infinite(self):
-        assert infinity == float('inf')
-        assert -infinity == float('-inf')
-        assert is_infinite(infinity)
-        assert is_infinite(-infinity)
-        assert is_infinite(float('inf'))
-        assert is_infinite(float('-inf'))
-        assert is_infinite(numpy.inf)
-        assert is_infinite(-numpy.inf)
-
-        assert not is_infinite(0.0)
-        assert not is_infinite(numpy.nan)
-        assert not is_infinite(infinity - infinity)
 
     def test_get_gap_labels(self):
         l1, l2 = get_gap_labels(1)

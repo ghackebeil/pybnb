@@ -3,7 +3,8 @@ import sys
 
 import pytest
 
-from pybnb.misc import infinity
+import pybnb
+from pybnb.common import infinity
 from pybnb.solver import (SolverResults,
                           Solver)
 
@@ -39,11 +40,11 @@ class TestProblems(object):
                              **kwds):
         if solver is None:
             solver = Solver(comm=None)
-        orig = problem.new_node()
+        orig = pybnb.node.Node()
         problem.save_state(orig)
         results = solver.solve(problem, **kwds)
 
-        current = problem.new_node()
+        current = pybnb.node.Node()
         problem.save_state(current)
         assert len(current.state) == len(orig.state)
         for i in range(len(current.state)):

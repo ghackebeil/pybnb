@@ -2,14 +2,11 @@ import pybnb
 
 class RootInfeasibleMin(pybnb.Problem):
 
-    def __init__(self):
-        super(RootInfeasibleMin, self).\
-            __init__(pybnb.minimize)
-
     #
     # Implement Problem abstract methods
     #
 
+    def sense(self): return pybnb.minimize
     def objective(self): return self.infeasible_objective
     def bound(self): return self.infeasible_objective
     def save_state(self, node): pass

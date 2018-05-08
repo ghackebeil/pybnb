@@ -12,8 +12,6 @@ class Lipschitz1D(pybnb.Problem):
     _L = 12.0
 
     def __init__(self, xL, xU,  branch_abstol=1e-5):
-        super(Lipschitz1D, self).\
-            __init__(pybnb.maximize)
         assert branch_abstol > 0
         assert xL <= xU
         self._branch_abstol = branch_abstol
@@ -33,6 +31,9 @@ class Lipschitz1D(pybnb.Problem):
     #
     # Implement Problem abstract methods
     #
+
+    def sense(self):
+        return pybnb.maximize
 
     def objective(self):
         mid = 0.5 * (self._xL + self._xU)

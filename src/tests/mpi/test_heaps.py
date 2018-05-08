@@ -85,9 +85,10 @@ def gen_heaps(k):
 
 class DiscreteMin(pybnb.Problem):
 
-    def __init__(self, objectives, bound_bheap, default_objective):
-        super(DiscreteMin, self).\
-            __init__(pybnb.minimize)
+    def __init__(self,
+                 objectives,
+                 bound_bheap,
+                 default_objective):
         assert len(bound_bheap) >= 1
         self._objectives = objectives
         self._bound_bheap = bound_bheap
@@ -98,11 +99,15 @@ class DiscreteMin(pybnb.Problem):
     # Implement Problem abstract methods
     #
 
+    def sense(self):
+        return pybnb.minimize
+
     def objective(self):
         assert self._node is not None
         tree_id = self._node.tree_id
         tree_id is not None
-        return self._objectives.get(tree_id, self._default_objective)
+        return self._objectives.get(tree_id,
+                                    self._default_objective)
 
     def bound(self):
         assert self._node is not None
@@ -135,7 +140,6 @@ class DiscreteMin(pybnb.Problem):
             child.tree_id = right_tree_id
             children.append(child)
         return children
-
 
 def _test_heaps(comm):
     solver = pybnb.Solver(comm=comm)

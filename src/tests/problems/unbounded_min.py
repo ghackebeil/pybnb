@@ -2,14 +2,11 @@ import pybnb
 
 class UnboundedMin(pybnb.Problem):
 
-    def __init__(self):
-        super(UnboundedMin, self).\
-            __init__(pybnb.minimize)
-
     #
     # Implement Problem abstract methods
     #
 
+    def sense(self): return pybnb.minimize
     def objective(self): return self.unbounded_objective
     def bound(self): return self.unbounded_objective
     def save_state(self, node): pass
