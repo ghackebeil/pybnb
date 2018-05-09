@@ -15,7 +15,7 @@ from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (Dispatcher,
                               TreeIdLabeler,
-                              SavedDispatcherQueue)
+                              DispatcherQueueData)
 
 try:
     import mpi4py
@@ -48,7 +48,7 @@ class SolverResults(object):
         ----------
         stream : file-like object or string, optional
             A file-like object or a filename where results
-            should be written to. (default=sys.stdout)
+            should be written to. (default: ``sys.stdout``)
         """
         with as_stream(stream) as stream:
             stream.write("solver results:\n")
@@ -65,11 +65,11 @@ class SolverResults(object):
             should be written to.
         prefix : string, optional
             A string to use as a prefix for each line that
-            is written. (default='')
+            is written. (default: '')
         pretty : bool, optional
             Indicates whether or not certain recognized
             attributes should be formatted for more
-            human-readable output. (default=False)
+            human-readable output. (default: False)
         """
         with as_stream(stream) as stream:
             attrs = vars(self)
@@ -107,17 +107,18 @@ class Solver(object):
 
     Parameters
     ----------
-    comm : :class:`mpi4py.MPI.Comm`, optional
+    comm : ``mpi4py.MPI.Comm``, optional
         The MPI communicator to use. If unset, the
         mpi4py.MPI.COMM_WORLD communicator will be
         used. Setting this keyword to None will disable the
         use of MPI and avoid an attempted import of
-        mpi4py.MPI (which may trigger an MPI_Init()).
+        mpi4py.MPI (which avoids triggering a call to
+        `MPI_Init()`).
     dispatcher_rank : int, optional
         The process with this rank will be designated as the
         dispatcher process. If MPI functionality is disabled
         (by setting comm=None), this keyword must be 0.
-        (default=0)
+        (default: 0)
     """
 
     def __init__(self,
@@ -421,7 +422,7 @@ class Solver(object):
 
         Returns
         -------
-        queue : :class:`pybnb.dispatcher.SavedDispatcherQueue` or None
+        queue : :class:`pybnb.dispatcher.DispatcherQueueData` or None
             If this process is the dispatcher and there are
             any nodes remaining in the queue after the most
             recent solve, this method returns an object that
@@ -453,30 +454,30 @@ class Solver(object):
 
         Parameters
         ----------
-        problem : pybnb.problem.Problem
+        problem : :class:`pybnb.problem.Problem`
             An object defining a branch-and-bound problem.
         best_objective : float, optional
             Initializes the solve with an assumed best
-            objective. (default=None)
-        initialize_queue : pybnb.dispatcher.SavedDispatcherQueue, optional
+            objective. (default: None)
+        initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
             Can be assigned the return value of a call to
             the :attr:`pybnb.solver.Solver.save_dispatcher_queue`
             method after a previous solve to initialize the
             current solve with any nodes remaining in the
-            queue after the previous solve. (default=None)
+            queue after the previous solve. (default: None)
         absolute_gap : float, optional
             The solver will terminate with an optimal status
             when the absolute gap between the objective and
-            bound is less than this value. (default=1e-8)
+            bound is less than this value. (default: 1e-8)
         relative_gap : float, optional
             The solver will terminate with an optimal status
             when the relative gap between the objective and
-            bound is less than this value. (default=1e-4)
+            bound is less than this value. (default: 1e-4)
         cutoff : float, optional
             If provided, when the best objective is proven
             worse than this value, the solver will begin to
             terminate, and the termination_condition flag
-            will be set to the string "cutoff". (default=None)
+            will be set to the string "cutoff". (default: None)
         node_limit : int, optional
             If provided, the solver will begin to terminate
             once this many nodes have been processed. It is
@@ -485,7 +486,7 @@ class Solver(object):
             more than the number of available workers. If
             this setting initiates a shutdown, then the
             termination_condition flag will be set to
-            the string "node_limit". (default=None)
+            the string "node_limit". (default: None)
         time_limit : float, optional
             If provided, the solver will begin to terminate
             the solve once this amount of time has
@@ -494,18 +495,18 @@ class Solver(object):
             workers spend processing their current node. If
             this setting initiates a shutdown, then the
             termination_condition flag will be set to
-            the string "time_limit". (default=None)
+            the string "time_limit". (default: None)
         absolute_tolerance : float, optional
             The absolute tolerance use when deciding if two
             objective values are sufficiently
-            different. (default=1e-10)
+            different. (default: 1e-10)
         log_interval_seconds : float, optional
             The approximate maximum time (in seconds)
             between solver log updates. More time may pass
             between log updates if no updates have been
             received from any workers, and less time may
-            pass if a new incumbent is found. (default=1.0)
-        log : :class:`logging.Logger`, optional
+            pass if a new incumbent is found. (default: 1.0)
+        log : logging.Logger, optional
             A log object where solver output should be
             sent. The default value causes all output to be
             streamed to the console. Setting to None
@@ -513,7 +514,7 @@ class Solver(object):
 
         Returns
         -------
-        results : pybnb.solver.SolverResults
+        results : :class:`pybnb.solver.SolverResults`
             A object storing information about the solve.
         """
 
@@ -559,7 +560,7 @@ class Solver(object):
                     tree_id_labeler = TreeIdLabeler()
                     if root.tree_id is None:
                         root.tree_id = tree_id_labeler()
-                    initialize_queue = SavedDispatcherQueue(
+                    initialize_queue = DispatcherQueueData(
                         states=[root._state],
                         tree_id_labeler=tree_id_labeler)
                 if log is _notset:
@@ -677,7 +678,7 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         a call to :attr:`collect_worker_statistics`.
     stream : file-like object, or string, optional
         A file-like object or a filename where results
-        should be written to. (default=sys.stdout)
+        should be written to. (default: ``sys.stdout``)
     """
     import numpy
     explored_nodes_count = numpy.array(stats['explored_nodes_count'],
@@ -754,31 +755,32 @@ def solve(problem,
     ----------
     problem : :class:`pybnb.problem.Problem`
         A object that defines a branch-and-bound problem
-    comm : mpi4py.MPI.Comm, optional
+    comm : ``mpi4py.MPI.Comm``, optional
         The MPI communicator to use. If unset, the
         mpi4py.MPI.COMM_WORLD communicator will be
         used. Setting this keyword to None will disable the
         use of MPI and avoid an attempted import of
-        mpi4py.MPI (which may trigger an MPI_Init()).
+        mpi4py.MPI (which avoids triggering a call to
+        `MPI_Init()`).
     dispatcher_rank : int, optional
         The process with this rank will be designated as the
         dispatcher process. If MPI functionality is disabled
         (by setting comm=None), this keyword must be 0.
-        (default=0)
+        (default: 0)
     log_filename : string, optional
         A filename where solver output should be sent in
         addition to console. This keyword will be ignored if
-        the 'log' keyword is set. (default=None)
+        the 'log' keyword is set. (default: None)
     results_filename : string, optional
         Saves the solver results into a YAML-formatted file
-        with the given name. (default=None)
+        with the given name. (default: None)
     **kwds
         Additional keywords to be passed to
-        :attr:`pybnb.solver.Solver.solve`
+        :func:`pybnb.solver.Solver.solve`
 
     Returns
     -------
-    results : pybnb.solver.SolverResults
+    results : :class:`pybnb.solver.SolverResults`
         A object storing information about the solve.
     """
 

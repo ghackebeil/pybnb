@@ -67,7 +67,7 @@ class _NullCM(object):
 
 def as_stream(stream, **kwds):
     """A utility for handling function arguments that can be
-    a filename or a file object. This function is mean to be
+    a filename or a file object. This function is meant to be
     used in the context of a with statement.
 
     Parameters
@@ -77,12 +77,12 @@ def as_stream(stream, **kwds):
         to open.
     **kwds
         Additional keywords passed to the built-in function
-        `open` when the `stream` keyword is a filename.
+        ``open`` when the `stream` keyword is a filename.
 
     Returns
     -------
     file-like object
-        A file-like object that can be writtent to. If the
+        A file-like object that can be written to. If the
         input argument was originally an open file, a dummy
         context will wrap the file object so that it will
         not be closed upon exit of the with block.
@@ -172,17 +172,20 @@ def get_keyword_docs(doc):
     data = {}
     for key, val in args.items():
         data[key] = {"doc": val}
-        default_ = re.search(r"\(default=.*\)",val)
+        default_ = re.search(r"\(default: .*\)",val)
         if default_ is not None:
-            default_ = default_.group(0)[1:-1].split("=")
+            default_ = default_.group(0)[1:-1].split(": ")
             assert len(default_) == 2
             default_ = default_[1]
+            while default_.startswith("`") and \
+                  default_.endswith("`"):
+                default_ = default_[1:-1]
             if default_ == "None":
                 default_ = None
             else:
                 default_ = eval(default_)
             data[key]["default"] = default_
-            doc = re.split(r"\(default=.*\)",val)
+            doc = re.split(r"\(default: .*\)",val)
             assert len(doc) == 2
             assert doc[1].strip() == ""
             data[key]["doc"] = doc[0].strip()
@@ -211,21 +214,21 @@ def get_simple_logger(filename=None,
     Parameters
     ----------
     filename : string, optional
-        The name of a file to write to. (default=None)
+        The name of a file to write to. (default: None)
     stream : file-like object, optional
-        A file-like object to write to. (default=None)
+        A file-like object to write to. (default: None)
     console : bool, optional
         If True, the logger will be configured to print
         output to the console through stdout and
-        stderr. (default=True)
+        stderr. (default: True)
     level : int, optional
-        The logging level to use. (default=logging.INFO)
-    formatter: logging.Formatter, optional
-        The logging formatter to use. (default=None)
+        The logging level to use. (default: ``logging.INFO``)
+    formatter: ``logging.Formatter``, optional
+        The logging formatter to use. (default: None)
 
     Returns
     -------
-    logging.Logger
+    ``logging.Logger``
         A logging object
     """
     log = logging.Logger(None, level=level)
@@ -270,8 +273,9 @@ def _run_command_line_solver(problem, args):
 
 def create_command_line_solver(problem, parser=None):
     """Convert a given problem implementation to a
-    command-line example by exposing the Solver options
-    using argparse."""
+    command-line example by exposing the
+    :func:`pybnb.solver.solve` function arguments using
+    argparse."""
     import os
     import tempfile
     # for profiling

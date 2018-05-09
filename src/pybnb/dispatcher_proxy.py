@@ -4,6 +4,7 @@ branch-and-bound workers.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+import collections
 
 from pybnb.node import Node
 from pybnb.mpi_utils import (send_nothing,
@@ -17,40 +18,61 @@ try:
 except ImportError:                               #pragma:nocover
     pass
 
-class ProcessType(object):
-    worker = 0
-    dispatcher = 1
-    @staticmethod
-    def is_valid(ptype):
-        assert type(ptype) is int
-        return ptype in (ProcessType.worker,
-                         ProcessType.dispatcher)
+_ProcessType = collections.namedtuple(
+    "_ProcessType",
+    ["worker",
+     "dispatcher"])
+ProcessType = _ProcessType(
+    worker     = 0,
+    dispatcher = 1)
+"""A namespace of typecodes that are used to categorize
+processes during dispatcher startup."""
 
-class DispatcherAction(object):
-    update                    = 21
-    solve_finished            = 31
-    barrier                   = 41
-    finalize                  = 51
-    log_info                  = 71
-    log_warning               = 72
-    log_debug                 = 73
-    log_error                 = 74
+_DispatcherAction = collections.namedtuple(
+    "_DispatcherAction",
+    ["update",
+     "solve_finished",
+     "barrier",
+     "finalize",
+     "log_info",
+     "log_warning",
+     "log_debug",
+     "log_error"])
+DispatcherAction = _DispatcherAction(
+    update                    = 111,
+    solve_finished            = 211,
+    barrier                   = 311,
+    finalize                  = 411,
+    log_info                  = 511,
+    log_warning               = 611,
+    log_debug                 = 711,
+    log_error                 = 811)
+"""A namespace of typecodes that are used to categorize
+messages received by the dispatcher from workers."""
 
-class WorkerAction(object):
-    work             = 110
-    nowork           = 210
-    receive_solution = 410
+_DispatcherResponse = collections.namedtuple(
+    "_DispatcherResponse",
+    ["work",
+     "nowork"])
+DispatcherResponse = _DispatcherResponse(
+    work             = 1111,
+    nowork           = 2111)
+"""A namespace of typecodes that are used to categorize
+responses received by workers from the dispatcher."""
 
 class DispatcherProxy(object):
+    """A proxy class for interacting with the central
+    dispatcher via message passing."""
 
     @staticmethod
     def _init(comm, ptype):
         import mpi4py.MPI
         assert mpi4py.MPI.Is_initialized()
         # make sure there is only one dispatcher
+        assert len(ProcessType) == 2
         assert ProcessType.dispatcher == 1
         assert ProcessType.worker == 0
-        assert ProcessType.is_valid(ptype)
+        assert ptype in ProcessType
         assert int(ptype) == ptype
         types_sum = comm.allreduce(ptype, op=mpi4py.MPI.SUM)
         assert types_sum == ProcessType.dispatcher
@@ -116,6 +138,7 @@ class DispatcherProxy(object):
             self.worker_comm = None
 
     def update(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.update`."""
         with self.CommActionTimer:
             return self._update(*args, **kwds)
     def _update(self,
@@ -155,48 +178,16 @@ class DispatcherProxy(object):
         self.comm.Probe(status=self._status)
         assert not self._status.Get_error()
         tag = self._status.Get_tag()
-        if tag == WorkerAction.nowork:
+        if tag == DispatcherResponse.nowork:
             data = recv_data(self.comm, self._status)
             return float(data[0]), None
-        assert tag == WorkerAction.work
+        assert tag == DispatcherResponse.work
         state = recv_data(self.comm, self._status)
         best_objective = Node._extract_best_objective(state)
         return best_objective, state
 
-
-    def log_info(self, *args, **kwds):
-        with self.CommActionTimer:
-            return self._log_info(*args, **kwds)
-    def _log_info(self, msg):
-        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
-                        self.dispatcher_rank,
-                        tag=DispatcherAction.log_info)
-
-    def log_warning(self, *args, **kwds):
-        with self.CommActionTimer:
-            return self._log_warning(*args, **kwds)
-    def _log_warning(self, msg):
-        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
-                        self.dispatcher_rank,
-                        tag=DispatcherAction.log_warning)
-
-    def log_debug(self, *args, **kwds):
-        with self.CommActionTimer:
-            return self._log_debug(*args, **kwds)
-    def _log_debug(self, msg):
-        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
-                        self.dispatcher_rank,
-                        tag=DispatcherAction.log_debug)
-
-    def log_error(self, *args, **kwds):
-        with self.CommActionTimer:
-            return self._log_error(*args, **kwds)
-    def _log_error(self, msg):
-        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
-                        self.dispatcher_rank,
-                        tag=DispatcherAction.log_error)
-
     def finalize(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.finalize`."""
         with self.CommActionTimer:
             return self._finalize(*args, **kwds)
     def _finalize(self):
@@ -207,6 +198,7 @@ class DispatcherProxy(object):
         return self.comm.bcast(None, root=self.dispatcher_rank)
 
     def barrier(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.barrier`."""
         with self.CommActionTimer:
             return self._barrier(*args, **kwds)
     def _barrier(self):
@@ -219,6 +211,7 @@ class DispatcherProxy(object):
         self.comm.Barrier()
 
     def solve_finished(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.solve_finished`."""
         with self.CommActionTimer:
             return self._solve_finished(*args, **kwds)
     def _solve_finished(self):
@@ -227,3 +220,39 @@ class DispatcherProxy(object):
                      self.dispatcher_rank,
                      DispatcherAction.solve_finished,
                      synchronous=True)
+
+    def log_info(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""
+        with self.CommActionTimer:
+            return self._log_info(*args, **kwds)
+    def _log_info(self, msg):
+        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
+                        self.dispatcher_rank,
+                        tag=DispatcherAction.log_info)
+
+    def log_warning(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_warning`."""
+        with self.CommActionTimer:
+            return self._log_warning(*args, **kwds)
+    def _log_warning(self, msg):
+        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
+                        self.dispatcher_rank,
+                        tag=DispatcherAction.log_warning)
+
+    def log_debug(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_debug`."""
+        with self.CommActionTimer:
+            return self._log_debug(*args, **kwds)
+    def _log_debug(self, msg):
+        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
+                        self.dispatcher_rank,
+                        tag=DispatcherAction.log_debug)
+
+    def log_error(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_error`."""
+        with self.CommActionTimer:
+            return self._log_error(*args, **kwds)
+    def _log_error(self, msg):
+        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
+                        self.dispatcher_rank,
+                        tag=DispatcherAction.log_error)

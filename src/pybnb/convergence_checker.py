@@ -18,19 +18,19 @@ class ConvergenceChecker(object):
         The objective sense for the problem.
     absolute_gap : float, optional
         The absolute difference between the objective and
-        bound that determines optimality. (default=1e-8)
+        bound that determines optimality. (default: 1e-8)
     relative_gap : float, optional
         The relative difference between the objective and
-        bound that determines optimality. (default=1e-4)
+        bound that determines optimality. (default: 1e-4)
     absolute_tolerance : float, optional
         The absolute tolerance use when deciding if two
         objective or bound values are sufficiently
-        different. (default=1e-10)
+        different. (default: 1e-10)
     cutoff : float, optional
         If provided, when the best objective is proven worse
         than this value (by greater than
         `absolute_tolerance`), then the cutoff termination
-        criteria is met. (default=None)
+        criteria is met. (default: None)
     """
     __slots__ = ("sense",
                  "absolute_gap_tolerance",

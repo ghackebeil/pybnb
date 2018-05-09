@@ -7,17 +7,45 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 import array
 
 class Message(object):
-    """A helper class for probing for / receiving messages"""
+    """A helper class for probing for and receiving
+    messages. A single instance of this class is meant to be
+    reused.
+
+    Parameters
+    ----------
+    comm : :class:`mpi4py.MPI.Comm`
+        The MPI communicator to use.
+    """
     __slots__ = ("status","data","comm")
     def __init__(self, comm):
         import mpi4py.MPI
         self.comm = comm
         self.status = mpi4py.MPI.Status()
         self.data = None
-    def probe(self):
+    def probe(self, **kwds):
+        """Perform a blocking test for a message"""
         self.comm.Probe(status=self.status)
         self.data = None
     def recv(self, datatype=None):
+        """Complete the receive for the most recent message
+        probe and return the data as a numeric array or a
+        string, depending on the datatype keyword.
+
+        Parameters
+        ----------
+        datatype : {``mpi4py.MPI.DOUBLE``, ``mpi4py.MPI.CHAR``}, optional
+            An MPI datatype used to interpret the received
+            data. If None, ``mpi4py.MPI.DOUBLE`` will be
+            used. (default: None)
+
+        Returns
+        -------
+        ``array.array`` or string
+            When the datatype is ``mpi4py.MPI.DOUBLE``, an
+            array with typecode "d" is returned. When the
+            datatype ``mpi4py.MPI.CHAR``, a string is
+            returned.
+        """
         assert not self.status.Get_error()
         if datatype is None:
             count = self.status.Get_count()
@@ -76,7 +104,7 @@ def send_nothing(comm, dest, tag, synchronous=False):
         A valid MPI tag to use for the message.
     synchronous : bool, optional
         Indicates whether or not a synchronous MPI send
-        should be used. (default=False)
+        should be used. (default: False)
     """
     import mpi4py.MPI
     if send_nothing._nothing is None:
@@ -104,16 +132,18 @@ def recv_data(comm, status, datatype=None):
         An MPI status object that has been populated with
         information about the message to be received via a
         probe.
-    datatype : {:obj:`mpi4py.MPI.DOUBLE`, :obj:`mpi4py.MPI.CHAR`}, optional
-        An MPI datatype used to interpret the received data. If None,
-        :obj:`mpi4py.MPI.DOUBLE` will be used. (default=None)
+    datatype : {``mpi4py.MPI.DOUBLE``, ``mpi4py.MPI.CHAR``}, optional
+        An MPI datatype used to interpret the received
+        data. If None, ``mpi4py.MPI.DOUBLE`` will be
+        used. (default: None)
 
     Returns
     -------
-    :obj:array.array
-        The returned array uses typecode "d" when datatype
-        is :obj:`mpi4py.MPI.DOUBLE` and uses typecode "B"
-        when datatype is :obj:`mpi4py.MPI.CHAR`.
+    ``array.array`` or string
+        When the datatype is ``mpi4py.MPI.DOUBLE``, an
+        array with typecode "d" is returned. When the
+        datatype ``mpi4py.MPI.CHAR``, a string is
+        returned.
     """
     import mpi4py.MPI
     assert not status.Get_error()

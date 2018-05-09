@@ -20,7 +20,7 @@ from pybnb.common import (minimize,
 from pybnb.misc import get_gap_labels
 from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
-                                    WorkerAction,
+                                    DispatcherResponse,
                                     DispatcherProxy)
 from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
@@ -47,17 +47,48 @@ class _ProtectCompare(object):
     def __eq__(self, other): return True
 
 class TreeIdLabeler(object):
-    def __init__(self):
-        self._next_id = 0
+    """A class for generating node ids based on an
+    incremental counter (starting at zero)"""
+    def __init__(self, start=0):
+        self._next_id = start
     def __call__(self):
         id_ = self._next_id
         self._next_id += 1
         return id_
 
-SavedDispatcherQueue = collections.namedtuple("SavedDispatcherQueue",
-                                              ["states","tree_id_labeler"])
+class DispatcherQueueData(
+        collections.namedtuple("DispatcherQueueData",
+                               ["states","tree_id_labeler"])):
+    """A namedtuple storing data that can be used
+    re-initialize a dispatcher queue.
+
+    Attributes
+    ----------
+    states : tuple
+        A list of node states stored in the order they were
+        found in the priority queue.
+    tree_id_labeler : pybnb.dispatcher.TreeIdLabeler
+        A tree id labeler whose counter starts at the next
+        node id that would have been generated.
+    """
 
 class StatusPrinter(object):
+    """Logs status information about the branch-and-bound
+    solve.
+
+    Parameters
+    ----------
+    dispatcher : :class:`pybnb.dispatcher.Dispatcher`
+        The central dispatcher that will be monitored.
+    log : :class:`logging.Logger`
+        A log object where solver output should be sent.
+    log_interval_seconds : float
+        The approximate maximum time (in seconds) between
+        solver log updates. More time may pass between log
+        updates if no updates have been received from any
+        workers, and less time may pass if a new incumbent
+        is found. (default: 1.0)
+    """
 
     def __init__(self,
                  dispatcher,
@@ -124,22 +155,44 @@ class StatusPrinter(object):
         self._report_new_objective = False
 
     def log_info(self, msg):
+        """Pass a message to ``log.info``"""
         self._log.info(msg)
 
     def log_warn(self, msg):
+        """Pass a message to ``log.warn``"""
         self._log.warn(msg)
 
     def log_debug(self, msg):
+        """Pass a message to ``log.debug``"""
         self._log.debug(msg)
 
     def log_error(self, msg):
+        """Pass a message to ``log.error``"""
         self._log.error(msg)
 
     def new_objective(self, report=True):
+        """Indicate that a new objective has been found
+
+        Parameters
+        ----------
+        report : bool, optional
+            Indicate whether or not to force the next `tick`
+            log output. (default: False)
+        """
         self._new_objective = True
         self._report_new_objective = report
 
     def tick(self, force=False):
+        """Provide an opportunity to log output if certain
+        criteria are met.
+
+        Parameters
+        ----------
+        force : bool, optional
+            Indicate whether or not to force logging of
+            output, even if logging criteria are not
+            met. (default: False)
+        """
         if self._log.disabled:
             return
         current_time = self._time()
@@ -172,7 +225,7 @@ class StatusPrinter(object):
             rate = 0.0
 
         tag = '' if (not new_objective) else '*'
-        bound = self._dispatcher.get_current_bound()
+        bound = self._dispatcher._get_current_bound()
         objective = self._dispatcher.best_objective
         agap = self._dispatcher.converger.\
                compute_absolute_gap(bound, objective)
@@ -215,8 +268,18 @@ class StatusPrinter(object):
         self._print_count += 1
         self._last_print_time = current_time
 
-
 class Dispatcher(object):
+    """The central dispatcher for a distributed
+    branch-and-bound algorithm.
+
+    Parameters
+    ----------
+    comm : ``mpi4py.MPI.Comm``, optional
+        The MPI communicator to use. If set to None, this
+        will disable the use of MPI and avoid an attempted
+        import of mpi4py.MPI (which avoids triggering a call
+        to `MPI_Init()`).
+    """
 
     def __init__(self, comm):
         if comm is not None:
@@ -267,23 +330,6 @@ class Dispatcher(object):
             self.root_worker_comm_rank = 0
             self.worker_ranks = [0]
 
-    def save_dispatcher_queue(self):
-        return SavedDispatcherQueue(
-            states=tuple(data.obj for _,data in self.queue.queue),
-            tree_id_labeler=self.tree_id_labeler)
-
-    def get_termination_condition(self):
-        if self.stop_optimality:
-            return "optimality"
-        elif self.stop_node_limit:
-            return "node_limit"
-        elif self.stop_time_limit:
-            return "time_limit"
-        elif self.stop_cutoff:
-            return "cutoff"
-        else:
-            return "no_nodes"
-
     def _get_queue_bound(self):
         bound = None
         if self.queue.qsize() > 0:
@@ -293,7 +339,7 @@ class Dispatcher(object):
             assert bound == Node._extract_bound(data.obj)
         return bound
 
-    def get_current_bound(self):
+    def _get_current_bound(self):
         bounds = []
         qbound = self._get_queue_bound()
         if qbound is not None:
@@ -350,7 +396,7 @@ class Dispatcher(object):
                         data = self._get_work_to_send(dest)
                         requests.append(self.comm.Isend([data,mpi4py.MPI.DOUBLE],
                                                         dest,
-                                                        tag=WorkerAction.work))
+                                                        tag=DispatcherResponse.work))
                 if len(requests):
                     mpi4py.MPI.Request.Waitall(requests)
                 elif self.needs_work_queue.qsize() == (self.comm.size-1):
@@ -361,16 +407,10 @@ class Dispatcher(object):
                         dest = self.needs_work_queue.get()
                         requests.append(self.comm.Isend([send_data,mpi4py.MPI.DOUBLE],
                                                         dest,
-                                                        WorkerAction.nowork))
+                                                        DispatcherResponse.nowork))
                     mpi4py.MPI.Request.Waitall(requests)
 
         return (self.best_objective, None)
-
-    def serve(self):
-        if self.comm is None:
-            raise ValueError("The dispatcher was not instantiated "
-                             "with an MPI communicator.")
-        self._listen()
 
     def _check_update_worst_terminal_bound(self, bound):
         if (self.worst_terminal_bound is None) or \
@@ -407,7 +447,7 @@ class Dispatcher(object):
                 self.stop_node_limit or \
                 self.stop_time_limit or \
                 self.stop_cutoff):
-            global_bound = self.get_current_bound()
+            global_bound = self._get_current_bound()
             if (global_bound == self.converger.infeasible_objective) or \
                self.converger.objective_is_optimal(self.best_objective,
                                                    global_bound):
@@ -502,6 +542,10 @@ class Dispatcher(object):
                 self.solve_finished()
                 break
 
+    #
+    # Local Interface
+    #
+
     def initialize(self,
                    best_objective,
                    initialize_queue,
@@ -510,6 +554,33 @@ class Dispatcher(object):
                    time_limit,
                    log,
                    log_interval_seconds):
+        """Initialize the dispatcher for a new solve.
+
+        Parameters
+        ----------
+        best_objective : float
+            The assumed best objective to start with.
+        initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`
+            The initial queue.
+        converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
+            The branch-and-bound convergence checker object.
+        node_limit : int or None
+            In integer representing the maximum number of
+            nodes to processes before beginning to terminate
+            the solve. If None, no node limit will be enforced.
+        time_limit : float
+            The maximum amount of time to spend processing
+            nodes before beginning to terminate the
+            solve. If None, no time limit will be enforced.
+        log : ``logging.Logger``
+            A log object where solver output should be sent.
+        log_interval_seconds : float
+            The approximate maximum time (in seconds)
+            between solver log updates. More time may pass
+            between log updates if no updates have been
+            received from any workers, and less time may
+            pass if a new incumbent is found. (default: 1.0)
+        """
         assert not self.initialized
         assert (node_limit is None) or \
             ((node_limit > 0) and \
@@ -561,6 +632,31 @@ class Dispatcher(object):
                source_explored_nodes_count,
                node_states,
                _source=0):
+        """Update local worker information.
+
+        Parameters
+        ----------
+        best_objective : float
+            The current best objective value known to the
+            worker.
+        previous_bound : float
+            The updated bound computed for the last node
+            that was processed by the worker.
+        source_explored_nodes_count : int
+            The total number of nodes explored by the
+            worker.
+        node_states : list
+            A list of new node states to add to the queue.
+
+        Returns
+        -------
+        new_objective : float
+            The best objective value known to the dispatcher.
+        state : ``array.array`` or None
+            A state array representing a new node for the
+            worker to process. If None, this indicates that
+            the worker should begin to finalize the solve.
+        """
         assert self.initialized
         self._update_explored_nodes_count(
             source_explored_nodes_count,
@@ -588,28 +684,91 @@ class Dispatcher(object):
         return ret
 
     def finalize(self):
+        """Start the solve finalization.
+
+        Returns
+        -------
+        best_bound : float
+            The best objective bound known to the
+            dispatcher.
+        """
         self.journalist.tick(force=True)
-        best_bound = self.get_current_bound()
+        best_bound = self._get_current_bound()
         assert self.initialized
         self.initialized = False
         return best_bound
 
     def barrier(self):
+        """Start a global process barrier."""
         # this is a no-op
         pass
 
     def solve_finished(self):
+        """Indicate that the solve has finished."""
         # this is a no-op
         pass
 
     def log_info(self, msg):
+        """Pass a message to ``log.info``"""
         self.journalist.log_info(msg)
 
     def log_warning(self, msg):
+        """Pass a message to ``log.warn``"""
         self.journalist.log_warn(msg)
 
     def log_debug(self, msg):
+        """Pass a message to ``log.debug``"""
         self.journalist.log_debug(msg)
 
     def log_error(self, msg):
+        """Pass a message to ``log.error``"""
         self.journalist.log_error(msg)
+
+    def save_dispatcher_queue(self):
+        """Saves the current dispatcher queue. The result can
+        be used to re-initialize a solve.
+
+        Returns
+        -------
+        queue_data : :class:`pybnb.dispatcher.DispatcherQueueData`
+            An object storing information that can be used
+            to re-initialize the dispatcher queue to its
+            current state.
+        """
+        return DispatcherQueueData(
+            states=tuple(
+                data.obj for _,data in self.queue.queue),
+            tree_id_labeler=TreeIdLabeler(
+                start=self.tree_id_labeler._next_id))
+
+    def get_termination_condition(self):
+        """Get the solve termination description.
+
+        Returns
+        -------
+        termination_condition : string
+            A string describing the reason for solve termination.
+        """
+        if self.stop_optimality:
+            return "optimality"
+        elif self.stop_node_limit:
+            return "node_limit"
+        elif self.stop_time_limit:
+            return "time_limit"
+        elif self.stop_cutoff:
+            return "cutoff"
+        else:
+            return "no_nodes"
+
+    #
+    # Distributed Interface
+    #
+
+    def serve(self):
+        """Start listening for distributed branch-and-bound
+        commands and map them to commands in the local
+        dispatcher interface."""
+        if self.comm is None:
+            raise ValueError("The dispatcher was not instantiated "
+                             "with an MPI communicator.")
+        self._listen()

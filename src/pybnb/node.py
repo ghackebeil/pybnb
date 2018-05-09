@@ -40,7 +40,7 @@ class Node(object):
         size : int, optional
             The state size to allocate for each child. If
             set to None, the children will use the same
-            state size as this node. (default=None)
+            state size as this node. (default: None)
         """
         assert count >= 0
         if size is None:

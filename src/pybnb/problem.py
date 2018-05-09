@@ -15,8 +15,8 @@ class Problem(object):
 
     @property
     def infeasible_objective(self):
-        """Returns the value representing an infeasible
-        objective for this problem (i.e., +/-inf)."""
+        """The value that represents an infeasible objective
+        (i.e., +inf or -inf depending on the sense)."""
         if self.sense() == minimize:
             return infinity
         else:
@@ -25,8 +25,8 @@ class Problem(object):
 
     @property
     def unbounded_objective(self):
-        """Returns the value representing an unbounded
-        objective for this problem (i.e., +/-inf)."""
+        """The value that represents an unbounded objective
+        (i.e., +inf or -inf depending on the sense)."""
         if self.sense() == minimize:
             return -infinity
         else:
@@ -44,21 +44,23 @@ class Problem(object):
     def objective(self):                          #pragma:nocover
         """Returns a feasible value for the objective of the
         current problem state or
-        ``self.infeasible_objective`` if the current state
-        is not feasible."""
+        :attr:`self.infeasible_objective
+        <pybnb.problem.Problem.infeasible_objective>` if the
+        current state is not feasible."""
         raise NotImplementedError()
 
     def bound(self):                              #pragma:nocover
         """Returns a value that is a bound on the objective
-        of the current problem state (possibly
-        ``self.unbounded_objective``)."""
+        of the current problem state or
+        :attr:`self.unbounded_objective
+        <pybnb.problem.Problem.unbounded_objective>` if no
+        non-trivial bound is available."""
         raise NotImplementedError()
 
     def branch(self, parent_node):                #pragma:nocover
-        """Returns a list of
-        :class:`pybnb.node.Node` objects that
-        partition the parent node state into zero or more
-        children."""
+        """Returns a list of :class:`pybnb.node.Node`
+        objects that partition the parent node state into
+        zero or more children."""
         raise NotImplementedError()
 
     def save_state(self, node):                   #pragma:nocover
@@ -68,8 +70,7 @@ class Problem(object):
 
     def load_state(self, node):                   #pragma:nocover
         """Loads the problem state that is stored on the
-        given :class:`pybnb.node.Node`
-        object."""
+        given :class:`pybnb.node.Node` object."""
         raise NotImplementedError()
 
     #
@@ -84,7 +85,7 @@ class Problem(object):
 
         Parameters
         ----------
-        worker_comm : :class:`mpi4py.MPI.Comm`
+        worker_comm : ``mpi4py.MPI.Comm``
             The MPI communicator to used by the
             workers. Will be None if MPI has been disabled.
         best_objective : float
@@ -100,7 +101,7 @@ class Problem(object):
 
         Parameters
         ----------
-        worker_comm : :class:`mpi4py.MPI.Comm`
+        worker_comm : ``mpi4py.MPI.Comm``
             The MPI communicator to used by the
             workers. Will be None if MPI has been disabled.
         best_objective : float
@@ -116,11 +117,11 @@ class Problem(object):
 
         Parameters
         ----------
-        comm : :class:`mpi4py.MPI.Comm`
+        comm : ``mpi4py.MPI.Comm``
             The full MPI communicator to used by all
             processes.  Will be None if MPI has been
             disabled.
-        worker_comm : :class:`mpi4py.MPI.Comm`
+        worker_comm : ``mpi4py.MPI.Comm``
             The MPI communicator to used by the
             workers. Will be None if MPI has been disabled.
         results : pybnb.solver.SolverResults

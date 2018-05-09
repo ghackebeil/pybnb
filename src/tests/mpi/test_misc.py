@@ -11,7 +11,7 @@ from pybnb.node import Node
 from pybnb.solver import Solver
 from pybnb.problem import Problem
 from pybnb.dispatcher import (TreeIdLabeler,
-                              SavedDispatcherQueue)
+                              DispatcherQueueData)
 from pybnb.misc import get_simple_logger
 
 from six import StringIO
@@ -52,7 +52,7 @@ def _logging_check(comm):
         root.bound = p.unbounded_objective
         tree_id_labeler = TreeIdLabeler()
         root.tree_id = tree_id_labeler()
-        initialize_queue = SavedDispatcherQueue(
+        initialize_queue = DispatcherQueueData(
             states=[root._state],
             tree_id_labeler=tree_id_labeler)
         out = StringIO()

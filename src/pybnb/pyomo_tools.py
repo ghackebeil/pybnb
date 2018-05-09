@@ -293,7 +293,17 @@ class RangeReductionProblem(pybnb.Problem):
     #
 
     def listen(self, root=0):
-        """Listen for requests to run range reduction"""
+        """Listen for requests to run range reduction. All
+        processes within the communicator, except for the
+        root process, should call this method.
+
+        Parameters
+        ----------
+        root : int
+            The rank of the processes acting as the
+            root. The root process should not call this
+            function.
+        """
         assert self.comm.size > 1
         assert self.comm.rank != root
         orig = pybnb.node.Node()
