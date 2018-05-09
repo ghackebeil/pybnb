@@ -7,6 +7,15 @@ try:
 except ImportError:
     jit = lambda x: x
 
+def log2floor(n):
+    """
+    Returns the exact value of floor(log2(n)).
+    No floating point calculations are used.
+    Requires positive integer type.
+    """
+    assert n > 0
+    return n.bit_length() - 1
+
 class Lipschitz1D(pybnb.Problem):
 
     _L = 12.0
@@ -15,6 +24,8 @@ class Lipschitz1D(pybnb.Problem):
         assert branch_abstol > 0
         assert xL <= xU
         self._branch_abstol = branch_abstol
+        self._root_xL = xL
+        self._root_xU = xU
         self._xL = xL
         self._xU = xU
 
@@ -44,31 +55,34 @@ class Lipschitz1D(pybnb.Problem):
         return 0.5*f(xL) + 0.5*f(xU) + 0.5*L*(xU-xL)
 
     def save_state(self, node):
-        if node.size != 2:
-            node.resize(2)
-        state = node.state
-        state[0] = self._xL
-        state[1] = self._xU
+        if node.size != 0:
+            node.resize(0)
+        # if the tree_id is None, then we know
+        # this is the initial call to save state
+        # at the root node
+        if node.tree_id is None:
+            node.tree_id = 0
 
     def load_state(self, node):
-        state = node.state
-        self._xL = float(state[0])
-        self._xU = float(state[1])
+        # determine the problem state from the
+        # node's tree id
+        level = log2floor(node.tree_id+1)
+        delta = (self._root_xU - self._root_xL)/float(2**level)
+        level_index = node.tree_id - ((2**level) - 1)
+        self._xL = self._root_xL + level_index*delta
+        self._xU = self._xL + delta
 
     def branch(self, parent):
         L, U = self._xL, self._xU
         dist = float(U - L)
         if dist/2.0 < self._branch_abstol:
             return ()
-        # branch
+        # branch and use the 0-based binary-heap labeling to
+        # encode the state of the child nodes
         children = parent.new_children(2)
-        mid = 0.5*(L + U)
-        self._xL, self._xU = L, mid
-        self.save_state(children[0])
-        self._xL, self._xU = mid, U
-        self.save_state(children[1])
-        # reset the bounds
-        self._xL, self._xU = L, U
+        assert parent.tree_id is not None
+        children[0].tree_id = 2*parent.tree_id + 1
+        children[1].tree_id = 2*parent.tree_id + 2
         return children
 
 if __name__ == "__main__":
