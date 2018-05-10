@@ -156,7 +156,6 @@ def _test_heaps(comm):
         get_bound(heap)
         node_list = [None, len(heap)] + [i for i in range(len(heap))
                                          if heap[i] is not None]
-        """
         for default_objective in [None, 2]:
             for objective_node in node_list:
                 if objective_node is not None:
@@ -167,6 +166,7 @@ def _test_heaps(comm):
                     problem = DiscreteMin({},
                                           heap,
                                           default_objective=1)
+                """
                 results = solver.solve(problem, log=None)
                 if objective_node == len(heap):
                     assert results.objective == 2
@@ -183,7 +183,7 @@ def _test_heaps(comm):
                     if solver.comm is not None:
                         solver.comm.Barrier()
                     assert False
-        """
+                """
 def test_heaps_nocomm():
     _test_heaps(None)
 
