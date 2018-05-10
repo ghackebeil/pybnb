@@ -206,7 +206,7 @@ class DispatcherProxy(object):
         with self.CommActionTimer:
             return self._barrier(*args, **kwds)
     def _barrier(self):
-        self.worker_comm.Barrier()
+        #self.worker_comm.Barrier()
         if self.worker_comm.rank == 0:
             send_nothing(self.comm,
                          self.dispatcher_rank,
