@@ -603,7 +603,7 @@ class Solver(object):
         finally:
             problem.load_state(root)
         if self.is_worker:
-            self._disp.barrier()
+            #self._disp.barrier()
             if (self.comm is None) or \
                (self.worker_comm.rank == 0):
                 self._disp.solve_finished()
