@@ -1,3 +1,13 @@
+#
+# This example solves a simple one dimensional problem that
+# has an expensive objective function. A bound is computed
+# using a specified lipschitz constant (assumed to be
+# valid).
+#
+# The package numba is not required, but it will make
+# this example run faster.
+#
+
 import math
 
 import pybnb
