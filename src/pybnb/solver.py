@@ -583,9 +583,6 @@ class Solver(object):
                     log,
                     log_interval_seconds)
                 """
-            if self.comm is not None:
-                self.comm.Barrier()
-            if not self.is_worker:
                 self._disp.serve()
             else:
                 """
