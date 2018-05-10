@@ -186,5 +186,5 @@ def recv_data(comm, status, datatype=None, out=None):
               status=status)
     assert not status.Get_error()
     if convert_to_string:
-        out = data.tostring().decode("utf8")
+        out = out.tostring().decode("utf8")
     return out
