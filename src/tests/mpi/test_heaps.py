@@ -166,8 +166,8 @@ def _test_heaps(comm):
                     problem = DiscreteMin({},
                                           heap,
                                           default_objective=1)
-                """
                 results = solver.solve(problem, log=None)
+                """
                 if objective_node == len(heap):
                     assert results.objective == 2
                 else:
