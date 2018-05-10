@@ -222,8 +222,7 @@ class DispatcherProxy(object):
         assert self.worker_comm.rank == 0
         send_nothing(self.comm,
                      self.dispatcher_rank,
-                     DispatcherAction.solve_finished,
-                     synchronous=True)
+                     DispatcherAction.solve_finished)
 
     def log_info(self, *args, **kwds):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""
