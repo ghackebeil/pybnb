@@ -153,7 +153,7 @@ def _test_heaps(comm):
         elif solver.comm.rank == 2:
             pass
     for heap in gen_heaps(2):
-        get_bound(heap)
+        heap_bound = get_bound(heap)
         node_list = [None, len(heap)] + [i for i in range(len(heap))
                                          if heap[i] is not None]
         for default_objective in [None, 2]:
@@ -172,17 +172,7 @@ def _test_heaps(comm):
                     assert results.objective == 2
                 else:
                     assert results.objective == 1
-                if results.bound != get_bound(heap):   #pragma:nocover
-                    # bad
-                    if (solver.comm is None) or \
-                       (solver.comm.rank == 0):
-                        print(heap)
-                        print(results.bound)
-                        print(get_bound(heap))
-                        print(objective_node)
-                    if solver.comm is not None:
-                        solver.comm.Barrier()
-                    assert False
+                assert results.bound == heap_bound
                 """
 def test_heaps_nocomm():
     _test_heaps(None)
