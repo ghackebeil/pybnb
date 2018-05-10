@@ -604,6 +604,7 @@ class Solver(object):
                 self._disp.solve_finished()
         stop = self._time()
         self._wall_time = stop-start
+        """
         if self.comm is not None:
             if self.is_worker:
                 nodes_buf_local = array.array("i", [self._explored_nodes_count])
@@ -682,7 +683,7 @@ class Solver(object):
                 self._disp.log_info("Status unknown")
             self._disp.log_info("")
             self._disp.log_info(str(results))
-
+        """
         return results
 
 def summarize_worker_statistics(stats, stream=sys.stdout):
