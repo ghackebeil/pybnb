@@ -170,22 +170,28 @@ class DispatcherProxy(object):
         self.comm.Send([data,mpi4py.MPI.DOUBLE],
                        self.dispatcher_rank,
                        tag=DispatcherAction.update)
-        del data
         self.comm.Probe(status=self._status)
         assert not self._status.Get_error()
         tag = self._status.Get_tag()
         if tag == DispatcherResponse.nowork:
             data = recv_data(self.comm, self._status)
             return float(data[0]), None
-        assert tag == DispatcherResponse.work
-        data = numpy.empty(self._status.Get_count(mpi4py.MPI.DOUBLE),
-                           dtype=float)
-        recv_data(self.comm,
-                  self._status,
-                  datatype=mpi4py.MPI.DOUBLE,
-                  out=data)
-        best_objective = Node._extract_best_objective(data)
-        return best_objective, data
+        else:
+            assert tag == DispatcherResponse.work
+            recv_size = self._status.Get_count(mpi4py.MPI.DOUBLE)
+            if len(data) >= recv_size:
+                # avoid another allocation and just use a
+                # portion of the array was used to send the
+                # update data
+                data = data[:recv_size]
+            else:
+                data = numpy.empty(recv_size, dtype=float)
+            recv_data(self.comm,
+                      self._status,
+                      datatype=mpi4py.MPI.DOUBLE,
+                      out=data)
+            best_objective = Node._extract_best_objective(data)
+            return best_objective, data
 
     def finalize(self, *args, **kwds):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.finalize`."""

@@ -59,7 +59,10 @@ class Node(object):
         self._data = data
         self._user_state = self._data[:-self._extra_data_slots]
         # make _user_state is a view of _data
-        assert self._user_state.base is self._data
+        if self._data.base is None:
+            assert self._user_state.base is self._data
+        else:
+            assert self._user_state.base is self._data.base
 
     def new_children(self, count, size=None):
         """Returns a list of new child nodes.
