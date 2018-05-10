@@ -583,6 +583,7 @@ class Solver(object):
                     log,
                     log_interval_seconds)
                 """
+            if not self.is_worker:
                 self._disp.serve()
             else:
                 """
