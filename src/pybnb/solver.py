@@ -573,6 +573,7 @@ class Solver(object):
                 elif log is None:
                     log = get_simple_logger(console=False)
                     assert log.disabled
+                """
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
@@ -581,6 +582,7 @@ class Solver(object):
                     time_limit,
                     log,
                     log_interval_seconds)
+                """
             if self.comm is not None:
                 self.comm.Barrier()
             if not self.is_worker:
