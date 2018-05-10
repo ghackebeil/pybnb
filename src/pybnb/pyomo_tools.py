@@ -16,6 +16,8 @@ import pyomo.kernel as pmo
 import six
 from six.moves import xrange as range
 
+import numpy
+
 try:
     import mpi4py
 except ImportError:                               #pragma:nocover
@@ -169,7 +171,12 @@ class RangeReductionProblem(pybnb.Problem):
     def _notify_continue_listen(self, node):
         assert (self.comm is not None) and \
             (self.comm.size > 1)
-        self.comm.bcast((True,self.best_objective),
+        data = numpy.array([True,self.best_objective,len(node.state)],
+                           dtype=float)
+        assert data[0] == True
+        assert data[1] == self.best_objective
+        assert data[2] == len(node.state)
+        self.comm.Bcast([data, mpi4py.MPI.DOUBLE],
                         root=self.comm.rank)
         self.comm.Bcast([node.state, mpi4py.MPI.DOUBLE],
                         root=self.comm.rank)
@@ -177,7 +184,12 @@ class RangeReductionProblem(pybnb.Problem):
     def _notify_stop_listen(self):
         assert (self.comm is not None) and \
             (self.comm.size > 1)
-        self.comm.bcast((False,self.best_objective),
+        data = numpy.array([False,self.best_objective,0],
+                           dtype=float)
+        assert data[0] == False
+        assert data[1] == self.best_objective
+        assert data[2] == 0
+        self.comm.Bcast([data, mpi4py.MPI.DOUBLE],
                         root=self.comm.rank)
 
     def _tighten_bounds(self):
@@ -300,27 +312,35 @@ class RangeReductionProblem(pybnb.Problem):
         Parameters
         ----------
         root : int
-            The rank of the processes acting as the
+            The rank of the process acting as the
             root. The root process should not call this
             function.
         """
         assert self.comm.size > 1
         assert self.comm.rank != root
         orig = pybnb.node.Node()
+        orig.tree_id = -1
         self.save_state(orig)
+        node = pybnb.node.Node()
+        node.tree_id = -1
         try:
-            node = pybnb.node.Node(size=len(orig.state))
-            again, self.best_objective = self.comm.bcast(
-                None,
-                root=root)
+            data = numpy.empty(3,dtype=float)
+            self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
+                            root=root)
+            again = bool(data[0])
+            self.best_objective = float(data[1])
+            node_size = int(data[2])
             while again:
+                node.resize(node_size)
                 self.comm.Bcast([node.state,mpi4py.MPI.DOUBLE],
                                 root=root)
                 self.load_state(node)
                 self._tighten_bounds()
-                again, self.best_objective = self.comm.bcast(
-                    None,
-                    root=root)
+                self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
+                                root=root)
+                again = bool(data[0])
+                self.best_objective = float(data[1])
+                node_size = int(data[2])
         finally:
             self.load_state(orig)
 

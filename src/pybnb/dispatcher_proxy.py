@@ -66,32 +66,35 @@ class DispatcherProxy(object):
 
     @staticmethod
     def _init(comm, ptype):
+        """Broadcasts the dispatcher rank to everyone and
+        sets up a worker communicator that excludes the
+        single dispatcher."""
         import mpi4py.MPI
         assert mpi4py.MPI.Is_initialized()
-        # make sure there is only one dispatcher
         assert len(ProcessType) == 2
         assert ProcessType.dispatcher == 1
         assert ProcessType.worker == 0
         assert ptype in ProcessType
-        assert int(ptype) == ptype
-        types_sum = comm.allreduce(ptype, op=mpi4py.MPI.SUM)
-        assert types_sum == ProcessType.dispatcher
-        dptype, drank = comm.allreduce(sendobj=(ptype, comm.rank),
-                                       op=mpi4py.MPI.MAXLOC)
-        assert dptype == ProcessType.dispatcher
+        ptype_, dispatcher_rank = comm.allreduce(sendobj=(ptype, comm.rank),
+                                                 op=mpi4py.MPI.MAXLOC)
+        assert ptype_ == ProcessType.dispatcher
+        color = None
         if ptype == ProcessType.dispatcher:
-            assert drank == comm.rank
+            assert dispatcher_rank == comm.rank
+            color = 1
         else:
-            assert drank != comm.rank
-
-        # tag one worker thread as the "master"
-        root_rank = comm.size - 1
-        if drank == root_rank:
-            root_rank -= 1
-
-        wcomm = comm.Split(0 if comm.rank != drank else 1)
-
-        return drank, root_rank, wcomm
+            assert dispatcher_rank != comm.rank
+            color = 0
+        assert color is not None
+        worker_comm = comm.Split(color)
+        if color == 1:
+            worker_comm.Free()
+            status = recv_nothing(comm)
+            return dispatcher_rank, status.Get_source()
+        else:
+            if worker_comm.rank == 0:
+                send_nothing(comm, dispatcher_rank)
+            return dispatcher_rank, worker_comm
 
     class _ActionTimer(object):
         __slots__ = ("_start","_obj")
@@ -121,16 +124,8 @@ class DispatcherProxy(object):
         self.comm_time = 0.0
         with self.CommActionTimer:
             (self.dispatcher_rank,
-             self.root_worker_comm_rank,
              self.worker_comm) = \
                 self._init(comm, ProcessType.worker)
-
-            self.root_worker_worker_comm_rank = None
-            if self.comm.rank == self.root_worker_comm_rank:
-                self.root_worker_worker_comm_rank = self.worker_comm.rank
-            self.root_worker_worker_comm_rank = \
-                self.comm.bcast(self.root_worker_worker_comm_rank,
-                                root=self.root_worker_comm_rank)
 
     def __del__(self):
         if self.worker_comm is not None:
@@ -191,11 +186,14 @@ class DispatcherProxy(object):
         with self.CommActionTimer:
             return self._finalize(*args, **kwds)
     def _finalize(self):
-        if self.worker_comm.rank == self.root_worker_worker_comm_rank:
+        if self.worker_comm.rank == 0:
             send_nothing(self.comm,
                          self.dispatcher_rank,
                          DispatcherAction.finalize)
-        return self.comm.bcast(None, root=self.dispatcher_rank)
+        data = numpy.empty(1,dtype=float)
+        self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
+                        root=self.dispatcher_rank)
+        return float(data[0])
 
     def barrier(self, *args, **kwds):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.barrier`."""
@@ -203,7 +201,7 @@ class DispatcherProxy(object):
             return self._barrier(*args, **kwds)
     def _barrier(self):
         self.worker_comm.Barrier()
-        if self.comm.rank == self.root_worker_comm_rank:
+        if self.worker_comm.rank == 0:
             send_nothing(self.comm,
                          self.dispatcher_rank,
                          DispatcherAction.barrier,
@@ -215,7 +213,7 @@ class DispatcherProxy(object):
         with self.CommActionTimer:
             return self._solve_finished(*args, **kwds)
     def _solve_finished(self):
-        assert self.worker_comm.rank == self.root_worker_worker_comm_rank
+        assert self.worker_comm.rank == 0
         send_nothing(self.comm,
                      self.dispatcher_rank,
                      DispatcherAction.solve_finished,

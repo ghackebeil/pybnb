@@ -65,7 +65,16 @@ class Problem(object):
 
     def save_state(self, node):                   #pragma:nocover
         """Saves the current problem state into the given
-        :class:`pybnb.node.Node` object."""
+        :class:`pybnb.node.Node` object.
+
+        This method is guaranteed to be called once at the
+        start of the solve by all proccesses involved to
+        collect the root node problem state, but it may be
+        called additional times. When it is called for the
+        root node, the :attr:`tree_id <pybnb.node.Node.tree_id`
+        and :attr:`parent_tree_id <pybnb.node.Node.parent_tree_id`
+        will both be None on the node.
+        """
         raise NotImplementedError()
 
     def load_state(self, node):                   #pragma:nocover
@@ -124,7 +133,7 @@ class Problem(object):
         worker_comm : ``mpi4py.MPI.Comm``
             The MPI communicator to used by the
             workers. Will be None if MPI has been disabled.
-        results : pybnb.solver.SolverResults
+        results : :class:`pybnb.solver.SolverResults`
             The fully populated results container that will
             be returned from the solver.
         """

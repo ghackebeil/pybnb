@@ -142,7 +142,7 @@ class Node(object):
     @property
     def parent_tree_id(self):
         """Get the tree id of the parent for this node. This
-        attribute will be automatically set on nodes return
+        attribute will be automatically set on nodes returned
         from the :func:`pybnb.node.Node.new_children`
         method."""
         return self._extract_parent_tree_id(self._data)

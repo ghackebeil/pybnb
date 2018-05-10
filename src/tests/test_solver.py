@@ -40,7 +40,6 @@ class TestSolverSimple(object):
         assert b.worker_comm == None
         assert b.is_worker == True
         assert b.is_dispatcher == True
-        assert b.is_root_worker == True
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()
         assert len(stats) == 7

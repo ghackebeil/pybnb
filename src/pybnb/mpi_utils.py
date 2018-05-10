@@ -63,36 +63,52 @@ class Message(object):
     @property
     def source(self): return self.status.Get_source()
 
-def recv_nothing(comm, status):
-    """A helper function for receiving an empty message
-    that matches a probe status.
+def recv_nothing(comm, status=None):
+    """A helper function for receiving an empty
+    message. This function is not thread safe.
 
     Parameters
     ----------
     comm : :class:`mpi4py.MPI.Comm`
         An MPI communicator.
-    status : :class:`mpi4py.MPI.Status`
+    status : :class:`mpi4py.MPI.Status`, optional
         An MPI status object that has been populated with
         information about the message to be received via a
-        probe.
+        probe. If None, a new status object will be created
+        and an empty message will be expected from any
+        source with any tag. (default: None)
+
+    Returns
+    -------
+    status : :class:`mpi4py.MPI.Status`
+        If the the original status argument was not None, it
+        will be returned after being updated by the
+        receive. Otherwise, the status object that was
+        created will be returned.
     """
     import mpi4py.MPI
     if recv_nothing._nothing is None:
         recv_nothing._nothing = [array.array("B",[]),
                                  mpi4py.MPI.CHAR]
+    if status is not None:
+        assert not status.Get_error()
+        assert status.Get_count(mpi4py.MPI.CHAR) == 0
+        comm.Recv(recv_nothing._nothing,
+                  source=status.Get_source(),
+                  tag=status.Get_tag(),
+                  status=status)
+    else:
+        status = mpi4py.MPI.Status()
+        comm.Recv(recv_nothing._nothing,
+                  status=status)
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
-    comm.Recv(recv_nothing._nothing,
-              source=status.Get_source(),
-              tag=status.Get_tag(),
-              status=status)
-    assert not status.Get_error()
-    assert status.Get_count(mpi4py.MPI.CHAR) == 0
+    return status
 recv_nothing._nothing = None
 
-def send_nothing(comm, dest, tag, synchronous=False):
+def send_nothing(comm, dest, tag=0, synchronous=False):
     """A helper function for sending an empty message
-    with a given tag.
+    with a given tag. This function is not thread safe.
 
     Parameters
     ----------
@@ -100,8 +116,8 @@ def send_nothing(comm, dest, tag, synchronous=False):
         An MPI communicator.
     dest : int
         The process rank to send the message to.
-    tag : int
-        A valid MPI tag to use for the message.
+    tag : int, optional
+        A valid MPI tag to use for the message. (default: 0)
     synchronous : bool, optional
         Indicates whether or not a synchronous MPI send
         should be used. (default: False)

@@ -25,7 +25,10 @@ from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherProxy)
 from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
-from pybnb.mpi_utils import Message
+from pybnb.mpi_utils import (Message,
+                             recv_nothing)
+
+import numpy
 
 try:
     import mpi4py
@@ -314,21 +317,15 @@ class Dispatcher(object):
 
         if self.comm is not None:
             # send rank of dispatcher to all workers
-            self.dispatcher_rank, self.root_worker_comm_rank, wc = \
+            self.dispatcher_rank, self.root_worker_rank = \
                 DispatcherProxy._init(
                     self.comm,
                     ProcessType.dispatcher)
-            wc.Free()
             assert self.dispatcher_rank == self.comm.rank
-
-            # another broadcast used by the workers for which
-            # the result is not needed here
-            self.comm.bcast(None,root=self.root_worker_comm_rank)
             self.worker_ranks = [i for i in range(self.comm.size)
                                  if i != self.comm.rank]
         else:
             self.dispatcher_rank = 0
-            self.root_worker_comm_rank = 0
             self.worker_ranks = [0]
 
     def _get_queue_bound(self):
@@ -530,7 +527,10 @@ class Dispatcher(object):
                 assert msg.data is None
                 best_bound = self.finalize()
                 assert best_bound is not None
-                self.comm.bcast(best_bound, root=self.comm.rank)
+                self.comm.Bcast(
+                    [numpy.array([best_bound],dtype=float),
+                     mpi4py.MPI.DOUBLE],
+                    root=self.comm.rank)
             elif tag == DispatcherAction.barrier:
                 msg.recv()
                 assert msg.data is None

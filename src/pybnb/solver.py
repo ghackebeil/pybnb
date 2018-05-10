@@ -17,6 +17,8 @@ from pybnb.dispatcher import (Dispatcher,
                               TreeIdLabeler,
                               DispatcherQueueData)
 
+import numpy
+
 try:
     import mpi4py
 except ImportError:                               #pragma:nocover
@@ -340,15 +342,6 @@ class Solver(object):
         return self._worker_flag
 
     @property
-    def is_root_worker(self):
-        """Indicates if this process has been designated as
-        the root worker by the dispatcher."""
-        if self.comm is not None:
-            return (self._disp.root_worker_comm_rank == \
-                    self.comm.rank)
-        return True
-
-    @property
     def is_dispatcher(self):
         """Indicates if this process has been designated as
         the dispatcher."""
@@ -400,12 +393,12 @@ class Solver(object):
                     self._explored_nodes_count)
                 stats['comm_time'] = self.worker_comm.allgather(
                     self._disp.comm_time)
-                if self.is_root_worker:
+                if self.worker_comm.rank == 0:
                     self.comm.send(stats, self._disp.dispatcher_rank)
             else:
                 assert self.worker_comm is None
                 assert self.is_dispatcher
-                stats = self.comm.recv(source=self._disp.root_worker_comm_rank)
+                stats = self.comm.recv(source=self._disp.root_worker_rank)
         else:
             assert self.worker_comm is None
             stats['wall_time'] = [self._wall_time]
@@ -525,12 +518,20 @@ class Solver(object):
         # broadcast options from dispatcher to everyone else
         # to ensure consistency
         if self.comm is not None:
-            (best_objective, absolute_gap, relative_gap,
-             cutoff, absolute_tolerance) = \
-                self.comm.bcast((best_objective,
-                                 absolute_gap, relative_gap,
-                                 cutoff, absolute_tolerance),
-                                root=self._disp.dispatcher_rank)
+            settings = numpy.array([best_objective,
+                                    absolute_gap,
+                                    relative_gap,
+                                    cutoff,
+                                    absolute_tolerance],
+                                   dtype=float)
+            self.comm.Bcast([settings,mpi4py.MPI.DOUBLE],
+                            root=self._disp.dispatcher_rank)
+            (best_objective,
+             absolute_gap,
+             relative_gap,
+             cutoff,
+             absolute_tolerance) = settings.tolist()
+            del settings
             if not self.is_dispatcher:
                 # These are not used unless this process is
                 # the dispatcher
@@ -595,23 +596,34 @@ class Solver(object):
             problem.load_state(root)
         if self.is_worker:
             self._disp.barrier()
-            if self.is_root_worker:
+            if (self.comm is None) or \
+               (self.worker_comm.rank == 0):
                 self._disp.solve_finished()
         stop = self._time()
         self._wall_time = stop-start
         if self.comm is not None:
             if self.is_worker:
-                results.nodes = self.worker_comm.allreduce(
-                    self._explored_nodes_count,
+                nodes_buf = numpy.array([self._explored_nodes_count],
+                                        dtype=int)
+                self.worker_comm.Allreduce(
+                    mpi4py.MPI.IN_PLACE,
+                    [nodes_buf,mpi4py.MPI.INT],
                     op=mpi4py.MPI.SUM)
-            results.wall_time = self.comm.allreduce(
-                self._wall_time,
+                results.nodes = int(nodes_buf[0])
+                del nodes_buf
+            wall_time_buf = numpy.array([self._wall_time],
+                                        dtype=float)
+            self.comm.Allreduce(
+                mpi4py.MPI.IN_PLACE,
+                [wall_time_buf,mpi4py.MPI.DOUBLE],
                 op=mpi4py.MPI.MAX)
-            if self.is_root_worker:
+            results.wall_time = float(wall_time_buf[0])
+            del wall_time_buf
+            if self.is_worker and (self.worker_comm.rank == 0):
                 assert not self.is_dispatcher
                 self.comm.send(results, self._disp.dispatcher_rank)
             elif self.is_dispatcher:
-                results = self.comm.recv(source=self._disp.root_worker_comm_rank)
+                results = self.comm.recv(source=self._disp.root_worker_rank)
                 results.termination_condition = self._disp.get_termination_condition()
             results.termination_condition = self.comm.bcast(results.termination_condition,
                                                             root=self._disp.dispatcher_rank)
