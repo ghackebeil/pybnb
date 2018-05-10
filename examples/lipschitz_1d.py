@@ -27,6 +27,9 @@ class Lipschitz1D(pybnb.Problem):
         self._branch_abstol = branch_abstol
         self._xL = xL
         self._xU = xU
+        self._fL_cached = self._f(self._xL)
+        self._fU_cached = self._f(self._xU)
+        self._fmid_cached = self._f(0.5*(self._xL + self._xU))
 
     @jit
     def _f(self, x):
@@ -46,38 +49,71 @@ class Lipschitz1D(pybnb.Problem):
         return pybnb.maximize
 
     def objective(self):
-        mid = 0.5 * (self._xL + self._xU)
-        return self._f(mid)
+        if math.isnan(self._fmid_cached):
+            mid = 0.5 * (self._xL + self._xU)
+            self._fmid_cached = self._f(mid)
+        return self._fmid_cached
 
     def bound(self):
-        xL, xU, L, f = self._xL, self._xU, self._L, self._f
-        return 0.5*f(xL) + 0.5*f(xU) + 0.5*L*(xU-xL)
+        if math.isnan(self._fL_cached):
+            self._fL_cached = self._f(self._xL)
+        if math.isnan(self._fU_cached):
+            self._fU_cached = self._f(self._xU)
+        return 0.5*self._fL_cached + \
+               0.5*self._fU_cached + \
+               0.5*self._LC*(self._xU-self._xL)
 
     def save_state(self, node):
         node.resize(5)
         state = node.state
         state[0] = self._xL
         state[1] = self._xU
+        state[2] = self._fL_cached
+        state[3] = self._fU_cached
+        state[4] = self._fmid_cached
 
     def load_state(self, node):
         state = node.state
+        assert len(state) == 5
         self._xL = float(state[0])
         self._xU = float(state[1])
+        self._fL_cached = float(state[2])
+        self._fU_cached = float(state[3])
+        self._fmid_cached = float(state[4])
 
-    def branch(self, parent):
-        L, U = self._xL, self._xU
-        dist = float(U - L)
-        if dist/2.0 < self._branch_abstol:
+    def branch(self, node):
+        dist = float(self._xU - self._xL)
+        if 0.5*dist < self._branch_abstol:
             return ()
+
+        # save the current state in the argument node, so we
+        # can easily reset
+        self.save_state(node)
+
         # branch
-        children = parent.new_children(2)
-        mid = 0.5*(L + U)
-        self._xL, self._xU = L, mid
+        xL, xU = self._xL, self._xU
+        children = node.new_children(2)
+        mid = 0.5*(xL + xU)
+
+        # left child
+        self._xL = xL
+        self._xU = mid
+        self._fL_cached = self._fL_cached
+        self._fU_cached = self._fmid_cached
+        self._fmid_cached = pybnb.nan
         self.save_state(children[0])
-        self._xL, self._xU = mid, U
+
+        # right child
+        self._xL = mid
+        self._xU = xU
+        self._fL_cached = self._fmid_cached
+        self._fU_cached = self._fU_cached
+        self._fmid_cached = pybnb.nan
         self.save_state(children[1])
-        # reset the bounds
-        self._xL, self._xU = L, U
+
+        # reset the current state
+        self.load_state(node)
+
         return children
 
 if __name__ == "__main__":
