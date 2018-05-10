@@ -10,17 +10,17 @@ env:
 #    - IMAGE_NAME=python-mpi-builds:python_3.7-rc-openmpi
 #    - IMAGE_NAME=python-mpi-builds:python_3.7-rc-mpich
     - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi
-    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi SLIM=1
-    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
+#    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi SLIM=1
+#    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.6-mpich
     - IMAGE_NAME=python-mpi-builds:python_3.5-openmpi
     - IMAGE_NAME=python-mpi-builds:python_3.5-mpich
     - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi
     - IMAGE_NAME=python-mpi-builds:python_2.7-mpich
-    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi
-    - IMAGE_NAME=python-mpi-builds:pypy_3-mpich
-    - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi
-    - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
+#    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi
+#    - IMAGE_NAME=python-mpi-builds:pypy_3-mpich
+#    - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi
+#    - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
 before_install:
   - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
