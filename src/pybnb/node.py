@@ -55,8 +55,11 @@ class Node(object):
 
     def _set_data(self, data):
         assert len(data) >= self._extra_data_slots
+        assert type(data) is numpy.ndarray
         self._data = data
         self._user_state = self._data[:-self._extra_data_slots]
+        # make _user_state is a view of _data
+        assert self._user_state.base is self._data
 
     def new_children(self, count, size=None):
         """Returns a list of new child nodes.

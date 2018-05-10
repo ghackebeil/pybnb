@@ -3,7 +3,7 @@ Branch-and-bound dispatcher implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
+import array
 import sys
 import time
 import array
@@ -27,8 +27,6 @@ from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.mpi_utils import (Message,
                              recv_nothing)
-
-import numpy
 
 try:
     import mpi4py
@@ -528,7 +526,7 @@ class Dispatcher(object):
                 best_bound = self.finalize()
                 assert best_bound is not None
                 self.comm.Bcast(
-                    [numpy.array([best_bound],dtype=float),
+                    [array.array("d",[best_bound]),
                      mpi4py.MPI.DOUBLE],
                     root=self.comm.rank)
             elif tag == DispatcherAction.barrier:

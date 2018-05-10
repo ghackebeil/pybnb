@@ -4,6 +4,7 @@ branch-and-bound workers.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+import array
 import collections
 
 from pybnb.node import Node
@@ -177,7 +178,12 @@ class DispatcherProxy(object):
             data = recv_data(self.comm, self._status)
             return float(data[0]), None
         assert tag == DispatcherResponse.work
-        data = recv_data(self.comm, self._status)
+        data = numpy.empty(self._status.Get_count(mpi4py.MPI.DOUBLE),
+                           dtype=float)
+        recv_data(self.comm,
+                  self._status,
+                  datatype=mpi4py.MPI.DOUBLE,
+                  out=data)
         best_objective = Node._extract_best_objective(data)
         return best_objective, data
 

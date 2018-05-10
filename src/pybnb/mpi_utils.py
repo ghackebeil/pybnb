@@ -135,7 +135,7 @@ def send_nothing(comm, dest, tag=0, synchronous=False):
          tag=tag)
 send_nothing._nothing = None
 
-def recv_data(comm, status, datatype=None):
+def recv_data(comm, status, datatype=None, out=None):
     """A helper function for receiving numeric or string
     data sent using the lower-level buffer-based mpi4py
     routines.
@@ -152,30 +152,39 @@ def recv_data(comm, status, datatype=None):
         An MPI datatype used to interpret the received
         data. If None, ``mpi4py.MPI.DOUBLE`` will be
         used. (default: None)
+    out : buffer-like object, optional
+        A buffer-like object that is compatible with the datatype
+        argument and can be passed to comm.Recv. If None, one will be
+        created using the built-in ``array`` module.
 
     Returns
     -------
-    ``array.array`` or string
-        When the datatype is ``mpi4py.MPI.DOUBLE``, an
-        array with typecode "d" is returned. When the
-        datatype ``mpi4py.MPI.CHAR``, a string is
-        returned.
+    ``array.array`` or string or user-provided
+        If the out keyword is not None, then that object will be
+        return. Otherwise, When the datatype is ``mpi4py.MPI.DOUBLE``,
+        an array with typecode "d" is returned. When the datatype
+        ``mpi4py.MPI.CHAR``, a string is returned.
     """
     import mpi4py.MPI
     assert not status.Get_error()
     if datatype is None:
         datatype = mpi4py.MPI.DOUBLE
     size = status.Get_count(datatype)
-    if datatype == mpi4py.MPI.DOUBLE:
-        data = array.array("d",[0])*size
+    convert_to_string = False
+    if out is None:
+        if datatype == mpi4py.MPI.DOUBLE:
+            out = array.array("d",[0])*size
+        else:
+            convert_to_string = True
+            assert datatype == mpi4py.MPI.CHAR
+            out = array.array("B",b"\0")*size
     else:
-        assert datatype == mpi4py.MPI.CHAR
-        data = array.array("B",b"\0")*size
-    comm.Recv([data,datatype],
+        assert len(out) == size
+    comm.Recv([out,datatype],
               source=status.Get_source(),
               tag=status.Get_tag(),
               status=status)
     assert not status.Get_error()
-    if datatype == mpi4py.MPI.CHAR:
-        data = data.tostring().decode("utf8")
-    return data
+    if convert_to_string:
+        out = data.tostring().decode("utf8")
+    return out

@@ -3,10 +3,12 @@ Branch-and-bound solver implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
+import array
 import sys
 import time
+import math
 
+from pybnb.common import nan
 from pybnb.misc import (metric_fmt,
                         as_stream,
                         get_simple_logger)
@@ -17,7 +19,7 @@ from pybnb.dispatcher import (Dispatcher,
                               TreeIdLabeler,
                               DispatcherQueueData)
 
-import numpy
+
 
 try:
     import mpi4py
@@ -518,19 +520,20 @@ class Solver(object):
         # broadcast options from dispatcher to everyone else
         # to ensure consistency
         if self.comm is not None:
-            settings = numpy.array([best_objective,
-                                    absolute_gap,
-                                    relative_gap,
-                                    cutoff,
-                                    absolute_tolerance],
-                                   dtype=float)
+            settings = array.array("d", [best_objective,
+                                         absolute_gap,
+                                         relative_gap,
+                                         cutoff if cutoff is not None else nan,
+                                         absolute_tolerance])
             self.comm.Bcast([settings,mpi4py.MPI.DOUBLE],
                             root=self._disp.dispatcher_rank)
             (best_objective,
              absolute_gap,
              relative_gap,
              cutoff,
-             absolute_tolerance) = settings.tolist()
+             absolute_tolerance) = settings
+            if math.isnan(cutoff):
+                cutoff = None
             del settings
             if not self.is_dispatcher:
                 # These are not used unless this process is
@@ -603,22 +606,24 @@ class Solver(object):
         self._wall_time = stop-start
         if self.comm is not None:
             if self.is_worker:
-                nodes_buf = numpy.array([self._explored_nodes_count],
-                                        dtype=int)
+                nodes_buf_local = array.array("i", [self._explored_nodes_count])
+                nodes_buf_global = array.array("i", [0])
                 self.worker_comm.Allreduce(
-                    mpi4py.MPI.IN_PLACE,
-                    [nodes_buf,mpi4py.MPI.INT],
+                    [nodes_buf_local,mpi4py.MPI.INT],
+                    [nodes_buf_global,mpi4py.MPI.INT],
                     op=mpi4py.MPI.SUM)
-                results.nodes = int(nodes_buf[0])
-                del nodes_buf
-            wall_time_buf = numpy.array([self._wall_time],
-                                        dtype=float)
+                results.nodes = int(nodes_buf_global[0])
+                del nodes_buf_local
+                del nodes_buf_global
+            wtime_buf_local = array.array("d", [self._wall_time])
+            wtime_buf_global = array.array("d", [0])
             self.comm.Allreduce(
-                mpi4py.MPI.IN_PLACE,
-                [wall_time_buf,mpi4py.MPI.DOUBLE],
+                [wtime_buf_local,mpi4py.MPI.DOUBLE],
+                [wtime_buf_global,mpi4py.MPI.DOUBLE],
                 op=mpi4py.MPI.MAX)
-            results.wall_time = float(wall_time_buf[0])
-            del wall_time_buf
+            results.wall_time = float(wtime_buf_global[0])
+            del wtime_buf_global
+            del wtime_buf_local
             if self.is_worker and (self.worker_comm.rank == 0):
                 assert not self.is_dispatcher
                 self.comm.send(results, self._disp.dispatcher_rank)
