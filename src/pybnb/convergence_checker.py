@@ -4,10 +4,11 @@ Convergence checking implementation.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 
+import math
+
 from pybnb.common import (minimize,
                           maximize,
-                          infinity,
-                          is_infinite)
+                          inf)
 
 class ConvergenceChecker(object):
     """A class used to check convergence.
@@ -53,21 +54,21 @@ class ConvergenceChecker(object):
         self.cutoff = None
         if cutoff is not None:
             self.cutoff = float(cutoff)
-            assert not is_infinite(self.cutoff)
+            assert not math.isinf(self.cutoff)
 
         if self.sense == minimize:
-            self.infeasible_objective = infinity
-            self.unbounded_objective = -infinity
+            self.infeasible_objective = inf
+            self.unbounded_objective = -inf
         else:
             assert self.sense == maximize
-            self.infeasible_objective = -infinity
-            self.unbounded_objective = infinity
+            self.infeasible_objective = -inf
+            self.unbounded_objective = inf
         assert (self.absolute_gap_tolerance >= 0) and \
-            (not is_infinite(self.absolute_gap_tolerance))
+            (not math.isinf(self.absolute_gap_tolerance))
         assert self.relative_gap_tolerance >= 0 and \
-            (not is_infinite(self.relative_gap_tolerance))
+            (not math.isinf(self.relative_gap_tolerance))
         assert self.absolute_tolerance > 0 and \
-            (not is_infinite(self.absolute_tolerance))
+            (not math.isinf(self.absolute_tolerance))
 
     def compute_absolute_gap(self, bound, objective):
         """Returns the absolute gap between the bound and
@@ -75,19 +76,19 @@ class ConvergenceChecker(object):
         objective sense of this problem."""
         if bound == objective:
             return 0.0
-        elif is_infinite(bound) or is_infinite(objective):
+        elif math.isinf(bound) or math.isinf(objective):
             if self.sense == minimize:
-                if (bound == -infinity) or \
-                   (objective == infinity):
-                    return infinity
+                if (bound == -inf) or \
+                   (objective == inf):
+                    return inf
                 else:
-                    return -infinity
+                    return -inf
             else:
-                if (bound == infinity) or \
-                   (objective == -infinity):
-                    return infinity
+                if (bound == inf) or \
+                   (objective == -inf):
+                    return inf
                 else:
-                    return -infinity
+                    return -inf
         else:
             if self.sense == minimize:
                 gap = objective - bound
@@ -100,7 +101,7 @@ class ConvergenceChecker(object):
         the objective, respecting the sign relative to the
         objective sense of this problem."""
         rgap = self.compute_absolute_gap(bound, objective)
-        if is_infinite(rgap):
+        if math.isinf(rgap):
             return rgap
         rgap /= max(1.0, abs(objective))
         return rgap

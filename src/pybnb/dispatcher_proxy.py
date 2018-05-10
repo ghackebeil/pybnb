@@ -145,11 +145,11 @@ class DispatcherProxy(object):
                 best_objective,
                 previous_bound,
                 explored_nodes_count,
-                node_states):
+                node_data):
         size = 4
-        node_states_size = len(node_states)
-        if node_states_size > 0:
-            for udata in node_states:
+        node_data_size = len(node_data)
+        if node_data_size > 0:
+            for udata in node_data:
                 size += 1
                 size += len(udata)
         data = numpy.empty(size, dtype=float)
@@ -160,13 +160,13 @@ class DispatcherProxy(object):
         data[2] = explored_nodes_count
         assert data[2] == explored_nodes_count
         assert int(data[2]) == explored_nodes_count
-        data[3] = node_states_size
-        assert data[3] == node_states_size
-        assert int(data[3]) == int(node_states_size)
-        if node_states_size > 0:
+        data[3] = node_data_size
+        assert data[3] == node_data_size
+        assert int(data[3]) == int(node_data_size)
+        if node_data_size > 0:
             pos = 4
-            for i in range(node_states_size):
-                udata = node_states[i]
+            for i in range(node_data_size):
+                udata = node_data[i]
                 data[pos] = len(udata)
                 pos += 1
                 data[pos:pos+len(udata)] = udata[:]
@@ -182,9 +182,9 @@ class DispatcherProxy(object):
             data = recv_data(self.comm, self._status)
             return float(data[0]), None
         assert tag == DispatcherResponse.work
-        state = recv_data(self.comm, self._status)
-        best_objective = Node._extract_best_objective(state)
-        return best_objective, state
+        data = recv_data(self.comm, self._status)
+        best_objective = Node._extract_best_objective(data)
+        return best_objective, data
 
     def finalize(self, *args, **kwds):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.finalize`."""

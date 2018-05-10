@@ -16,7 +16,8 @@ else:
 
 from pybnb.common import (minimize,
                           maximize,
-                          infinity)
+                          inf,
+                          nan)
 from pybnb.misc import get_gap_labels
 from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
@@ -58,14 +59,14 @@ class TreeIdLabeler(object):
 
 class DispatcherQueueData(
         collections.namedtuple("DispatcherQueueData",
-                               ["states","tree_id_labeler"])):
+                               ["nodes","tree_id_labeler"])):
     """A namedtuple storing data that can be used
     re-initialize a dispatcher queue.
 
     Attributes
     ----------
-    states : tuple
-        A list of node states stored in the order they were
+    nodes : tuple
+        A list of nodes stored in the order they were
         found in the priority queue.
     tree_id_labeler : pybnb.dispatcher.TreeIdLabeler
         A tree id labeler whose counter starts at the next
@@ -237,7 +238,7 @@ class StatusPrinter(object):
                 self._log.info(self._initial_header_line)
             self._log.info(self._header_line)
 
-        if (rgap != infinity) and \
+        if (rgap != inf) and \
            (rgap > 9999.0):
             self._log.info(self._line_template_big_gap.format(
                 tag=tag,
@@ -464,13 +465,13 @@ class Dispatcher(object):
                        ((time.time() - self._start_time) >= self.time_limit):
                         self.stop_time_limit = True
 
-    def _add_to_queue(self, state):
-        bound = priority = Node._extract_bound(state)
+    def _add_to_queue(self, data):
+        bound = priority = Node._extract_bound(data)
         if self.converger.sense == maximize:
             priority = -priority
         if self.converger.objective_can_improve(self.best_objective,
                                                 bound):
-            self.queue.put((priority,_ProtectCompare(state)))
+            self.queue.put((priority,_ProtectCompare(data)))
             return True, bound
         else:
             return False, bound
@@ -501,10 +502,10 @@ class Dispatcher(object):
                     pos = 4
                     for i in range(nodes_receiving_count):
                         assert int(msg.data[pos]) == msg.data[pos]
-                        state_size = int(msg.data[pos])
+                        data_size = int(msg.data[pos])
                         pos += 1
-                        node_list[i] = msg.data[pos:pos+state_size]
-                        pos += state_size
+                        node_list[i] = msg.data[pos:pos+data_size]
+                        pos += data_size
                 else:
                     node_list = ()
                 self.update(best_objective,
@@ -620,9 +621,9 @@ class Dispatcher(object):
         self._start_time = time.time()
         self.journalist.log_info("Running branch & bound (worker count: %d)"
                                  % (len(self.worker_ranks)))
-        for state in initialize_queue.states:
-            assert Node._has_tree_id(state)
-            self._add_to_queue(state)
+        for node in initialize_queue.nodes:
+            assert node.tree_id is not None
+            self._add_to_queue(node._data)
         self._check_update_best_objective(best_objective)
         self.journalist.tick()
 
@@ -630,7 +631,7 @@ class Dispatcher(object):
                best_objective,
                previous_bound,
                source_explored_nodes_count,
-               node_states,
+               node_data,
                _source=0):
         """Update local worker information.
 
@@ -645,15 +646,15 @@ class Dispatcher(object):
         source_explored_nodes_count : int
             The total number of nodes explored by the
             worker.
-        node_states : list
-            A list of new node states to add to the queue.
+        node_data : list
+            A list of new node data arrays to add to the queue.
 
         Returns
         -------
         new_objective : float
             The best objective value known to the dispatcher.
-        state : ``array.array`` or None
-            A state array representing a new node for the
+        data : ``array.array`` or None
+            A data array representing a new node for the
             worker to process. If None, this indicates that
             the worker should begin to finalize the solve.
         """
@@ -666,12 +667,12 @@ class Dispatcher(object):
         if _source in self.last_known_bound:
             del self.last_known_bound[_source]
         self._check_update_best_objective(best_objective)
-        if len(node_states):
-            for state in node_states:
-                if not Node._has_tree_id(state):
-                    Node._insert_tree_id(state,
+        if len(node_data):
+            for data in node_data:
+                if not Node._has_tree_id(data):
+                    Node._insert_tree_id(data,
                                          self.tree_id_labeler())
-                added, bound_ = self._add_to_queue(state)
+                added, bound_ = self._add_to_queue(data)
                 if not added:
                     self._check_update_worst_terminal_bound(bound_)
         else:
@@ -736,8 +737,8 @@ class Dispatcher(object):
             current state.
         """
         return DispatcherQueueData(
-            states=tuple(
-                data.obj for _,data in self.queue.queue),
+            nodes=tuple(
+                Node(data_=data.obj) for _,data in self.queue.queue),
             tree_id_labeler=TreeIdLabeler(
                 start=self.tree_id_labeler._next_id))
 

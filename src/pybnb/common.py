@@ -10,23 +10,8 @@ minimize = 1
 maximize = -1
 """The objective sense defining a maximization problem."""
 
-infinity = float("inf")
-"""A constant equal to ``float('inf')``."""
+inf = float("inf")
+"""A floating point constant set to ``float('inf')``."""
 
-def is_infinite(x):
-    """Returns True if the given argument is equal to `+inf`
-    or `-inf`.
-
-    Example
-    -------
-
-    >>> is_infinite(float('inf'))
-    True
-    >>> is_infinite(float('-inf'))
-    True
-    >>> is_infinite(0)
-    False
-
-    """
-    return (x == -infinity) or \
-           (x == infinity)
+nan = float("nan")
+"""A floating point constant set to ``float('nan')``."""

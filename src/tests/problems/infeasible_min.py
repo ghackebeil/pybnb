@@ -31,8 +31,7 @@ class InfeasibleMin(pybnb.Problem):
             return 1.0/delta
 
     def save_state(self, node):
-        if node.size != 2:
-            node.resize(2)
+        node.resize(2)
         state = node.state
         state[0] = self._xL
         state[1] = self._xU

@@ -13,7 +13,8 @@ import pybnb.solver
 
 from pybnb.common import (minimize,
                           maximize,
-                          infinity)
+                          inf,
+                          nan)
 from pybnb.problem import Problem
 from pybnb.solver import (Solver,
                           solve)

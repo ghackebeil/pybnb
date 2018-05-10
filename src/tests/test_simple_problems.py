@@ -4,7 +4,7 @@ import sys
 import pytest
 
 import pybnb
-from pybnb.common import infinity
+from pybnb.common import inf
 from pybnb.solver import (SolverResults,
                           Solver)
 
@@ -64,7 +64,7 @@ class TestProblems(object):
             q = solver.save_dispatcher_queue()
             assert len(q) == 2
             assert q.tree_id_labeler is not None
-            assert len(q.states) == solver._disp.queue.qsize()
+            assert len(q.nodes) == solver._disp.queue.qsize()
         else:
             assert solver.save_dispatcher_queue() is None
 
@@ -89,8 +89,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "infeasible"
         baseline.termination_condition = "optimality"
-        baseline.objective = -infinity
-        baseline.bound = -infinity
+        baseline.objective = -inf
+        baseline.bound = -inf
         baseline.nodes = 255
         baseline.wall_time = _ignore_value_
         problem = infeasible_max.InfeasibleMax()
@@ -99,7 +99,7 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "no_nodes"
-        baseline.objective = -infinity
+        baseline.objective = -inf
         baseline.bound = -16
         baseline.nodes = 31
         baseline.wall_time = _ignore_value_
@@ -109,7 +109,7 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "cutoff"
-        baseline.objective = -infinity
+        baseline.objective = -inf
         baseline.bound = -16
         baseline.nodes = 31
         baseline.wall_time = _ignore_value_
@@ -133,7 +133,7 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "node_limit"
-        baseline.objective = -infinity
+        baseline.objective = -inf
         baseline.bound = -16
         baseline.nodes = 31
         baseline.wall_time = _ignore_value_
@@ -155,8 +155,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "time_limit"
-        baseline.objective = -infinity
-        baseline.bound = infinity
+        baseline.objective = -inf
+        baseline.bound = inf
         baseline.nodes = 0
         baseline.wall_time = _ignore_value_
         problem = infeasible_max.InfeasibleMax()
@@ -166,8 +166,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "infeasible"
         baseline.termination_condition = "optimality"
-        baseline.objective = infinity
-        baseline.bound = infinity
+        baseline.objective = inf
+        baseline.bound = inf
         baseline.nodes = 255
         baseline.wall_time = _ignore_value_
         problem = infeasible_min.InfeasibleMin()
@@ -176,7 +176,7 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "no_nodes"
-        baseline.objective = infinity
+        baseline.objective = inf
         baseline.bound = 16
         baseline.nodes = 31
         baseline.wall_time = _ignore_value_
@@ -186,7 +186,7 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "cutoff"
-        baseline.objective = infinity
+        baseline.objective = inf
         baseline.bound = 16
         baseline.nodes = 31
         baseline.wall_time = _ignore_value_
@@ -209,7 +209,7 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "node_limit"
-        baseline.objective = infinity
+        baseline.objective = inf
         baseline.bound = 16
         baseline.nodes = 31
         baseline.wall_time = _ignore_value_
@@ -231,8 +231,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unknown"
         baseline.termination_condition = "time_limit"
-        baseline.objective = infinity
-        baseline.bound = -infinity
+        baseline.objective = inf
+        baseline.bound = -inf
         baseline.nodes = 0
         baseline.wall_time = _ignore_value_
         problem = infeasible_min.InfeasibleMin()
@@ -242,8 +242,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "infeasible"
         baseline.termination_condition = "optimality"
-        baseline.objective = -infinity
-        baseline.bound = -infinity
+        baseline.objective = -inf
+        baseline.bound = -inf
         baseline.nodes = 1
         baseline.wall_time = _ignore_value_
         problem = root_infeasible_max.RootInfeasibleMax()
@@ -253,8 +253,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "infeasible"
         baseline.termination_condition = "optimality"
-        baseline.objective = infinity
-        baseline.bound = infinity
+        baseline.objective = inf
+        baseline.bound = inf
         baseline.nodes = 1
         baseline.wall_time = _ignore_value_
         problem = root_infeasible_min.RootInfeasibleMin()
@@ -264,8 +264,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unbounded"
         baseline.termination_condition = "no_nodes"
-        baseline.objective = infinity
-        baseline.bound = infinity
+        baseline.objective = inf
+        baseline.bound = inf
         baseline.nodes = 1
         baseline.wall_time = _ignore_value_
         problem = unbounded_max.UnboundedMax()
@@ -275,8 +275,8 @@ class TestProblems(object):
         baseline = SolverResults()
         baseline.solution_status = "unbounded"
         baseline.termination_condition = "no_nodes"
-        baseline.objective = -infinity
-        baseline.bound = -infinity
+        baseline.objective = -inf
+        baseline.bound = -inf
         baseline.nodes = 1
         baseline.wall_time = _ignore_value_
         problem = unbounded_min.UnboundedMin()

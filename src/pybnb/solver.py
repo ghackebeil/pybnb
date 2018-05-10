@@ -216,17 +216,17 @@ class Solver(object):
         assert unbounded_objective == converger.unbounded_objective
 
         self._best_objective = best_objective
-        child_states = ()
+        children_data = ()
         bound = problem.unbounded_objective
         working_node = Node()
         assert working_node.tree_id is None
         # start the work loop
         while (1):
-            new_objective, state = \
+            new_objective, data = \
                 self._disp.update(self._best_objective,
                                   bound,
                                   self._explored_nodes_count,
-                                  child_states)
+                                  children_data)
 
             updated = self._check_update_best_objective(
                 converger,
@@ -237,16 +237,18 @@ class Solver(object):
                     self._best_objective)
             del updated
 
-            child_states = ()
+            children_data = ()
 
-            if state is None:
+            if data is None:
                 # make sure all processes have the exact same best
                 # objective value (not just subject to tolerances)
                 self._best_objective = new_objective
                 break
+            # load the new data into the node
+            working_node._set_data(data)
             del new_objective
+            del data
 
-            working_node._state = state
             bound = working_node.bound
             assert working_node.tree_id is not None
             self._explored_nodes_count += 1
@@ -260,7 +262,6 @@ class Solver(object):
                 (not converger.cutoff_is_met(bound)):
 
                 problem.load_state(working_node)
-                del state
 
                 bound_eval_start = self._time()
                 new_bound = problem.bound()
@@ -300,8 +301,8 @@ class Solver(object):
                    converger.objective_can_improve(
                        self._best_objective,
                        bound):
-                    child_states = [child._state for child in
-                                    problem.branch(working_node)]
+                    children_data = [child._data for child in
+                                     problem.branch(working_node)]
         results.objective = self._best_objective
         results.bound = self._disp.finalize()
 
@@ -561,7 +562,7 @@ class Solver(object):
                     if root.tree_id is None:
                         root.tree_id = tree_id_labeler()
                     initialize_queue = DispatcherQueueData(
-                        states=[root._state],
+                        nodes=[Node(data_=root._data.copy())],
                         tree_id_labeler=tree_id_labeler)
                 if log is _notset:
                     log = get_simple_logger()

@@ -9,7 +9,7 @@ except ImportError:
 
 class Lipschitz1D(pybnb.Problem):
 
-    _L = 12.0
+    _LC = 12.0
 
     def __init__(self, xL, xU,  branch_abstol=1e-5):
         assert branch_abstol > 0
@@ -44,8 +44,7 @@ class Lipschitz1D(pybnb.Problem):
         return 0.5*f(xL) + 0.5*f(xU) + 0.5*L*(xU-xL)
 
     def save_state(self, node):
-        if node.size != 2:
-            node.resize(2)
+        node.resize(5)
         state = node.state
         state[0] = self._xL
         state[1] = self._xU

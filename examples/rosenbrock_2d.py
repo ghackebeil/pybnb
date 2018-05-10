@@ -87,11 +87,11 @@ class Rosenbrock2D(PyomoProblem):
         x = self._model.x = pmo.variable(lb=xL, ub=xU)
         y = self._model.y = pmo.variable(lb=yL, ub=yU)
         x2 = self._model.x2 = pmo.variable(
-            lb=-pybnb.infinity,
-            ub=pybnb.infinity)
+            lb=-pybnb.inf,
+            ub=pybnb.inf)
         x2y = self._model.x2y = pmo.variable(
-            lb=-pybnb.infinity,
-            ub=pybnb.infinity)
+            lb=-pybnb.inf,
+            ub=pybnb.inf)
         self._model.x2_c = SquaredEnvelope(x, x2)
         # Temporarily provide bounds to the x2 variable so
         # they can be used to build the McCormick
@@ -100,8 +100,8 @@ class Rosenbrock2D(PyomoProblem):
         # McCormickEnvelope constraints.
         x2.bounds = self._model.x2_c.derived_output_bounds()
         self._model.x2y_c = McCormickEnvelope(x2, y, x2y)
-        x2.bounds = (-pybnb.infinity,
-                     pybnb.infinity)
+        x2.bounds = (-pybnb.inf,
+                     pybnb.inf)
 
         # original objective
         self._model.f = pmo.expression(
@@ -162,8 +162,8 @@ class Rosenbrock2D(PyomoProblem):
         # SquaredEnvelope constraints.
         self._model.x2.bounds = self._model.x2_c.derived_output_bounds()
         self._model.x2y_c.update_constraints()
-        self._model.x2.bounds = (-pybnb.infinity,
-                                 pybnb.infinity)
+        self._model.x2.bounds = (-pybnb.inf,
+                                 pybnb.inf)
 
     #
     # Implement PyomoProblem abstract methods
@@ -218,8 +218,7 @@ class Rosenbrock2D(PyomoProblem):
                 return self.infeasible_objective
 
     def save_state(self, node):
-        if node.size != 4:
-            node.resize(4)
+        node.resize(4)
         state = node.state
         state[0] = self._model.x.lb
         state[1] = self._model.x.ub
@@ -227,8 +226,8 @@ class Rosenbrock2D(PyomoProblem):
         state[3] = self._model.y.ub
 
     def load_state(self, node):
-        assert node.size == 4
         state = node.state
+        assert len(state) == 4
         self._model.x.lb = float(state[0])
         self._model.x.ub = float(state[1])
         self._model.y.lb = float(state[2])

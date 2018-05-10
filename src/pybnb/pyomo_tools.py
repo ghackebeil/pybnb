@@ -246,10 +246,10 @@ class RangeReductionProblem(pybnb.Problem):
                 objects.append(obj)
                 lower_bounds.append(pmo.value(obj.lb) \
                                     if obj.has_lb() else \
-                                    -pybnb.infinity)
+                                    -pybnb.inf)
                 upper_bounds.append(pmo.value(obj.ub) \
                                     if obj.has_ub() else \
-                                    pybnb.infinity)
+                                    pybnb.inf)
         lower_bounds = array.array('d', lower_bounds)
         upper_bounds = array.array('d', upper_bounds)
 
@@ -309,7 +309,7 @@ class RangeReductionProblem(pybnb.Problem):
         orig = pybnb.node.Node()
         self.save_state(orig)
         try:
-            node = pybnb.node.Node(size=orig.size)
+            node = pybnb.node.Node(size=len(orig.state))
             again, self.best_objective = self.comm.bcast(
                 None,
                 root=root)

@@ -268,8 +268,7 @@ class BinPacking(pybnb.Problem):
 
     def save_state(self, node):
         state_size = len(self.model.x)*2 + len(self.model.y)*2
-        if node.size != state_size:
-            node.resize(state_size)
+        node.resize(state_size)
         state = node.state
         ndx = 0
         for xij in self.model.x.components():

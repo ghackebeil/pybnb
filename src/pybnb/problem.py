@@ -6,7 +6,7 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
 from pybnb.common import (minimize,
                           maximize,
-                          infinity)
+                          inf)
 
 class Problem(object):
     """The abstract base class used for defining
@@ -18,20 +18,20 @@ class Problem(object):
         """The value that represents an infeasible objective
         (i.e., +inf or -inf depending on the sense)."""
         if self.sense() == minimize:
-            return infinity
+            return inf
         else:
             assert self.sense() == maximize
-            return -infinity
+            return -inf
 
     @property
     def unbounded_objective(self):
         """The value that represents an unbounded objective
         (i.e., +inf or -inf depending on the sense)."""
         if self.sense() == minimize:
-            return -infinity
+            return -inf
         else:
             assert self.sense() == maximize
-            return infinity
+            return inf
 
     #
     # Abstract Methods

@@ -53,7 +53,7 @@ def _logging_check(comm):
         tree_id_labeler = TreeIdLabeler()
         root.tree_id = tree_id_labeler()
         initialize_queue = DispatcherQueueData(
-            states=[root._state],
+            nodes=[root],
             tree_id_labeler=tree_id_labeler)
         out = StringIO()
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
