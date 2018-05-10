@@ -575,7 +575,6 @@ class Solver(object):
                 elif log is None:
                     log = get_simple_logger(console=False)
                     assert log.disabled
-                """
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
@@ -584,16 +583,13 @@ class Solver(object):
                     time_limit,
                     log,
                     log_interval_seconds)
-                """
             if not self.is_worker:
                 self._disp.serve()
             else:
-                """
                 self._solve(problem,
                             best_objective,
                             converger,
                             results)
-                """
                 pass
         except:                                        #pragma:nocover
             sys.stderr.write("Exception caught: "+str(sys.exc_info()[1])+"\n")
@@ -609,7 +605,6 @@ class Solver(object):
                 self._disp.solve_finished()
         stop = self._time()
         self._wall_time = stop-start
-        """
         if self.comm is not None:
             if self.is_worker:
                 nodes_buf_local = array.array("i", [self._explored_nodes_count])
@@ -688,7 +683,7 @@ class Solver(object):
                 self._disp.log_info("Status unknown")
             self._disp.log_info("")
             self._disp.log_info(str(results))
-        """
+
         return results
 
 def summarize_worker_statistics(stats, stream=sys.stdout):

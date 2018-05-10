@@ -167,18 +167,16 @@ def _test_heaps(comm):
                                           heap,
                                           default_objective=1)
                 results = solver.solve(problem, log=None)
-                """
                 if objective_node == len(heap):
                     assert results.objective == 2
                 else:
                     assert results.objective == 1
                 assert results.bound == heap_bound
-                """
+
 def test_heaps_nocomm():
     _test_heaps(None)
 
 if mpi_available:
-
     @MPITest(commsize=[1, 2, 3])
     def test_heaps_comm(comm):
         _test_heaps(comm)
