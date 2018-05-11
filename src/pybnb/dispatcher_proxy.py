@@ -37,7 +37,6 @@ _DispatcherAction = collections.namedtuple(
      "log_warning",
      "log_debug",
      "log_error",
-     "barrier",
      "stop_listen"])
 
 DispatcherAction = _DispatcherAction(
@@ -47,8 +46,7 @@ DispatcherAction = _DispatcherAction(
     log_warning               = 411,
     log_debug                 = 511,
     log_error                 = 611,
-    barrier                   = 711,
-    stop_listen               = 811)
+    stop_listen               = 711)
 """A namespace of typecodes that are used to categorize
 messages received by the dispatcher from workers."""
 
@@ -243,19 +241,6 @@ class DispatcherProxy(object):
         self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
                         self.dispatcher_rank,
                         tag=DispatcherAction.log_error)
-
-    def barrier(self, *args, **kwds):
-        """A proxy to :func:`pybnb.dispatcher.Dispatcher.barrier`."""
-        with self.CommActionTimer:
-            return self._barrier(*args, **kwds)
-    def _barrier(self):
-        self.worker_comm.Barrier()
-        if self.worker_comm.rank == 0:
-            send_nothing(self.comm,
-                         self.dispatcher_rank,
-                         DispatcherAction.barrier,
-                         synchronous=True)
-        self.comm.Barrier()
 
     def stop_listen(self, *args, **kwds):
         """Tell the dispatcher to abruptly stop the listen loop."""

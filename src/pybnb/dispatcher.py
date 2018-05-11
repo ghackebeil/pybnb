@@ -530,11 +530,6 @@ class Dispatcher(object):
                      mpi4py.MPI.DOUBLE],
                     root=self.comm.rank)
                 break
-            elif tag == DispatcherAction.barrier:
-                msg.recv()
-                assert msg.data is None
-                self.barrier()
-                self.comm.Barrier()
             elif tag == DispatcherAction.stop_listen:
                 msg.recv()
                 assert msg.data is None
@@ -710,11 +705,6 @@ class Dispatcher(object):
     def log_error(self, msg):
         """Pass a message to ``log.error``"""
         self.journalist.log_error(msg)
-
-    def barrier(self):
-        """Start a global process barrier."""
-        # this is a no-op
-        pass
 
     def save_dispatcher_queue(self):
         """Saves the current dispatcher queue. The result can
