@@ -83,7 +83,7 @@ def _logging_check(comm):
                     opt._disp.log_error(str(comm.rank)+": error")
                 opt.worker_comm.Barrier()
             if opt.worker_comm.rank == 0:
-                opt._disp.solve_finished()
+                opt._disp.stop_listen()
     if comm is not None:
         comm.Barrier()
     if opt.is_dispatcher:

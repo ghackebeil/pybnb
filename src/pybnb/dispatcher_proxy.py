@@ -32,22 +32,23 @@ processes during dispatcher startup."""
 _DispatcherAction = collections.namedtuple(
     "_DispatcherAction",
     ["update",
-     "solve_finished",
-     "barrier",
      "finalize",
      "log_info",
      "log_warning",
      "log_debug",
-     "log_error"])
+     "log_error",
+     "barrier",
+     "stop_listen"])
+
 DispatcherAction = _DispatcherAction(
     update                    = 111,
-    solve_finished            = 211,
-    barrier                   = 311,
-    finalize                  = 411,
-    log_info                  = 511,
-    log_warning               = 611,
-    log_debug                 = 711,
-    log_error                 = 811)
+    finalize                  = 211,
+    log_info                  = 311,
+    log_warning               = 411,
+    log_debug                 = 511,
+    log_error                 = 611,
+    barrier                   = 711,
+    stop_listen               = 811)
 """A namespace of typecodes that are used to categorize
 messages received by the dispatcher from workers."""
 
@@ -202,33 +203,10 @@ class DispatcherProxy(object):
             send_nothing(self.comm,
                          self.dispatcher_rank,
                          DispatcherAction.finalize)
-        data = numpy.empty(1,dtype=float)
+        data = array.array("d",[0])
         self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
                         root=self.dispatcher_rank)
         return float(data[0])
-
-    def barrier(self, *args, **kwds):
-        """A proxy to :func:`pybnb.dispatcher.Dispatcher.barrier`."""
-        with self.CommActionTimer:
-            return self._barrier(*args, **kwds)
-    def _barrier(self):
-        self.worker_comm.Barrier()
-        if self.worker_comm.rank == 0:
-            send_nothing(self.comm,
-                         self.dispatcher_rank,
-                         DispatcherAction.barrier,
-                         synchronous=True)
-        self.comm.Barrier()
-
-    def solve_finished(self, *args, **kwds):
-        """A proxy to :func:`pybnb.dispatcher.Dispatcher.solve_finished`."""
-        with self.CommActionTimer:
-            return self._solve_finished(*args, **kwds)
-    def _solve_finished(self):
-        assert self.worker_comm.rank == 0
-        send_nothing(self.comm,
-                     self.dispatcher_rank,
-                     DispatcherAction.solve_finished)
 
     def log_info(self, *args, **kwds):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""
@@ -265,3 +243,26 @@ class DispatcherProxy(object):
         self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
                         self.dispatcher_rank,
                         tag=DispatcherAction.log_error)
+
+    def barrier(self, *args, **kwds):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.barrier`."""
+        with self.CommActionTimer:
+            return self._barrier(*args, **kwds)
+    def _barrier(self):
+        self.worker_comm.Barrier()
+        if self.worker_comm.rank == 0:
+            send_nothing(self.comm,
+                         self.dispatcher_rank,
+                         DispatcherAction.barrier,
+                         synchronous=True)
+        self.comm.Barrier()
+
+    def stop_listen(self, *args, **kwds):
+        """Tell the dispatcher to abruptly stop the listen loop."""
+        with self.CommActionTimer:
+            return self._stop_listen(*args, **kwds)
+    def _stop_listen(self):
+        assert self.worker_comm.rank == 0
+        send_nothing(self.comm,
+                     self.dispatcher_rank,
+                     DispatcherAction.stop_listen)

@@ -598,11 +598,14 @@ class Solver(object):
             raise
         finally:
             problem.load_state(root)
+        """
         if self.is_worker:
-            #self._disp.barrier()
+            self._disp.barrier()
             if (self.comm is None) or \
                (self.worker_comm.rank == 0):
                 self._disp.solve_finished()
+            pass
+        """
         stop = self._time()
         self._wall_time = stop-start
         if self.comm is not None:

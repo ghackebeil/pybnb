@@ -529,18 +529,16 @@ class Dispatcher(object):
                     [array.array("d",[best_bound]),
                      mpi4py.MPI.DOUBLE],
                     root=self.comm.rank)
+                break
             elif tag == DispatcherAction.barrier:
                 msg.recv()
                 assert msg.data is None
                 self.barrier()
                 self.comm.Barrier()
-            else:
-                assert tag == DispatcherAction.solve_finished
+            elif tag == DispatcherAction.stop_listen:
                 msg.recv()
                 assert msg.data is None
-                self.solve_finished()
                 break
-
     #
     # Local Interface
     #
@@ -697,16 +695,6 @@ class Dispatcher(object):
         self.initialized = False
         return best_bound
 
-    def barrier(self):
-        """Start a global process barrier."""
-        # this is a no-op
-        pass
-
-    def solve_finished(self):
-        """Indicate that the solve has finished."""
-        # this is a no-op
-        pass
-
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
         self.journalist.log_info(msg)
@@ -722,6 +710,11 @@ class Dispatcher(object):
     def log_error(self, msg):
         """Pass a message to ``log.error``"""
         self.journalist.log_error(msg)
+
+    def barrier(self):
+        """Start a global process barrier."""
+        # this is a no-op
+        pass
 
     def save_dispatcher_queue(self):
         """Saves the current dispatcher queue. The result can
