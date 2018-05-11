@@ -598,16 +598,6 @@ class Solver(object):
             raise
         finally:
             problem.load_state(root)
-        """
-        if self.is_worker:
-            self._disp.barrier()
-            if (self.comm is None) or \
-               (self.worker_comm.rank == 0):
-                self._disp.solve_finished()
-            pass
-        """
-        if self.comm is not None:
-            self.comm.Barrier()
         stop = self._time()
         self._wall_time = stop-start
         if self.comm is not None:
@@ -689,6 +679,8 @@ class Solver(object):
             self._disp.log_info("")
             self._disp.log_info(str(results))
 
+        if self.comm is not None:
+            self.comm.Barrier()
         return results
 
 def summarize_worker_statistics(stats, stream=sys.stdout):
