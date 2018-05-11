@@ -1,14 +1,22 @@
+import os
+
 import pytest
 
+import pybnb
 from pybnb.solver import (Solver,
                           SolverResults,
-                          summarize_worker_statistics)
+                          summarize_worker_statistics,
+                          solve)
 
 from six import StringIO
 
-# TODO
-# - test with show_log both True and False to make
-#   sure that does not affect results
+class DummyProblem(pybnb.Problem):
+    def sense(self): return pybnb.minimize
+    def objective(self): return 0
+    def bound(self): return 0
+    def save_state(self, node): pass
+    def load_state(self, node): pass
+    def branch(self): raise NotImplementedError()
 
 class _DummyComm_Size1(object):
     size = 1
@@ -64,3 +72,13 @@ Average Worker Timing:
         tmp = StringIO()
         summarize_worker_statistics(stats, stream=tmp)
         assert tmp.getvalue() == out
+
+    def test_solve_function(self):
+        fname = ("TestSolverSimple."
+                 "test_solve_function_log_filename.out")
+        assert not os.path.exists(fname)
+        solve(DummyProblem(),
+              comm=None,
+              log_filename=fname)
+        assert os.path.exists(fname)
+        os.remove(fname)
