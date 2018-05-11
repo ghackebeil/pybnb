@@ -523,7 +523,6 @@ class Solver(object):
         # broadcast options from dispatcher to everyone else
         # to ensure consistency
         if self.comm is not None:
-            """
             settings = array.array("d", [best_objective,
                                          absolute_gap,
                                          relative_gap,
@@ -539,7 +538,6 @@ class Solver(object):
             if math.isnan(cutoff):
                 cutoff = None
             del settings
-            """
             if not self.is_dispatcher:
                 # These are not used unless this process is
                 # the dispatcher
