@@ -93,7 +93,8 @@ class DispatcherProxy(object):
             return dispatcher_rank, status.Get_source()
         else:
             if worker_comm.rank == 0:
-                send_nothing(comm, dispatcher_rank)
+                send_nothing(comm,
+                             dispatcher_rank)
             return dispatcher_rank, worker_comm
 
     class _ActionTimer(object):

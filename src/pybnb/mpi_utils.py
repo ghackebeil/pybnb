@@ -106,7 +106,7 @@ def recv_nothing(comm, status=None):
     return status
 recv_nothing._nothing = None
 
-def send_nothing(comm, dest, tag=0, synchronous=False):
+def send_nothing(comm, dest, tag=0):
     """A helper function for sending an empty message
     with a given tag. This function is not thread safe.
 
@@ -118,19 +118,12 @@ def send_nothing(comm, dest, tag=0, synchronous=False):
         The process rank to send the message to.
     tag : int, optional
         A valid MPI tag to use for the message. (default: 0)
-    synchronous : bool, optional
-        Indicates whether or not a synchronous MPI send
-        should be used. (default: False)
     """
     import mpi4py.MPI
     if send_nothing._nothing is None:
         send_nothing._nothing = [array.array("B",[]),
                                  mpi4py.MPI.CHAR]
-    if not synchronous:
-        Send = comm.Send
-    else:
-        Send = comm.Ssend
-    Send(send_nothing._nothing,
+    comm.Send(send_nothing._nothing,
          dest,
          tag=tag)
 send_nothing._nothing = None

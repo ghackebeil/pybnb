@@ -176,14 +176,7 @@ def get_keyword_docs(doc):
         if default_ is not None:
             default_ = default_.group(0)[1:-1].split(": ")
             assert len(default_) == 2
-            default_ = default_[1]
-            while default_.startswith("`") and \
-                  default_.endswith("`"):
-                default_ = default_[1:-1]
-            if default_ == "None":
-                default_ = None
-            else:
-                default_ = eval(default_)
+            default_ = eval(default_[1])
             data[key]["default"] = default_
             doc = re.split(r"\(default: .*\)",val)
             assert len(doc) == 2
