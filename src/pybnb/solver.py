@@ -606,6 +606,8 @@ class Solver(object):
                 self._disp.solve_finished()
             pass
         """
+        if self.comm is not None:
+            self.comm.Barrier()
         stop = self._time()
         self._wall_time = stop-start
         if self.comm is not None:
