@@ -13,15 +13,15 @@ then
         MPIRUN_ARG="mpirun -n 4"
     fi
 fi
-#${DOC} pytest -v --doctest-modules src/pybnb
-#${DOC} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v ${EXAMPLE_ARG}
-#${DOC} mv .coverage coverage.parallel.1
-${DOC} python run-mpitests.py "${MPIRUN_FLAG}""${MPIRUN_ARG}" --no-build --with-coverage -v src/tests/mpi/test_heaps.py
-#${DOC} mv .coverage coverage.parallel.2
-#${DOC} python run-mpitests.py --single --no-build --with-coverage -v
-#${DOC} mv .coverage coverage.parallel.3
+${DOC} pytest -v --doctest-modules src/pybnb
+${DOC} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v ${EXAMPLE_ARG}
+${DOC} mv .coverage coverage.parallel.1
+${DOC} python run-mpitests.py "${MPIRUN_FLAG}""${MPIRUN_ARG}" --no-build --with-coverage -v
+${DOC} mv .coverage coverage.parallel.2
+${DOC} python run-mpitests.py --single --no-build --with-coverage -v
+${DOC} mv .coverage coverage.parallel.3
 # prepare the coverage files for the "coverage combine"
 # call that comes next
-#${DOC} mv coverage.parallel.1 .coverage.parallel.1
-#${DOC} mv coverage.parallel.2 .coverage.parallel.2
-#${DOC} mv coverage.parallel.3 .coverage.parallel.3
+${DOC} mv coverage.parallel.1 .coverage.parallel.1
+${DOC} mv coverage.parallel.2 .coverage.parallel.2
+${DOC} mv coverage.parallel.3 .coverage.parallel.3
