@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import pytest
 
@@ -74,11 +75,12 @@ Average Worker Timing:
         assert tmp.getvalue() == out
 
     def test_solve_function(self):
-        fname = ("TestSolverSimple."
-                 "test_solve_function_log_filename.out")
-        assert not os.path.exists(fname)
-        solve(DummyProblem(),
-              comm=None,
-              log_filename=fname)
-        assert os.path.exists(fname)
-        os.remove(fname)
+        fid, fname = tempfile.mkstemp()
+        os.close(fid)
+        try:
+            solve(DummyProblem(),
+                  comm=None,
+                  log_filename=fname)
+            assert os.path.exists(fname)
+        finally:
+            os.remove(fname)
