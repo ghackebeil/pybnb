@@ -514,6 +514,9 @@ class Solver(object):
             A object storing information about the solve.
         """
 
+        if self.comm is not None:
+            self.comm.Barrier()
+
         if best_objective is None:
             best_objective = problem.infeasible_objective
 
@@ -679,8 +682,6 @@ class Solver(object):
             self._disp.log_info("")
             self._disp.log_info(str(results))
 
-        if self.comm is not None:
-            self.comm.Barrier()
         return results
 
 def summarize_worker_statistics(stats, stream=sys.stdout):
