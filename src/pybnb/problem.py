@@ -68,7 +68,7 @@ class Problem(object):
         :class:`pybnb.node.Node` object.
 
         This method is guaranteed to be called once at the
-        start of the solve by all proccesses involved to
+        start of the solve by all processes involved to
         collect the root node problem state, but it may be
         called additional times. When it is called for the
         root node, the :attr:`tree_id <pybnb.node.Node.tree_id`
