@@ -10,8 +10,7 @@ from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.node import Node
 from pybnb.solver import Solver
 from pybnb.problem import Problem
-from pybnb.dispatcher import (TreeIdLabeler,
-                              DispatcherQueueData)
+from pybnb.dispatcher import DispatcherQueueData
 from pybnb.misc import get_simple_logger
 
 from six import StringIO
@@ -50,11 +49,11 @@ def _logging_check(comm):
         root = Node()
         p.save_state(root)
         root.bound = p.unbounded_objective
-        tree_id_labeler = TreeIdLabeler()
-        root.tree_id = tree_id_labeler()
+        assert root.tree_id is None
+        Node._insert_tree_id(root._data, 0)
         initialize_queue = DispatcherQueueData(
             nodes=[root],
-            tree_id_labeler=tree_id_labeler)
+            next_tree_id=1)
         out = StringIO()
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         opt._disp.initialize(p.infeasible_objective,

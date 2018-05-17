@@ -16,7 +16,6 @@ from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (Dispatcher,
-                              TreeIdLabeler,
                               DispatcherQueueData)
 
 
@@ -610,12 +609,11 @@ class Solver(object):
             if self.is_dispatcher:
                 if initialize_queue is None:
                     root.bound = problem.unbounded_objective
-                    tree_id_labeler = TreeIdLabeler()
-                    if root.tree_id is None:
-                        root.tree_id = tree_id_labeler()
+                    assert root.tree_id is None
+                    Node._insert_tree_id(root._data, 0)
                     initialize_queue = DispatcherQueueData(
                         nodes=[Node(data_=root._data.copy())],
-                        tree_id_labeler=tree_id_labeler)
+                        next_tree_id=1)
                 if log is _notset:
                     log = get_simple_logger()
                 elif log is None:

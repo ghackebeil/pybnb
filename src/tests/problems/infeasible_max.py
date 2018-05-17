@@ -45,7 +45,8 @@ class InfeasibleMax(pybnb.Problem):
         xL, xU = self._xL, self._xU
         if (xU - xL) <= self._branching_abstol:
             return ()
-        children = parent.new_children(2)
+        children = [parent.new_child()
+                    for i in range(2)]
         mid = 0.5 * (xL + xU)
         self._xL = xL
         self._xU = mid

@@ -92,7 +92,7 @@ class Lipschitz1D(pybnb.Problem):
 
         # branch
         xL, xU = self._xL, self._xU
-        children = node.new_children(2)
+        children = [node.new_child() for i in range(2)]
         mid = 0.5*(xL + xU)
 
         # left child

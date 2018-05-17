@@ -93,7 +93,7 @@ class DiscreteMin(pybnb.Problem):
         self._objectives = objectives
         self._bound_bheap = bound_bheap
         self._default_objective = default_objective
-        self._node = None
+        self._heap_idx = 0
 
     #
     # Implement Problem abstract methods
@@ -103,41 +103,36 @@ class DiscreteMin(pybnb.Problem):
         return pybnb.minimize
 
     def objective(self):
-        assert self._node is not None
-        tree_id = self._node.tree_id
-        tree_id is not None
-        return self._objectives.get(tree_id,
+        return self._objectives.get(self._heap_idx,
                                     self._default_objective)
 
     def bound(self):
-        assert self._node is not None
-        tree_id = self._node.tree_id
-        tree_id is not None
-        tree_id >= 0
-        return self._bound_bheap[tree_id]
+        return self._bound_bheap[self._heap_idx]
 
     def save_state(self, node):
-        node.resize(0)
+        node.resize(1)
+        node.state[0] = self._heap_idx
 
     def load_state(self, node):
-        self._node = node
+        assert len(node.state) == 1
+        self._heap_idx = int(node.state[0])
 
     def branch(self, parent):
-        i = parent.tree_id
+        i = self._heap_idx
         assert i >= 0
         assert i < len(self._bound_bheap)
-        left_tree_id =  2*i + 1
+        left_idx =  2*i + 1
         children = []
-        if (left_tree_id < len(self._bound_bheap)) and \
-           (self._bound_bheap[left_tree_id] is not None):
-            child = parent.new_children(1)[0]
-            child.tree_id = left_tree_id
+        if (left_idx < len(self._bound_bheap)) and \
+           (self._bound_bheap[left_idx] is not None):
+            child = parent.new_child(size=1)
+            child.state[0] = left_idx
             children.append(child)
-        right_tree_id = 2*i + 2
-        if (right_tree_id < len(self._bound_bheap)) and \
-           (self._bound_bheap[right_tree_id] is not None):
-            child = parent.new_children(1)[0]
-            child.tree_id = right_tree_id
+        right_idx = 2*i + 2
+        if (right_idx < len(self._bound_bheap)) and \
+           (self._bound_bheap[right_idx] is not None):
+            child = parent.new_child(size=1)
+            child.state[0] = right_idx
             children.append(child)
         return children
 

@@ -77,33 +77,31 @@ class Node(object):
         else:
             assert self._user_state.base is self._data.base
 
-    def new_children(self, count, size=None):
-        """Returns a list of new child nodes.
+    def new_child(self, size=None):
+        """Returns a new child node.
 
         Parameters
         ----------
-        count : int
-            The number of child nodes to return.
         size : int, optional
             The state size to allocate for each child. If
             set to None, the children will use the same
             state size as this node. (default: None)
         """
-        assert count >= 0
         if size is None:
             size = len(self._user_state)
         tree_id = self.tree_id
-        assert tree_id is not None
         bound = self.bound
         tree_depth = self.tree_depth
-        children = []
-        for i in range(count):
-            children.append(Node(size=size))
-            self._insert_parent_tree_id(children[-1]._data, tree_id)
-            children[-1].bound = bound
-            children[-1].tree_depth = tree_depth + 1
-            assert children[-1].tree_id is None
-        return children
+        child = Node(size=size)
+        if tree_id is not None:
+            self._insert_parent_tree_id(child._data, tree_id)
+        else:
+            # set the has_parent_tree_id flag to False on the child
+            child._data[-2] = 0
+        child.bound = bound
+        child.tree_depth = tree_depth + 1
+        assert child.tree_id is None
+        return child
 
     def resize(self, size, force_new=False):
         """Resize the user state storage array for this node.
@@ -199,20 +197,19 @@ class Node(object):
 
     @property
     def tree_id(self):
-        """Get/set the tree id for this node. This defaults
-        to None when a node is created."""
+        """Get the tree id for this node. This defaults to
+        None when a node is created and will be set by the
+        dispatcher when the node is added to the work
+        queue."""
         if self._has_tree_id(self._data):
             return self._extract_tree_id(self._data)
         return None
-    @tree_id.setter
-    def tree_id(self, tree_id):
-        self._insert_tree_id(self._data, tree_id)
 
     @property
     def parent_tree_id(self):
         """Get the tree id of the parent for this node. This
         attribute will be automatically set on nodes returned
-        from the :func:`pybnb.node.Node.new_children`
+        from the :func:`pybnb.node.Node.new_child`
         method."""
         if self._has_parent_tree_id(self._data):
             return self._extract_parent_tree_id(self._data)
@@ -223,7 +220,7 @@ class Node(object):
         """Get/set the tree depth for this node. This
         attribute will be automatically set on nodes
         returned from the
-        :func:`pybnb.node.Node.new_children` method (to 1
+        :func:`pybnb.node.Node.new_child` method (to 1
         more than the value stored on this node)."""
         return self._extract_tree_depth(self._data)
     @tree_depth.setter

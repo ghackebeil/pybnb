@@ -62,7 +62,7 @@ class TestProblems(object):
         assert solver.is_dispatcher
         q = solver.save_dispatcher_queue()
         assert len(q) == 2
-        assert q.tree_id_labeler is not None
+        assert q.next_tree_id >= 0
         assert len(q.nodes) == solver._disp.queue.size()
 
     def _execute_tests(self, problem, baseline, **kwds):

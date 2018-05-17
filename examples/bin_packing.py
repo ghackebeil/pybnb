@@ -111,7 +111,8 @@ class BinPacking(pybnb.Problem):
         orig_bounds.update((xij, xij.bounds)
                            for xij in self.model.x.components())
 
-        children = parent.new_children(2)
+        children = [parent.new_child(),
+                    parent.new_child()]
 
         # first branch: fix this bin on
         self.model.y[i].lb = self.model.y[i].ub = 1

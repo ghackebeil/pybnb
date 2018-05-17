@@ -256,15 +256,16 @@ class Rosenbrock2D(PyomoProblem):
         if dist/2.0 < self._branch_abstol:
             return ()
         # branch
-        children = parent.new_children(2)
         mid = 0.5*(L + U)
+        left = parent.new_child()
         branch_var.bounds = (L, mid)
-        self.save_state(children[0])
+        self.save_state(left)
+        right = parent.new_child()
         branch_var.bounds = (mid, U)
-        self.save_state(children[1])
+        self.save_state(right)
         # reset the variable bounds
         branch_var.bounds = (L, U)
-        return children
+        return [left, right]
 
 if __name__ == "__main__":
     import pybnb.misc

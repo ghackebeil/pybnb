@@ -37,19 +37,9 @@ try:
 except ImportError:                               #pragma:nocover
     pass
 
-class TreeIdLabeler(object):
-    """A class for generating node ids based on an
-    incremental counter (starting at zero)"""
-    def __init__(self, start=0):
-        self._next_id = start
-    def __call__(self):
-        id_ = self._next_id
-        self._next_id += 1
-        return id_
-
 class DispatcherQueueData(
         collections.namedtuple("DispatcherQueueData",
-                               ["nodes","tree_id_labeler"])):
+                               ["nodes","next_tree_id"])):
     """A namedtuple storing data that can be used
     re-initialize a dispatcher queue.
 
@@ -58,9 +48,8 @@ class DispatcherQueueData(
     nodes : tuple
         A list of nodes stored in the order they were
         found in the priority queue.
-    tree_id_labeler : pybnb.dispatcher.TreeIdLabeler
-        A tree id labeler whose counter starts at the next
-        node id that would have been generated.
+    next_tree_id : int
+        The next tree_id that will be assigned to a node.
     """
 
 class StatusPrinter(object):
@@ -300,7 +289,7 @@ class Dispatcher(object):
         self.worst_terminal_bound = None
         self.first_update = None
         self.has_work = None
-        self.tree_id_labeler = None
+        self.next_tree_id = None
         self.stop_optimality = False
         self.stop_node_limit = False
         self.stop_time_limit = False
@@ -598,7 +587,7 @@ class Dispatcher(object):
             self,
             log,
             log_interval_seconds=log_interval_seconds)
-        self.tree_id_labeler = initialize_queue.tree_id_labeler
+        self.next_tree_id = initialize_queue.next_tree_id
         self.stop_optimality = False
         self.stop_node_limit = False
         self.stop_time_limit = False
@@ -612,6 +601,7 @@ class Dispatcher(object):
                                     node_priority_strategy))
         for node in initialize_queue.nodes:
             assert node.tree_id is not None
+            assert self.next_tree_id > node.tree_id
             added = self.queue.put(node._data)
             assert added
         self._check_update_best_objective(best_objective)
@@ -659,9 +649,10 @@ class Dispatcher(object):
         self._check_update_best_objective(best_objective)
         if len(node_data):
             for data in node_data:
-                if not Node._has_tree_id(data):
-                    Node._insert_tree_id(data,
-                                         self.tree_id_labeler())
+                assert not Node._has_tree_id(data)
+                Node._insert_tree_id(data,
+                                     self.next_tree_id)
+                self.next_tree_id += 1
                 added = self.queue.put(data)
                 if not added:
                     self._check_update_worst_terminal_bound(
@@ -728,8 +719,7 @@ class Dispatcher(object):
         return DispatcherQueueData(
             nodes=[Node(data_=data)
                    for data in self.queue.items()],
-            tree_id_labeler=TreeIdLabeler(
-                start=self.tree_id_labeler._next_id))
+            next_tree_id=self.next_tree_id)
 
     def get_termination_condition(self):
         """Get the solve termination description.
