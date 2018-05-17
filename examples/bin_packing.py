@@ -1,9 +1,10 @@
 #
 # This example solves the bin packing problem. A custom
 # heuristic is implemented to determine an integer-feasible
-# objective value for each region explored. Valid lower
-# bounds are obtained by solving the linear relaxation using
-# Pyomo.
+# objective value for each region explored. The objective
+# heuristic is non-deterministic. Thus, this example may
+# behave differently from run to run. Valid lower bounds are
+# obtained by solving the linear relaxation using Pyomo.
 #
 # Pyomo version 5.4.3 or later is required to run this
 # example.
