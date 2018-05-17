@@ -175,7 +175,8 @@ class BinPacking(pybnb.Problem):
             return ()
 
         assert bv is not None
-        children = parent.new_children(2)
+        children = [parent.new_child(),
+                    parent.new_child()]
         bv.lb = bv.ub = 1
         self.save_state(children[0])
         bv.lb = bv.ub = 0
