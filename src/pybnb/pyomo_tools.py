@@ -163,38 +163,43 @@ class RangeReductionProblem(pybnb.Problem):
         assert isinstance(problem, PyomoProblem)
         self.problem = problem
         assert best_objective != self.unbounded_objective
-        self.best_objective = float(best_objective)
-        self.comm = comm
-        if self.comm is not None:
+        self._best_objective = float(best_objective)
+        self._comm = comm
+        if self._comm is not None:
             import mpi4py.MPI
+        self._current_node = None
 
     def _notify_continue_listen(self, node):
-        assert (self.comm is not None) and \
-            (self.comm.size > 1)
-        data = numpy.array([True,self.best_objective,len(node.state)],
+        assert (self._comm is not None) and \
+            (self._comm.size > 1)
+        data = numpy.array([True,
+                            self._best_objective,
+                            len(node.state)],
                            dtype=float)
         assert data[0] == True
-        assert data[1] == self.best_objective
+        assert data[1] == self._best_objective
         assert data[2] == len(node.state)
-        self.comm.Bcast([data, mpi4py.MPI.DOUBLE],
-                        root=self.comm.rank)
-        self.comm.Bcast([node.state, mpi4py.MPI.DOUBLE],
-                        root=self.comm.rank)
+        self._comm.Bcast([data, mpi4py.MPI.DOUBLE],
+                         root=self._comm.rank)
+        self._comm.Bcast([node.state, mpi4py.MPI.DOUBLE],
+                         root=self._comm.rank)
 
     def _notify_stop_listen(self):
-        assert (self.comm is not None) and \
-            (self.comm.size > 1)
-        data = numpy.array([False,self.best_objective,0],
+        assert (self._comm is not None) and \
+            (self._comm.size > 1)
+        data = numpy.array([False,
+                            self._best_objective,
+                            0],
                            dtype=float)
         assert data[0] == False
-        assert data[1] == self.best_objective
+        assert data[1] == self._best_objective
         assert data[2] == 0
-        self.comm.Bcast([data, mpi4py.MPI.DOUBLE],
-                        root=self.comm.rank)
+        self._comm.Bcast([data, mpi4py.MPI.DOUBLE],
+                         root=self._comm.rank)
 
     def _tighten_bounds(self):
         self.range_reduction_model_setup()
-        assert self.best_objective != self.unbounded_objective
+        assert self._best_objective != self.unbounded_objective
         # setup objective
         assert self.problem.pyomo_model_objective.active
         self.problem.pyomo_model_objective.deactivate()
@@ -206,11 +211,11 @@ class RangeReductionProblem(pybnb.Problem):
         # setup optimality bound if necessary
         tmp_optbound_name = None
         tmp_optbound = None
-        if self.best_objective != self.infeasible_objective:
+        if self._best_objective != self.infeasible_objective:
             tmp_optbound = _create_optimality_bound(
                 self,
                 self.problem.pyomo_model_objective,
-                self.best_objective)
+                self._best_objective)
             tmp_optbound_name = _add_tmp_component(
                 self.problem.pyomo_model,
                 "optimality_bound",
@@ -268,12 +273,12 @@ class RangeReductionProblem(pybnb.Problem):
         # verify that everyone has the exact same list
         # (order and values), assumes everything in the list
         # has a well-defined hash
-        if self.comm is not None:
+        if self._comm is not None:
             my_joblist_hash = _hash_joblist(joblist)
-            joblist_hash = self.comm.bcast(my_joblist_hash,
-                                           root=0)
+            joblist_hash = self._comm.bcast(my_joblist_hash,
+                                            root=0)
             assert joblist_hash == my_joblist_hash
-        for i, cid, which in _mpi_partition(self.comm,
+        for i, cid, which in _mpi_partition(self._comm,
                                             joblist):
             obj = self.problem.cid_to_pyomo_object[cid]
             tmp_objective.expr = obj
@@ -290,13 +295,13 @@ class RangeReductionProblem(pybnb.Problem):
                 else:
                     assert which == 'U'
                     upper_bounds[i] = bound
-        if self.comm is not None:
-            self.comm.Allreduce(mpi4py.MPI.IN_PLACE,
-                                [lower_bounds, mpi4py.MPI.DOUBLE],
-                                op=mpi4py.MPI.MAX)
-            self.comm.Allreduce(mpi4py.MPI.IN_PLACE,
-                                [upper_bounds, mpi4py.MPI.DOUBLE],
-                                op=mpi4py.MPI.MIN)
+        if self._comm is not None:
+            self._comm.Allreduce(mpi4py.MPI.IN_PLACE,
+                                 [lower_bounds, mpi4py.MPI.DOUBLE],
+                                 op=mpi4py.MPI.MAX)
+            self._comm.Allreduce(mpi4py.MPI.IN_PLACE,
+                                 [upper_bounds, mpi4py.MPI.DOUBLE],
+                                 op=mpi4py.MPI.MIN)
 
         return objects, lower_bounds, upper_bounds
 
@@ -316,8 +321,8 @@ class RangeReductionProblem(pybnb.Problem):
             root. The root process should not call this
             function.
         """
-        assert self.comm.size > 1
-        assert self.comm.rank != root
+        assert self._comm.size > 1
+        assert self._comm.rank != root
         orig = pybnb.node.Node()
         orig.tree_id = -1
         self.save_state(orig)
@@ -325,21 +330,21 @@ class RangeReductionProblem(pybnb.Problem):
         node.tree_id = -1
         try:
             data = numpy.empty(3,dtype=float)
-            self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
-                            root=root)
+            self._comm.Bcast([data,mpi4py.MPI.DOUBLE],
+                             root=root)
             again = bool(data[0])
-            self.best_objective = float(data[1])
+            self._best_objective = float(data[1])
             node_size = int(data[2])
             while again:
                 node.resize(node_size)
-                self.comm.Bcast([node.state,mpi4py.MPI.DOUBLE],
-                                root=root)
+                self._comm.Bcast([node.state,mpi4py.MPI.DOUBLE],
+                                 root=root)
                 self.load_state(node)
                 self._tighten_bounds()
-                self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
-                                root=root)
+                self._comm.Bcast([data,mpi4py.MPI.DOUBLE],
+                                 root=root)
                 again = bool(data[0])
-                self.best_objective = float(data[1])
+                self._best_objective = float(data[1])
                 node_size = int(data[2])
         finally:
             self.load_state(orig)
@@ -352,7 +357,7 @@ class RangeReductionProblem(pybnb.Problem):
         return self.problem.sense()
 
     def objective(self):
-        return self.best_objective
+        return self._best_objective
 
     def bound(self):
         # tell the listeners to start bounds tightening
@@ -360,8 +365,8 @@ class RangeReductionProblem(pybnb.Problem):
         self.save_state(node)
         continue_loop = True
         while continue_loop:
-            if (self.comm is not None) and \
-               (self.comm.size > 1):
+            if (self._comm is not None) and \
+               (self._comm.size > 1):
                 self._notify_continue_listen(node)
             continue_loop = self.range_reduction_process_bounds(
                 *self._tighten_bounds())
@@ -380,7 +385,7 @@ class RangeReductionProblem(pybnb.Problem):
     def notify_new_best_objective_received(self,
                                            worker_comm,
                                            best_objective):
-        self.best_objective = best_objective
+        self._best_objective = best_objective
 
     def notify_new_best_objective(self,
                                   worker_comm,
@@ -392,8 +397,8 @@ class RangeReductionProblem(pybnb.Problem):
                               comm,
                               worker_comm,
                               results):
-        if (self.comm is not None) and \
-           (self.comm.size > 1):
+        if (self._comm is not None) and \
+           (self._comm.size > 1):
             self._notify_stop_listen()
 
     #
