@@ -1,9 +1,25 @@
 Welcome to ``PyBnB``
 ====================
 
-``pybnb`` is a parallel branch-and-bound engine designed to
-run on distributed-memory computing architectures. It uses
-the ``mpi4py`` Python package for message passing.
+``pybnb`` is a parallel branch-and-bound engine written in
+Python. It designed to run on distributed computing
+architectures, using ``mpi4py`` and ``numpy`` for fast
+inter-process communication.
+
+This package is designed to serve as a backend for
+problem-specific solution strategies that utilize a
+branch-and-bound algorithm. The following core functionality
+is included:
+
+ - work load distribution through a central dispatcher
+ - work task prioritization strategies (e.g., worst bound
+   first, breadth first)
+ - solver-like log output showing algorithm progress
+
+To use this package, one must implement a branch-and-bound
+problem by subclassing the :class:`Problem
+<pybnb.problem.Problem>` interface and defining the methods
+shown in the example below.
 
 .. code-block:: pycon
 
@@ -21,6 +37,14 @@ the ``mpi4py`` Python package for message passing.
     >>> print(result.solution_status)
     'optimal'
 
+Installation
+============
+You can install ``pybnb`` with ``pip``:
+
+.. code-block:: console
+
+    $ pip install pybnb
+
 Getting Started
 ===============
 
@@ -28,10 +52,21 @@ Under construction...
 
 .. toctree::
     :maxdepth: 2
-    :caption: API Reference
+    :caption: Public API Reference
 
     reference/common
     reference/problem
     reference/node
     reference/solver
     reference/pyomo_tools
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Developer API Reference
+
+    reference/convergence_checker
+    reference/priority_queue
+    reference/dispatcher
+    reference/dispatcher_proxy
+    reference/mpi_utils
+    reference/misc

@@ -12,3 +12,8 @@ numpy
 pyomo
 namedtuple
 subclassing
+namespace
+typecodes
+typecode
+readonly
+dtype
