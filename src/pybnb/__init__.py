@@ -6,7 +6,7 @@ import pybnb.node
 import pybnb.problem
 import pybnb.convergence_checker
 import pybnb.mpi_utils
-
+import pybnb.priority_queue
 import pybnb.dispatcher_proxy
 import pybnb.dispatcher
 import pybnb.solver

@@ -110,10 +110,11 @@ if __name__ == "__main__":
     problem = Rosenbrock2D(xL=-25, xU=25,
                            yL=-25 ,yU=25)
 
-    best_objective = problem.objective()
-    if comm is not None:
-        best_objective = comm.allreduce(best_objective,
-                                        op=mpi4py.MPI.MIN)
+    best_objective = None
+    if (comm is None) or (comm.rank == 0):
+        best_objective = problem.objective()
+    if (comm is not None):
+        best_objective = comm.bcast(best_objective, root=0)
     assert best_objective != problem.unbounded_objective
 
     # do parallel bounds tightening for the first three nodes

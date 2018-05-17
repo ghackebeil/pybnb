@@ -60,13 +60,10 @@ class TestProblems(object):
                  "not match baseline ("+
                  str(getattr(baseline, name))+")")
         assert solver.is_dispatcher
-        if solver._disp.queue.qsize() > 0:
-            q = solver.save_dispatcher_queue()
-            assert len(q) == 2
-            assert q.tree_id_labeler is not None
-            assert len(q.nodes) == solver._disp.queue.qsize()
-        else:
-            assert solver.save_dispatcher_queue() is None
+        q = solver.save_dispatcher_queue()
+        assert len(q) == 2
+        assert q.tree_id_labeler is not None
+        assert len(q.nodes) == solver._disp.queue.size()
 
     def _execute_tests(self, problem, baseline, **kwds):
         assert 'log_interval_second' not in kwds

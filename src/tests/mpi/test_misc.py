@@ -59,6 +59,7 @@ def _logging_check(comm):
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         opt._disp.initialize(p.infeasible_objective,
                              initialize_queue,
+                             "bound",
                              ConvergenceChecker(p.sense()),
                              None, None,
                              get_simple_logger(console=True,
@@ -87,7 +88,7 @@ def _logging_check(comm):
     if comm is not None:
         comm.Barrier()
     if opt.is_dispatcher:
-        assert ('\n'.join(out.getvalue().splitlines()[4:])) == \
+        assert ('\n'.join(out.getvalue().splitlines()[7:])) == \
                 _get_logging_baseline(comm.size if comm is not None else 1)
 
 def test_logging_nocomm():

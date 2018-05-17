@@ -27,26 +27,15 @@ from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.mpi_utils import (Message,
                              recv_nothing)
+from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
+                                  CustomPriorityQueue,
+                                  BreadthFirstPriorityQueue,
+                                  DepthFirstPriorityQueue)
 
 try:
     import mpi4py
 except ImportError:                               #pragma:nocover
     pass
-
-# This class used to store arrays in the priority queue
-class _ProtectCompare(object):
-    """Protects an object from being used for
-    comparison. Instances of this class will always compare
-    equal to something else."""
-    __slots__ = ("obj",)
-    __hash__ = None
-    def __init__(self, obj):
-        self.obj = obj
-    def __lt__(self, other): return False
-    def __gt__(self, other): return False
-    def __le__(self, other): return True
-    def __ge__(self, other): return True
-    def __eq__(self, other): return True
 
 class TreeIdLabeler(object):
     """A class for generating node ids based on an
@@ -120,8 +109,14 @@ class StatusPrinter(object):
         else:
             self._time = mpi4py.MPI.Wtime
         self._initial_header_line = \
-            ("         Nodes        |"
-             "                   Objective Bounds                     |"
+            ("--------------------"
+             "--------------------"
+             "--------------------"
+             "--------------------"
+             "--------------------"
+             "-------------\n"
+             "         Nodes        |"
+             "                     Objective Bounds                      |"
              "              Work              ")
         self._header_line = \
             (" {explored:>9} {unexplored:>9}  |{objective:>15} "
@@ -208,7 +203,7 @@ class StatusPrinter(object):
                     return
         self._new_objective = False
         unexplored_nodes_count = \
-            self._dispatcher.queue.qsize() + \
+            self._dispatcher.queue.size() + \
             len(self._dispatcher.has_work)
         explored_nodes_count = \
             self._dispatcher.explored_nodes_count
@@ -326,20 +321,10 @@ class Dispatcher(object):
             self.dispatcher_rank = 0
             self.worker_ranks = [0]
 
-    def _get_queue_bound(self):
-        bound = None
-        if self.queue.qsize() > 0:
-            bound, data = self.queue.queue[0]
-            if self.converger.sense == maximize:
-                bound = -bound
-            assert bound == Node._extract_bound(data.obj)
-        return bound
-
     def _get_current_bound(self):
         bounds = []
-        qbound = self._get_queue_bound()
-        if qbound is not None:
-            bounds.append(qbound)
+        if self.queue.size() > 0:
+            bounds.append(self.queue.bound())
         bounds.extend(self.last_known_bound.values())
         if self.worst_terminal_bound is not None:
             bounds.append(self.worst_terminal_bound)
@@ -350,19 +335,16 @@ class Dispatcher(object):
             return min(bounds)
 
     def _get_work_to_send(self, dest):
-        priority, data = self.queue.get_nowait()
-        bound = Node._extract_bound(data.obj)
-        if self.converger.sense == maximize:
-            assert bound == -priority
-        else:
-            assert bound == priority
+        data = self.queue.get()
+        assert data is not None
+        bound = Node._extract_bound(data)
         self.last_known_bound[dest] = bound
         Node._insert_best_objective(
-            data.obj,
+            data,
             self.best_objective)
         self.has_work.add(dest)
         self.sent_nodes_count += 1
-        return data.obj
+        return data
 
     def _send_work(self):
 
@@ -375,7 +357,7 @@ class Dispatcher(object):
                         self.stop_node_limit or \
                         self.stop_time_limit or \
                         self.stop_cutoff):
-                    if not self.queue.empty():
+                    if self.queue.size() > 0:
                         data = self._get_work_to_send(_source)
                         assert Node._extract_best_objective(data) == \
                             self.best_objective
@@ -386,7 +368,7 @@ class Dispatcher(object):
                         self.stop_node_limit or \
                         self.stop_time_limit or \
                         self.stop_cutoff):
-                    while (not self.queue.empty()) and \
+                    while (self.queue.size() > 0) and \
                           (not self.needs_work_queue.empty()):
                         dest = self.needs_work_queue.get_nowait()
                         data = self._get_work_to_send(dest)
@@ -419,23 +401,11 @@ class Dispatcher(object):
                                              self.best_objective):
             self.journalist.new_objective(report=True)
             self.best_objective = objective
-            # now attempt to trim down the queue to save memory
-            if self.queue.qsize() > 0:
-                for ndx, (priority, data) in enumerate(self.queue.queue):
-                    bound = Node._extract_bound(data.obj)
-                    if not self.converger.objective_can_improve(
-                            self.best_objective,
-                            bound):
-                        break
-                else:
-                    ndx = len(self.queue.queue)
-                if ndx != len(self.queue.queue):
-                    # be sure update the worst terminal bound with
-                    # any nodes we are throwing away (very unlikely to happen)
-                    for i in range(ndx, len(self.queue.queue)):
-                        self._check_update_worst_terminal_bound(
-                            Node._extract_bound(self.queue.queue[i][1].obj))
-                    self.queue.queue = self.queue.queue[:ndx]
+            removed = self.queue.update_for_best_objective(
+                self.best_objective)
+            for data in removed:
+                self._check_update_worst_terminal_bound(
+                    Node._extract_bound(data))
 
     def _check_convergence(self):
         # check if we are done
@@ -459,17 +429,6 @@ class Dispatcher(object):
                     if (self.time_limit is not None) and \
                        ((time.time() - self._start_time) >= self.time_limit):
                         self.stop_time_limit = True
-
-    def _add_to_queue(self, data):
-        bound = priority = Node._extract_bound(data)
-        if self.converger.sense == maximize:
-            priority = -priority
-        if self.converger.objective_can_improve(self.best_objective,
-                                                bound):
-            self.queue.put((priority,_ProtectCompare(data)))
-            return True, bound
-        else:
-            return False, bound
 
     def _update_explored_nodes_count(self, explored_count, source):
         self.explored_nodes_count -= \
@@ -541,6 +500,7 @@ class Dispatcher(object):
     def initialize(self,
                    best_objective,
                    initialize_queue,
+                   node_priority_strategy,
                    converger,
                    node_limit,
                    time_limit,
@@ -554,6 +514,24 @@ class Dispatcher(object):
             The assumed best objective to start with.
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`
             The initial queue.
+        node_priority_strategy : {"bound", "breadth", "depth", "custom"}
+            Indicates the strategy for ordering nodes in the
+            work queue. The "bound" strategy always selects
+            the node with the worst bound first. The
+            "breadth" strategy always selects the node with
+            the smallest tree depth first (i.e.,
+            breadth-first search). The "depth" strategy
+            always selects the node with the largest tree
+            depth first (i.e., depth-first search). The
+            "custom" strategy assumes the
+            :attr:`queue_priority
+            <pybnb.node.Node.queue_priority>` node attribute
+            has been set by the user. For all other
+            strategies, the :attr:`queue_priority
+            <pybnb.node.Node.queue_priority>` node attribute
+            will be set automatically. In all cases, the
+            largest priority node is always selected first,
+            with ties being broken by insertion order.
         converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
             The branch-and-bound convergence checker object.
         node_limit : int or None
@@ -579,10 +557,27 @@ class Dispatcher(object):
              (node_limit == int(node_limit)))
         assert (time_limit is None) or \
             (time_limit >= 0)
-        self.queue = Queue.PriorityQueue()
         self.needs_work_queue = Queue.Queue()
         self.converger = converger
         self.best_objective = converger.infeasible_objective
+        if node_priority_strategy == "bound":
+            self.queue = WorstBoundFirstPriorityQueue(
+                self.best_objective,
+                self.converger)
+        elif node_priority_strategy == "custom":
+            self.queue = CustomPriorityQueue(
+                self.best_objective,
+                self.converger)
+        elif node_priority_strategy == "breadth":
+            self.queue = BreadthFirstPriorityQueue(
+                self.best_objective,
+                self.converger)
+        else:
+            assert node_priority_strategy == "depth"
+            self.queue = DepthFirstPriorityQueue(
+                self.best_objective,
+                self.converger)
+
         self.node_limit = None
         if node_limit is not None:
             self.node_limit = int(node_limit)
@@ -610,11 +605,15 @@ class Dispatcher(object):
         self.stop_cutoff = False
         self.initialized = True
         self._start_time = time.time()
-        self.journalist.log_info("Running branch & bound (worker count: %d)"
-                                 % (len(self.worker_ranks)))
+        self.journalist.log_info("Starting branch & bound solve:\n"
+                                 " - worker processes: %d\n"
+                                 " - node priority strategy: %s"
+                                 % (len(self.worker_ranks),
+                                    node_priority_strategy))
         for node in initialize_queue.nodes:
             assert node.tree_id is not None
-            self._add_to_queue(node._data)
+            added = self.queue.put(node._data)
+            assert added
         self._check_update_best_objective(best_objective)
         self.journalist.tick()
 
@@ -663,12 +662,14 @@ class Dispatcher(object):
                 if not Node._has_tree_id(data):
                     Node._insert_tree_id(data,
                                          self.tree_id_labeler())
-                added, bound_ = self._add_to_queue(data)
+                added = self.queue.put(data)
                 if not added:
-                    self._check_update_worst_terminal_bound(bound_)
+                    self._check_update_worst_terminal_bound(
+                        Node._extract_bound(data))
         else:
             if not self.first_update[_source]:
-                self._check_update_worst_terminal_bound(previous_bound)
+                self._check_update_worst_terminal_bound(
+                    previous_bound)
         self.first_update[_source] = False
         self._check_convergence()
         ret = self._send_work()
@@ -685,6 +686,12 @@ class Dispatcher(object):
             dispatcher.
         """
         self.journalist.tick(force=True)
+        self.journalist.log_info("--------------------"
+                                 "--------------------"
+                                 "--------------------"
+                                 "--------------------"
+                                 "--------------------"
+                                 "-------------")
         best_bound = self._get_current_bound()
         assert self.initialized
         self.initialized = False
@@ -717,9 +724,10 @@ class Dispatcher(object):
             to re-initialize the dispatcher queue to its
             current state.
         """
+
         return DispatcherQueueData(
-            nodes=tuple(
-                Node(data_=data.obj) for _,data in self.queue.queue),
+            nodes=[Node(data_=data)
+                   for data in self.queue.items()],
             tree_id_labeler=TreeIdLabeler(
                 start=self.tree_id_labeler._next_id))
 

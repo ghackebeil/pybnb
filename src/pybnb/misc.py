@@ -308,6 +308,11 @@ def create_command_line_solver(problem, parser=None):
         assert solve_defaults[key] == \
             solve_docs[key]["default"]
     parser.add_argument(
+        "--node-priority-strategy",
+        type=str,
+        default=solve_defaults.pop("node_priority_strategy"),
+        help=solve_docs["absolute_gap"]["doc"])
+    parser.add_argument(
         "--absolute-gap",
         type=float,
         default=solve_defaults.pop("absolute_gap"),

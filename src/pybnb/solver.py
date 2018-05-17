@@ -31,6 +31,18 @@ import six
 class _notset(object):
     pass
 
+_priority_to_int = {}
+_priority_to_int["bound"] = 0
+_priority_to_int["breadth"] = 1
+_priority_to_int["depth"] = 2
+_priority_to_int["custom"] = 3
+
+_int_to_priority = [None]*4
+_int_to_priority[0] = "bound"
+_int_to_priority[1] = "breadth"
+_int_to_priority[2] = "depth"
+_int_to_priority[3] = "custom"
+
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve."""
 
@@ -419,25 +431,26 @@ class Solver(object):
         Returns
         -------
         queue : :class:`pybnb.dispatcher.DispatcherQueueData` or None
-            If this process is the dispatcher and there are
-            any nodes remaining in the queue after the most
-            recent solve, this method returns an object that
-            can be used to reinitialize the queue in a new
-            solve by assigning it to the initialize_queue
-            keyword for the :attr:`pybnb.solver.Solver.solve`
-            method. If this process is not the dispatcher
-            or the queue is empty, this method returns None.
+            If this process is the dispatcher, this method
+            will return an object storing any nodes
+            currently in the dispatcher queue.  If this
+            process is not the dispatcher, this method will
+            return None.  The returned object can be used to
+            reinitialize a solve (e.g., with different
+            algorithms settings) by assigning it to the
+            initialize_queue keyword of the
+            :attr:`pybnb.solver.Solver.solve` method.
         """
-        dispatcher_queue = None
-        if self.is_dispatcher and \
-           (self._disp.queue.qsize() > 0):
-            dispatcher_queue = self._disp.save_dispatcher_queue()
-        return dispatcher_queue
+        if self.is_dispatcher:
+            return self._disp.save_dispatcher_queue()
+        else:
+            return None
 
     def solve(self,
               problem,
               best_objective=None,
               initialize_queue=None,
+              node_priority_strategy="bound",
               absolute_gap=1e-8,
               relative_gap=1e-4,
               cutoff=None,
@@ -461,6 +474,25 @@ class Solver(object):
             method after a previous solve to initialize the
             current solve with any nodes remaining in the
             queue after the previous solve. (default: None)
+        node_priority_strategy : {"bound", "breadth", "depth", "custom"}
+            Indicates the strategy for ordering nodes in the
+            work queue. The "bound" strategy always selects
+            the node with the worst bound first. The
+            "breadth" strategy always selects the node with
+            the smallest tree depth first (i.e.,
+            breadth-first search). The "depth" strategy
+            always selects the node with the largest tree
+            depth first (i.e., depth-first search). The
+            "custom" strategy assumes the
+            :attr:`queue_priority
+            <pybnb.node.Node.queue_priority>` node attribute
+            has been set by the user. For all other
+            strategies, the :attr:`queue_priority
+            <pybnb.node.Node.queue_priority>` node attribute
+            will be set automatically. In all cases, the
+            largest priority node is always selected first,
+            with ties being broken by insertion
+            order. (default: "bound")
         absolute_gap : float, optional
             The solver will terminate with an optimal status
             when the absolute gap between the objective and
@@ -520,10 +552,18 @@ class Solver(object):
         if best_objective is None:
             best_objective = problem.infeasible_objective
 
+        node_priority_strategy_int = _priority_to_int.get(
+            node_priority_strategy, None)
+        if node_priority_strategy_int is None:
+            raise ValueError("The 'node_priority_strategy' keyword "
+                             "must be one of: %s"
+                             % (str(sorted(_priority_to_int.keys()))))
+
         # broadcast options from dispatcher to everyone else
         # to ensure consistency
         if self.comm is not None:
             settings = array.array("d", [best_objective,
+                                         node_priority_strategy_int,
                                          absolute_gap,
                                          relative_gap,
                                          cutoff if cutoff is not None else nan,
@@ -531,10 +571,15 @@ class Solver(object):
             self.comm.Bcast([settings,mpi4py.MPI.DOUBLE],
                             root=self._disp.dispatcher_rank)
             (best_objective,
+             node_priority_strategy_int,
              absolute_gap,
              relative_gap,
              cutoff,
              absolute_tolerance) = settings
+            assert node_priority_strategy_int == \
+                int(node_priority_strategy_int)
+            node_priority_strategy = \
+                _int_to_priority[int(node_priority_strategy_int)]
             if math.isnan(cutoff):
                 cutoff = None
             del settings
@@ -579,6 +624,7 @@ class Solver(object):
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
+                    node_priority_strategy,
                     converger,
                     node_limit,
                     time_limit,
