@@ -14,8 +14,9 @@ class Node(object):
     exposes a portion of that array to the user through the
     :attr:`state <pybnb.node.Node.state>` attribute.  The
     :func:`resize <pybnb.node.Node.resize>` method should be
-    called to set size of the state array, which will be
-    adjusted to the appropriate internal array size.
+    called to set the amount of available user state
+    storage, which will be adjusted to the appropriate
+    internal array size.
 
     Parameters
     ----------
@@ -27,12 +28,15 @@ class Node(object):
     """
     __slots__ = ("_data", "_user_state")
 
-    _extra_data_slots = 6
-    # data[-6] = best_objective
-    # data[-5] = bound
-    # data[-4] = tree_id
+    _extra_data_slots = 9
+    # data[-9] = best_objective
+    # data[-8] = bound
+    # data[-7] = queue_priority
+    # data[-6] = has_queue_priority
+    # data[-5] = tree_id
+    # data[-4] = has_tree_id
     # data[-3] = parent_tree_id
-    # data[-2] = has_tree_id
+    # data[-2] = has_parent_tree_id
     # data[-1] = tree_depth
 
     def __init__(self, size=0, tree_depth=0, data_=None):
@@ -47,10 +51,19 @@ class Node(object):
             assert tree_depth >= 0
             self._set_data(numpy.empty(size + self._extra_data_slots,
                                        dtype=float))
+            # set the has_queue_priority marker to false
+            self._data[-6] = 0
+            assert int(self._data[-6]) == 0
+            assert self._data[-6] == 0
             # set the has_tree_id marker to false
+            self._data[-4] = 0
+            assert int(self._data[-4]) == 0
+            assert self._data[-4] == 0
+            # set the has_parent_tree_id marker to false
             self._data[-2] = 0
             assert int(self._data[-2]) == 0
             assert self._data[-2] == 0
+            # set the tree depth
             self.tree_depth = tree_depth
 
     def _set_data(self, data):
@@ -93,7 +106,7 @@ class Node(object):
         return children
 
     def resize(self, size, force_new=False):
-        """Resize the state storage array for this node.
+        """Resize the user state storage array for this node.
 
         Parameters
         ----------
@@ -105,16 +118,27 @@ class Node(object):
             created even if the size does not change.  The
             default behavior will only reallocate a new
             array when the size changes. (default: False)
+
+        Note
+        ----
+            If a new array is allocated, the previous user
+            state array (accessible via the :attr:`state
+            <pybnb.node.Node.state>` attribute), will become
+            readonly as it will be invalidated.
         """
         assert size >= 0
         if (len(self._data) != size + self._extra_data_slots) or \
            force_new:
             orig_data = self._data
             orig_user_state = self._user_state
+            # make the user state view for the previous data
+            # array readonly
+            orig_user_state.setflags(write=False)
             self._set_data(numpy.empty(size + self._extra_data_slots,
                                        dtype=float))
-            # both _data and _user_state are updated
-            # at this point
+            # both _data and _user_state are updated at this
+            # point, now copy the original values where
+            # indices match
             self._data[-self._extra_data_slots:] = \
                 orig_data[-self._extra_data_slots:]
             min_size = min(len(self._user_state),
@@ -123,8 +147,47 @@ class Node(object):
 
     @property
     def state(self):
-        """Returns the user state storage array for this node."""
+        """Returns the user state numeric storage array for
+        this node. This will be a view on a larger numpy
+        array created with ``dtype=float``.
+
+        Note
+        ----
+            The :func:`resize <pybnb.node.Node.resize>`
+            method is provided to allow users to change the
+            amount of storage available in this array. If
+            the previous user state view becomes invalid due
+            to a resize, that array view will be marked as
+            readonly.
+
+        Example
+        -------
+
+        >>> node = Node(size=1)
+        >>> assert len(node.state) == 1
+        >>> state = node.state
+        >>> state[0] = 0
+        >>> # now resize (causing state to become a stale view)
+        >>> node.resize(2)
+        >>> state[0] = 1
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+        ValueError: assignment destination is read-only
+        >>> node.state[1] = 1
+        >>> assert list(node.state) == [0,1]
+
+        """
         return self._user_state
+
+    @property
+    def queue_priority(self):
+        """Get/set the queue priority for this node."""
+        if self._has_queue_priority(self._data):
+            return self._extract_queue_priority(self._data)
+        return None
+    @queue_priority.setter
+    def queue_priority(self, queue_priority):
+        self._insert_queue_priority(self._data, queue_priority)
 
     @property
     def bound(self):
@@ -151,7 +214,9 @@ class Node(object):
         attribute will be automatically set on nodes returned
         from the :func:`pybnb.node.Node.new_children`
         method."""
-        return self._extract_parent_tree_id(self._data)
+        if self._has_parent_tree_id(self._data):
+            return self._extract_parent_tree_id(self._data)
+        return None
 
     @property
     def tree_depth(self):
@@ -172,44 +237,69 @@ class Node(object):
     @classmethod
     def _insert_best_objective(cls, data, best_objective):
         assert len(data) >= cls._extra_data_slots
-        data[-6] = best_objective
-        assert float(data[-6]) == float(best_objective)
-        assert data[-6] == best_objective
+        data[-9] = best_objective
+        assert float(data[-9]) == float(best_objective)
+        assert data[-9] == best_objective
 
     @classmethod
     def _extract_best_objective(cls, data):
         assert len(data) >= cls._extra_data_slots
-        return float(data[-6])
+        return float(data[-9])
 
     @classmethod
     def _insert_bound(cls, data, bound):
         assert len(data) >= cls._extra_data_slots
-        data[-5] = bound
-        assert float(data[-5]) == float(bound)
-        assert data[-5] == bound
+        data[-8] = bound
+        assert float(data[-8]) == float(bound)
+        assert data[-8] == bound
 
     @classmethod
     def _extract_bound(cls, data):
         assert len(data) >= cls._extra_data_slots
-        return float(data[-5])
+        return float(data[-8])
+
+    @classmethod
+    def _insert_queue_priority(cls, data, queue_priority):
+        assert len(data) >= cls._extra_data_slots
+        data[-7] = queue_priority
+        assert data[-7] == queue_priority
+        # set the has_queue_priority marker to true
+        data[-6] = 1
+        assert int(data[-6]) == 1
+        assert data[-6] == 1
+
+    @classmethod
+    def _extract_queue_priority(cls, data):
+        assert len(data) >= cls._extra_data_slots
+        return float(data[-7])
+
+    @classmethod
+    def _has_queue_priority(cls, data):
+        assert len(data) >= cls._extra_data_slots
+        return int(data[-6]) == 1
 
     @classmethod
     def _insert_tree_id(cls, data, tree_id):
         assert len(data) >= cls._extra_data_slots
-        data[-4] = tree_id
+        data[-5] = tree_id
         # make sure the floating point representation is
         # exact (tree_id is likely an integer)
-        assert int(data[-4]) == int(tree_id)
-        assert data[-4] == tree_id
+        assert int(data[-5]) == int(tree_id)
+        assert data[-5] == tree_id
         # set the has_tree_id marker to true
-        data[-2] = 1
-        assert int(data[-2]) == 1
-        assert data[-2] == 1
+        data[-4] = 1
+        assert int(data[-4]) == 1
+        assert data[-4] == 1
 
     @classmethod
     def _extract_tree_id(cls, data):
         assert len(data) >= cls._extra_data_slots
-        return int(data[-4])
+        return int(data[-5])
+
+    @classmethod
+    def _has_tree_id(cls, data):
+        assert len(data) >= cls._extra_data_slots
+        return int(data[-4]) == 1
 
     @classmethod
     def _insert_parent_tree_id(cls, data, tree_id):
@@ -219,6 +309,10 @@ class Node(object):
         # exact (tree_id is likely an integer)
         assert int(data[-3]) == int(tree_id)
         assert data[-3] == tree_id
+        # set the has_tree_id marker to true
+        data[-2] = 1
+        assert int(data[-2]) == 1
+        assert data[-2] == 1
 
     @classmethod
     def _extract_parent_tree_id(cls, data):
@@ -226,7 +320,7 @@ class Node(object):
         return int(data[-3])
 
     @classmethod
-    def _has_tree_id(cls, data):
+    def _has_parent_tree_id(cls, data):
         assert len(data) >= cls._extra_data_slots
         return int(data[-2]) == 1
 
