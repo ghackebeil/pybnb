@@ -296,10 +296,14 @@ class RangeReductionProblem(pybnb.Problem):
                     assert which == 'U'
                     upper_bounds[i] = bound
         if self._comm is not None:
-            self._comm.Allreduce(mpi4py.MPI.IN_PLACE,
+            lower_bounds_local = lower_bounds
+            upper_bounds_local = upper_bounds
+            lower_bounds = array.array('d', lower_bounds)
+            upper_bounds = array.array('d', upper_bounds)
+            self._comm.Allreduce([lower_bounds_local, mpi4py.MPI.DOUBLE],
                                  [lower_bounds, mpi4py.MPI.DOUBLE],
                                  op=mpi4py.MPI.MAX)
-            self._comm.Allreduce(mpi4py.MPI.IN_PLACE,
+            self._comm.Allreduce([upper_bounds_local, mpi4py.MPI.DOUBLE],
                                  [upper_bounds, mpi4py.MPI.DOUBLE],
                                  op=mpi4py.MPI.MIN)
 
