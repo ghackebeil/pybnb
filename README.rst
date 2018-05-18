@@ -2,10 +2,14 @@ pybnb
 =====
 
 .. image:: https://travis-ci.org/ghackebeil/pybnb.svg?branch=master
-    :target: https://travis-ci.org/ghackebeil/pybnb
+  :target: https://travis-ci.org/ghackebeil/pybnb
 
 .. image:: https://codecov.io/gh/ghackebeil/pybnb/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/ghackebeil/pybnb
+
+.. image:: https://readthedocs.org/projects/pybnb/badge/?version=latest
+  :target: http://pybnb.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
 
 A parallel branch-and-bound engine for Python.
 
