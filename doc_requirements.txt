@@ -1,4 +1,7 @@
--r test_requirements.txt
+six
+numpy
+sortedcontainers
+pyomo
 sphinx
 sphinxcontrib-spelling
 sphinxcontrib.napoleon
