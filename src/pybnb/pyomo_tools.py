@@ -324,10 +324,8 @@ class RangeReductionProblem(pybnb.Problem):
         assert self._comm.size > 1
         assert self._comm.rank != root
         orig = pybnb.node.Node()
-        orig.tree_id = -1
         self.save_state(orig)
         node = pybnb.node.Node()
-        node.tree_id = -1
         try:
             data = numpy.empty(3,dtype=float)
             self._comm.Bcast([data,mpi4py.MPI.DOUBLE],
