@@ -32,9 +32,9 @@ install:
   - ${DOC} pip --version
   - ${DOC} mpirun --version
   - ${DOC} git clone https://github.com/Pyutilib/pyutilib.git
-  - ${DOC} cd pyutilib && ${DOC} python setup.py install
+  - ${DOC} bash -c "cd pyutilib && python setup.py install"
   - ${DOC} git clone https://github.com/Pyomo/pyomo.git
-  - ${DOC} cd pyomo && ${DOC} python setup.py install
+  - ${DOC} bash -c "cd pyomo && python setup.py install"
   - ${DOC} pip install -r test_requirements.txt
   - ${DOC} pip install codecov
   - ${DOC} python setup.py develop
