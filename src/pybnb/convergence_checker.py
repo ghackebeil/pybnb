@@ -15,7 +15,7 @@ class ConvergenceChecker(object):
 
     Parameters
     ----------
-    sense : {:obj:`pybnb.common.minimize`, :obj:`pybnb.common.maximize`}
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
         The objective sense for the problem.
     absolute_gap : float, optional
         The absolute difference between the objective and

@@ -131,7 +131,7 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
 
     Parameters
     ----------
-    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
         The objective sense for the problem.
     """
 
@@ -183,7 +183,7 @@ class CustomPriorityQueue(IPriorityQueue):
 
     Parameters
     ----------
-    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
         The objective sense for the problem.
     """
 
@@ -250,7 +250,7 @@ class BreadthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
     breadth-first order.
 
-    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
         The objective sense for the problem.
     """
 
@@ -264,7 +264,7 @@ class DepthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
     depth-first order.
 
-    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
         The objective sense for the problem.
     """
 
