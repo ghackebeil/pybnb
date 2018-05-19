@@ -138,15 +138,12 @@ class DiscreteMin(pybnb.Problem):
 
 def _test_heaps(comm):
     solver = pybnb.Solver(comm=comm)
-    if solver.comm is None:
+    if solver.comm.rank == 0:
         pass
-    else:
-        if solver.comm.rank == 0:
-            pass
-        elif solver.comm.rank == 1:
-            pass
-        elif solver.comm.rank == 2:
-            pass
+    elif solver.comm.rank == 1:
+        pass
+    elif solver.comm.rank == 3:
+        pass
     for heap in gen_heaps(2):
         heap_bound = get_bound(heap)
         node_list = [None, len(heap)] + [i for i in range(len(heap))
@@ -168,10 +165,7 @@ def _test_heaps(comm):
                     assert results.objective == 1
                 assert results.bound == heap_bound
 
-def test_heaps_nocomm():
-    _test_heaps(None)
-
 if mpi_available:
-    @MPITest(commsize=[1, 2, 3])
+    @MPITest(commsize=[1, 2, 4])
     def test_heaps_comm(comm):
         _test_heaps(comm)
