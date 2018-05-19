@@ -310,6 +310,18 @@ class Dispatcher(object):
             self.dispatcher_rank = 0
             self.worker_ranks = [0]
 
+    def _add_work_to_queue(self, data):
+        bound = Node._extract_bound(data)
+        if self.converger.objective_can_improve(
+                self.best_objective,
+                bound):
+            self.queue.put(data)
+            return True
+        else:
+            self._check_update_worst_terminal_bound(
+                Node._extract_bound(data))
+            return False
+
     def _get_current_bound(self):
         bounds = []
         if self.queue.size() > 0:
@@ -390,8 +402,10 @@ class Dispatcher(object):
                                              self.best_objective):
             self.journalist.new_objective(report=True)
             self.best_objective = objective
-            removed = self.queue.update_for_best_objective(
-                self.best_objective)
+            removed = self.queue.filter(
+                lambda data_: self.converger.objective_can_improve(
+                    objective,
+                    Node._extract_bound(data_)))
             for data in removed:
                 self._check_update_worst_terminal_bound(
                     Node._extract_bound(data))
@@ -540,7 +554,6 @@ class Dispatcher(object):
             received from any workers, and less time may
             pass if a new incumbent is found. (default: 1.0)
         """
-        assert not self.initialized
         assert (node_limit is None) or \
             ((node_limit > 0) and \
              (node_limit == int(node_limit)))
@@ -551,22 +564,17 @@ class Dispatcher(object):
         self.best_objective = converger.infeasible_objective
         if node_priority_strategy == "bound":
             self.queue = WorstBoundFirstPriorityQueue(
-                self.best_objective,
-                self.converger)
+                self.converger.sense)
         elif node_priority_strategy == "custom":
             self.queue = CustomPriorityQueue(
-                self.best_objective,
-                self.converger)
+                self.converger.sense)
         elif node_priority_strategy == "breadth":
             self.queue = BreadthFirstPriorityQueue(
-                self.best_objective,
-                self.converger)
+                self.converger.sense)
         else:
             assert node_priority_strategy == "depth"
             self.queue = DepthFirstPriorityQueue(
-                self.best_objective,
-                self.converger)
-
+                self.converger.sense)
         self.node_limit = None
         if node_limit is not None:
             self.node_limit = int(node_limit)
@@ -602,7 +610,7 @@ class Dispatcher(object):
         for node in initialize_queue.nodes:
             assert node.tree_id is not None
             assert self.next_tree_id > node.tree_id
-            added = self.queue.put(node._data)
+            added = self._add_work_to_queue(node._data)
             assert added
         self._check_update_best_objective(best_objective)
         self.journalist.tick()
@@ -653,10 +661,7 @@ class Dispatcher(object):
                 Node._insert_tree_id(data,
                                      self.next_tree_id)
                 self.next_tree_id += 1
-                added = self.queue.put(data)
-                if not added:
-                    self._check_update_worst_terminal_bound(
-                        Node._extract_bound(data))
+                self._add_work_to_queue(data)
         else:
             if not self.first_update[_source]:
                 self._check_update_worst_terminal_bound(

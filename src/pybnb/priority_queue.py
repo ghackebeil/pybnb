@@ -62,16 +62,16 @@ class _NoThreadingMaxPriorityFirstQueue(object):
 
     def filter(self, func, include_counters=False):
         """Removes items from the queue for which
-        `func(priority, item)` returns False. The list of
-        items removed is returned. If `include_counters` is
-        set to True, values in the returned list will have
-        the form (cnt, item), where cnt is a unique counter
+        `func(item)` returns False. The list of items
+        removed is returned. If `include_counters` is set to
+        True, values in the returned list will have the form
+        (cnt, item), where cnt is a unique counter that was
         created for the item when it was added to the
         queue."""
         heap_new = []
         removed = []
         for priority, cnt, item in self._heap:
-            if func(-priority, item):
+            if func(item):
                 heap_new.append((priority, cnt, item))
             elif not include_counters:
                 removed.append(item)
@@ -96,9 +96,10 @@ class IPriorityQueue(object):
         raise NotImplementedError
 
     def put(self, data):                          #pragma:nocover
-        """Puts a data item in the queue if it meets certain
-        criteria. Returns a boolean value indicating whether
-        or not the item was placed in the queue."""
+        """Puts a node data item in the queue, possibly
+        updating the value of :attr:`queue_priority
+        <pybnb.node.Node.queue_priority>`, depending on the
+        queue implementation."""
         raise NotImplementedError()
 
     def get(self):                                #pragma:nocover
@@ -111,13 +112,11 @@ class IPriorityQueue(object):
         queue. If the queue is empty, returns None."""
         raise NotImplementedError()
 
-    def update_for_best_objective(self):          #pragma:nocover
-        """Updates the queue based on a new best objective
-        value, which may cause data items to be removed from
-        the queue or prevent future data items from being
-        added to the queue. The list of node data items
+    def filter(self, func):                       #pragma:nocover
+        """Removes items from the queue for which
+        `func(item)` returns False. The list of items
         removed is returned. If the queue is empty or no
-        data items were removed, the returned list will be
+        items are removed, the returned list will be
         empty."""
         raise NotImplementedError()
 
@@ -132,15 +131,13 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
 
     Parameters
     ----------
-    best_objective : float
-        The assumed best objective to start with.
-    converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
-        The branch-and-bound convergence checker object.
+    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+        The objective sense for the problem.
     """
 
-    def __init__(self, best_objective, converger):
-        self._best_objective = best_objective
-        self._converger = converger
+    def __init__(self, sense):
+        assert sense in (minimize, maximize)
+        self._sense = sense
         self._queue = _NoThreadingMaxPriorityFirstQueue()
 
     def size(self):
@@ -148,18 +145,12 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
 
     def put(self, data):
         bound = Node._extract_bound(data)
-        if self._converger.objective_can_improve(
-                self._best_objective,
-                bound):
-            if self._converger.sense == minimize:
-                priority = -bound
-            else:
-                priority = bound
-            Node._insert_queue_priority(data, priority)
-            self._queue.put(data, priority)
-            return True
+        if self._sense == minimize:
+            priority = -bound
         else:
-            return False
+            priority = bound
+        Node._insert_queue_priority(data, priority)
+        self._queue.put(data, priority)
 
     def get(self):
         return self._queue.get()
@@ -170,18 +161,14 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
             data = self._queue.next()
             bound = Node._extract_bound(data)
             priority = Node._extract_queue_priority(data)
-            if self._converger.sense == minimize:
+            if self._sense == minimize:
                 assert bound == -priority
             else:
                 assert bound == priority
         return bound
 
-    def update_for_best_objective(self, best_objective):
-        self._best_objective = best_objective
-        return self._queue.filter(
-            lambda _,data_: self._converger.objective_can_improve(
-                best_objective,
-                Node._extract_bound(data_)))
+    def filter(self, func):
+        return self._queue.filter(func)
 
     def items(self):
         """Iterates over the queued items in arbitrary order
@@ -196,15 +183,13 @@ class CustomPriorityQueue(IPriorityQueue):
 
     Parameters
     ----------
-    best_objective : float
-        The assumed best objective to start with.
-    converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
-        The branch-and-bound convergence checker object.
+    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+        The objective sense for the problem.
     """
 
-    def __init__(self, best_objective, converger):
-        self._best_objective = best_objective
-        self._converger = converger
+    def __init__(self, sense):
+        assert sense in (minimize, maximize)
+        self._sense = sense
         self._queue = _NoThreadingMaxPriorityFirstQueue()
         self._sorted_by_bound = SortedList()
 
@@ -213,19 +198,14 @@ class CustomPriorityQueue(IPriorityQueue):
 
     def put(self, data):
         bound = Node._extract_bound(data)
-        assert Node._has_queue_priority(data)
+        if not Node._has_queue_priority(data):
+            raise ValueError("A node queue priority is required")
         priority = Node._extract_queue_priority(data)
-        if self._converger.objective_can_improve(
-                self._best_objective,
-                bound):
-            cnt = self._queue.put(data, priority)
-            if self._converger.sense == maximize:
-                self._sorted_by_bound.add((-bound, cnt, data))
-            else:
-                self._sorted_by_bound.add((bound, cnt, data))
-            return True
+        cnt = self._queue.put(data, priority)
+        if self._sense == maximize:
+            self._sorted_by_bound.add((-bound, cnt, data))
         else:
-            return False
+            self._sorted_by_bound.add((bound, cnt, data))
 
     def get(self):
         if self._queue.size() > 0:
@@ -234,7 +214,7 @@ class CustomPriorityQueue(IPriorityQueue):
             data = self._queue.get()
             assert data_ is data
             bound = Node._extract_bound(data)
-            if self._converger.sense == maximize:
+            if self._sense == maximize:
                 self._sorted_by_bound.remove((-bound, cnt, data))
             else:
                 self._sorted_by_bound.remove((bound, cnt, data))
@@ -249,17 +229,13 @@ class CustomPriorityQueue(IPriorityQueue):
         else:
             return None
 
-    def update_for_best_objective(self, best_objective):
-        self._best_objective = best_objective
+    def filter(self, func):
         removed = []
-        for cnt, data in self._queue.filter(
-            lambda _,data_: self._converger.objective_can_improve(
-                best_objective,
-                Node._extract_bound(data_)),
-            include_counters=True):
+        for cnt, data in self._queue.filter(func,
+                                            include_counters=True):
             removed.append(data)
             bound = Node._extract_bound(data)
-            if self._converger.sense == maximize:
+            if self._sense == maximize:
                 self._sorted_by_bound.remove((-bound, cnt, data))
             else:
                 self._sorted_by_bound.remove((bound, cnt, data))
@@ -274,34 +250,26 @@ class BreadthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
     breadth-first order.
 
-    Parameters
-    ----------
-    best_objective : float
-        The assumed best objective to start with.
-    converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
-        The branch-and-bound convergence checker object.
+    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+        The objective sense for the problem.
     """
 
     def put(self, data):
         depth = Node._extract_tree_depth(data)
         assert depth >= 0
         Node._insert_queue_priority(data, -depth)
-        return super(BreadthFirstPriorityQueue, self).put(data)
+        super(BreadthFirstPriorityQueue, self).put(data)
 
 class DepthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
     depth-first order.
 
-    Parameters
-    ----------
-    best_objective : float
-        The assumed best objective to start with.
-    converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
-        The branch-and-bound convergence checker object.
+    sense : {:obj:`minimize <pybnb.common.minimize, :obj:`maximize <pybnb.common.maximize`}
+        The objective sense for the problem.
     """
 
     def put(self, data):
         depth = Node._extract_tree_depth(data)
         assert depth >= 0
         Node._insert_queue_priority(data, depth)
-        return super(DepthFirstPriorityQueue, self).put(data)
+        super(DepthFirstPriorityQueue, self).put(data)

@@ -84,3 +84,9 @@ Average Worker Timing:
             assert os.path.exists(fname)
         finally:
             os.remove(fname)
+
+    def test_bad_node_priority_strategy(self):
+        with pytest.raises(ValueError):
+            solve(DummyProblem(),
+                  comm=None,
+                  node_priority_strategy='_not_a_valid_strategy_')
