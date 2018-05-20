@@ -15,10 +15,9 @@ install:
   - python  -m pip --version
   - python -m pip install --upgrade wheel
   - python -m wheel version
-  # Microsoft MPI
-  - ps: Start-FileDownload 'https://raw.githubusercontent.com/mpi4py/mpi4py/master/conf/ci/appveyor/install-msmpi.ps1'
-  - dir
-  - "powershell .\\install-msmpi.ps1"
+  # Microsoft MPI (piggyback off of mpi4py appveyor setup scripts)
+  - git glone https://github.com/mpi4py/mpi4py.git _mpi4py_
+  - "powershell _mpi4py_\\conf\\ci\\appveyor\\install-msmpi.ps1"
   - "SetEnvMPI.cmd"
   # Check versions
   - python --version
