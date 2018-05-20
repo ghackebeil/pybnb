@@ -23,8 +23,7 @@ install:
   # Check versions
   - python --version
   - python -m pip --version
-  - mpiexec
-  - mpirun
+  - mpiexec -help2
   # Install package
   - python -m pip install -r test_requirements.txt
   - python -m pip install codecov
