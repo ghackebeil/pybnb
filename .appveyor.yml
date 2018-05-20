@@ -33,21 +33,7 @@ build: off
 
 test_script:
   - pytest -v --doctest-modules src/pybnb
-  - pytest -v src/tests/mpi/test_heaps.py
-  - pytest -v src/tests/mpi/test_misc.py
-  - pytest -v src/tests/test_common.py
-  - pytest -v src/tests/test_convergence_checker.py
-  - pytest -v src/tests/test_dispatcher.py
-  - pytest -v src/tests/test_examples.py
-  - pytest -v src/tests/test_misc.py
-  - pytest -v src/tests/test_node.py
-  - pytest -v src/tests/test_package.py
-  - pytest -v src/tests/test_priority_queue.py
-  - pytest -v src/tests/test_problem.py
-  - pytest -v src/tests/test_pyomo_tools.py
-  - pytest -v src/tests/test_simple_problems.py
-  - pytest -v src/tests/test_solver.py
-#  - pytest -vvvv --cov=pybnb --cov=examples --cov=src/tests
+  - pytest -vvvv --cov=pybnb --cov=examples --cov=src/tests src/tests
 
 on_success:
   # Combine coverage reports over all subprocesses
