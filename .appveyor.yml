@@ -20,7 +20,7 @@ install:
   - "powershell _mpi4py_\\conf\\ci\\appveyor\\install-msmpi.ps1"
   - "SetEnvMPI.cmd"
   - "SET PATH=%MSMPI_BIN%;%PATH%"
-  - "powershell Remove-Item -Path _mpi4py_ -Recurse"
+  - "powershell Remove-Item -Path _mpi4py_ -Recurse -Force"
   # Check versions
   - python --version
   - python -m pip --version
