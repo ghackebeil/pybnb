@@ -20,6 +20,7 @@ install:
   - "powershell _mpi4py_\\conf\\ci\\appveyor\\install-msmpi.ps1"
   - "SetEnvMPI.cmd"
   - "SET PATH=%MSMPI_BIN%;%PATH%"
+  - "powershell Remove-Item –path _mpi4py_ –recurse"
   # Check versions
   - python --version
   - python -m pip --version
@@ -33,11 +34,7 @@ build: off
 
 test_script:
   - pytest -v --doctest-modules src/pybnb
-  - pytest -vvvv --cov=pybnb --cov=examples --cov=src/tests src/tests
+  - pytest -vvvv --cov=pybnb --cov=examples --cov=src/tests
 
 on_success:
-  # Combine coverage reports over all subprocesses
-  - "cd %BUILD_DIR%"
-  - dir .cov*
-  - "coverage combine %BUILD_DIR%"
   - codecov -X gcov
