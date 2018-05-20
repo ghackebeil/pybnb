@@ -33,10 +33,9 @@ build: off
 
 test_script:
   - pytest -v --doctest-modules src/pybnb
-  - pytest -v
-  - pytest -v --cov=pybnb
-  - pytest -v --cov=examples
-  - pytest -v --cov=src/tests
+  - pytest -v src/tests/mpi/common.py
+  - pytest -v src/tests/mpi/test_heaps.py
+  - pytest -v src/tests/mpi/test_misc.py
   - pytest -v src/tests/test_common.py
   - pytest -v src/tests/test_convergence_checker.py
   - pytest -v src/tests/test_dispatcher.py
