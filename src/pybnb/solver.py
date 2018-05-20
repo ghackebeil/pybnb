@@ -440,10 +440,10 @@ class Solver(object):
             initialize_queue keyword of the
             :attr:`pybnb.solver.Solver.solve` method.
         """
+        ret = None
         if self.is_dispatcher:
-            return self._disp.save_dispatcher_queue()
-        else:
-            return None
+            ret = self._disp.save_dispatcher_queue()
+        return ret
 
     def solve(self,
               problem,
