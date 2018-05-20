@@ -1,0 +1,26 @@
+environment:
+  matrix:
+    - PYTHON_VERSION: 3.6
+      PYTHON: "C:\\Miniconda36-x64"
+
+install:
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PYTHON%\\Library\\bin;%PATH%"
+  - python --version
+  - pip --version
+  - mpirun --version
+  - pip install -r test_requirements.txt
+  - pip install codecov
+  - python setup.py develop
+
+build: off
+
+test_script:
+  - pytest -v --doctest-modules src/pybnb
+  - pytest -v --cov=pybnb --cov=examples --cov=src/tests
+
+on_success:
+  # Combine coverage reports over all subprocesses
+  - "cd %BUILD_DIR%"
+  - dir .cov*
+  - "coverage combine %BUILD_DIR%"
+  - codecov -X gcov
