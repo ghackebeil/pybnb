@@ -19,11 +19,12 @@ install:
   - git clone https://github.com/mpi4py/mpi4py.git _mpi4py_
   - "powershell _mpi4py_\\conf\\ci\\appveyor\\install-msmpi.ps1"
   - "SetEnvMPI.cmd"
+  - "SET PATH=%MSMPI_BIN%;%PATH%"
   # Check versions
   - python --version
   - python -m pip --version
-  - "\"%MSMPI_BIN%\\mpiexec.exe\""
   - mpiexec
+  - mpirun
   # Install package
   - python -m pip install -r test_requirements.txt
   - python -m pip install codecov
