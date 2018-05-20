@@ -32,10 +32,7 @@ install:
 build: off
 
 test_script:
-  - python -m mpi4py --version
-  - python -c "import mpi4py.MPI"
   - pytest -v --doctest-modules src/pybnb
-  - pytest -v src/tests/mpi/common.py
   - pytest -v src/tests/mpi/test_heaps.py
   - pytest -v src/tests/mpi/test_misc.py
   - pytest -v src/tests/test_common.py
