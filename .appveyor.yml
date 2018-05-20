@@ -32,8 +32,8 @@ install:
 build: off
 
 test_script:
-  - pytest -v --doctest-modules src/pybnb
-  - pytest -v --cov=pybnb --cov=examples --cov=src/tests
+  - pytest -vvvv --doctest-modules src/pybnb
+  - pytest -vvvv --cov=pybnb --cov=examples --cov=src/tests
 
 on_success:
   # Combine coverage reports over all subprocesses
