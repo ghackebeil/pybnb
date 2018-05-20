@@ -22,7 +22,8 @@ install:
   # Check versions
   - python --version
   - python -m pip --version
-  - "\"%MSMPI_BIN%\\mpiexec.exe\" --version"
+  - "\"%MSMPI_BIN%\\mpiexec.exe\" -h"
+  - "\"%MSMPI_BIN%\\mpiexec.exe\" -v"
   # Install package
   - python -m pip install -r test_requirements.txt
   - python -m pip install codecov
