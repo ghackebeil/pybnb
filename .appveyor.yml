@@ -16,8 +16,9 @@ install:
   - python -m pip install --upgrade wheel
   - python -m wheel version
   # Microsoft MPI
-  - "powershell conf\\ci\\appveyor\\install-msmpi.ps1"
-  - "SetEnvMPI.cmd"
+  - ps: Start-FileDownload 'https://download.microsoft.com/download/B/2/E/B2EB83FE-98C2-4156-834A-E1711E6884FB/MSMpiSetup.exe'
+  - MSMpiSetup.exe -unattend
+  - "SET PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%"
   # Check versions
   - python --version
   - python -m pip --version
