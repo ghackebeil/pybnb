@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 
 import pytest
 
@@ -83,7 +84,11 @@ Average Worker Timing:
                   log_filename=fname)
             assert os.path.exists(fname)
         finally:
-            os.remove(fname)
+            time.sleep(0.1)
+            try:
+                os.remove(fname)
+            except:
+                pass
 
     def test_bad_node_priority_strategy(self):
         with pytest.raises(ValueError):
