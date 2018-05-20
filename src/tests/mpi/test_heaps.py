@@ -138,11 +138,11 @@ class DiscreteMin(pybnb.Problem):
 
 def _test_heaps(comm):
     solver = pybnb.Solver(comm=comm)
-    if solver.comm.rank == 0:
+    if comm.rank == 0:
         pass
-    elif solver.comm.rank == 1:
+    elif comm.rank == 1:
         pass
-    elif solver.comm.rank == 3:
+    elif comm.rank == 3:
         pass
     for heap in gen_heaps(2):
         heap_bound = get_bound(heap)
