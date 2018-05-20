@@ -3,13 +3,28 @@ environment:
     - PYTHON_VERSION: 3.6
       PYTHON: "C:\\Miniconda36-x64"
 
+init:
+  - "ECHO Python from %PYTHON%"
+  - "ECHO Miniconda from %ANACONDA%"
+
 install:
+  # Python
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PYTHON%\\Library\\bin;%PATH%"
   - python --version
-  - pip --version
-  - mpirun --version
-  - pip install -r test_requirements.txt
-  - pip install codecov
+  - python -m pip install --upgrade pip
+  - python  -m pip --version
+  - python -m pip install --upgrade wheel
+  - python -m wheel version
+  # Microsoft MPI
+  - "powershell conf\\ci\\appveyor\\install-msmpi.ps1"
+  - "SetEnvMPI.cmd"
+  # Check versions
+  - python --version
+  - python -m pip --version
+  - "\"%MSMPI_BIN%\\mpiexec.exe\" --version"
+  # Install package
+  - python -m pip install -r test_requirements.txt
+  - python -m pip install codecov
   - python setup.py develop
 
 build: off
