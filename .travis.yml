@@ -54,7 +54,7 @@ after_script:
   - docker ps
 deploy:
   provider: pypi
-  server: https://testpypi.python.org/pypi
+  server: https://test.pypi.org/legacy/
   user: N2PG43fzLFB76ukPVpWD
   password:
     secure: tgDB7RvaPzNgRsdrbYR9DJmkAImuFk86sYD/GmtHzUVoLnOKJvEq//9kOB7zMlRmCYT7sALt3K+gPGvuVQlPsHAD3aMYUd+NDglTs8sbCo4ZpTLqrorek8zwYYhFBuKl9qG5O3DnXCiYL2OlCZ3xTN9Cm5OSd89/6MFOgx7ILRxH7Uqky2IEiSbiRdVxthIsnZajyW+Kq43tZolPOdr/7bfS4SB/9wK/59FcY5e2w9g3GxtO7b1J59EUO0/jVcI8ixvJwd1eYC32aezQ65QcIWqo62+wDEWyGedaKdweZslpZcCHBRu7BPDG951e+RzNJE+8r4YJqrropkjTZCfQfGvlPCJztK3MCEYSE+ScVa5+3KbTl9Xg5vHKpcztlm7lfwLAGKav5fheVycm0W1Z7+RVy8jL76bYoVeBa7F5+9XQJSwLArAk14ESABukXpcoYOvJyoI4eF7SvEXsMtH1W4M7hsy1TOTqe7nLuDcqJXgc3Yu7Fc5iSZq5P21XsMoKGq4spNJSblfYTZ7nChUdsHhwVMZL6AJMs/ufxgkw7mX8Fk+1q5Ha6QRhRQpDY3f0Ikyg677PS3AXoDCzFkxDF4qAbo/ohMAKDrtGBolchigVhVR1Vo5nn2/y1NqNpwsf9xxBYw0CdQ/QtWebBPxvp0SjiF68XBz1OVqzeR0TtUU=
