@@ -6,19 +6,18 @@ env:
   global:
     - DH_ACCT_NAME=qkjqvazeqfjqftchxlgw
   matrix:
-    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi
-#    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
-#    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi SLIM=1
-#    - IMAGE_NAME=python-mpi-builds:python_3.6-mpich EXAMPLES=1
-#    - IMAGE_NAME=python-mpi-builds:python_3.6-mpich EXAMPLES=1
-#    - IMAGE_NAME=python-mpi-builds:python_3.5-openmpi EXAMPLES=1
-#    - IMAGE_NAME=python-mpi-builds:python_3.5-mpich EXAMPLES=1
-#    - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi EXAMPLES=1
-#    - IMAGE_NAME=python-mpi-builds:python_2.7-mpich EXAMPLES=1
-#    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi
-#    - IMAGE_NAME=python-mpi-builds:pypy_3-mpich
-#    - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi
-#    - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
+    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi SLIM=1
+    - IMAGE_NAME=python-mpi-builds:python_3.6-mpich EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.6-mpich EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.5-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.5-mpich EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_2.7-mpich EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi
+    - IMAGE_NAME=python-mpi-builds:pypy_3-mpich
+    - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi
+    - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
 before_install:
   - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
@@ -59,6 +58,6 @@ deploy:
     secure: "QRnY9dWGdzbRIb7iZnvgflRy91R3QMgwm6UlgVmdhlzbtoT/iJZ+2jMNpeZVM/GM5kjRti+OmMPgQTUqnC+NfvuTV9C+xyyFDMIAEPkKrnYiJZGWkCe9D9qxXoy2bqxnwcJeSk2kn9bQHUtEWv1D6osSIPoJheJ5Df8JuTfsG1JMuNb7JsfQhyZaOGOcMovExSfGh7BBC+aTfD0dF4Xn4yfx9ZPuGYUEsDz01Qny7VtIPcrIYE8EEV1ONo6KwCrHSx5bhWqvZM49w6NAl9PXUUKidMZvwU5aRvBHS0YHEE3LO1EK23rSiRe9P2k/GUQ8thvAUzDSIwav9DantrSKzzhOEO253JlccdPYQfIuQYKnOwpO92BdZo9nc35zCCQPm5LYaFY792YGoJ/AZGOgKUoFqHiMdsv2G/50GvgIclZvhO98S/v9NnBdJYRTQLNjTEvJoBvqbArnGuq4+Xl1kOWQc6EX/H8vpeynD/Wv6f4kbhLBwKUM/rfeR9kB/FaU/5bp64oDPP6xARZ492/iVdN7PNQRYfZpep0xy5b0AVmM3BZsBdOjsYx9d8iuD54u6T2IHdMDl+xZRdJtHJ5ImKC+x+k4EqbpiqxPOSSiTgF4BXswf8FW61J4NlY0sbday2mxehbwQ87lCBt+DFhtW2qKBNrRGKUeZ23Uc9F4NOg="
   distributions: sdist
   on:
-    tags: false
+    tags: true
     branch: master
     condition: $IMAGE_NAME = python-mpi-builds:python_3.6-openmpi
