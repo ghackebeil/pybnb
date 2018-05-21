@@ -1,5 +1,5 @@
 cache: false
-language: generic
+language: python
 services:
   - docker
 env:
