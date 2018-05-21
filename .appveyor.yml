@@ -7,20 +7,6 @@ environment:
     - PYTHON: "C:\\Python27-x64"
       ANACONDA: "C:\\Miniconda-x64"
 
-    - PYTHON: "C:\\Python33"
-      ANACONDA: "C:\\Miniconda36"
-
-    - PYTHON: "C:\\Python33-x64"
-      ANACONDA: "C:\\Miniconda36-x64"
-      DISTUTILS_USE_SDK: "1"
-
-    - PYTHON: "C:\\Python34"
-      ANACONDA: "C:\\Miniconda36"
-
-    - PYTHON: "C:\\Python34-x64"
-      ANACONDA: "C:\\Miniconda36-x64"
-      DISTUTILS_USE_SDK: "1"
-
     - PYTHON: "C:\\Python35"
       ANACONDA: "C:\\Miniconda36"
 
@@ -64,7 +50,15 @@ build: off
 
 test_script:
   - pytest -v --doctest-modules src/pybnb
-  - pytest -vvvv --cov=pybnb --cov=examples --cov=src/tests
+  - pytest -v --cov=pybnb --cov=examples --cov=src/tests
+  - "powershell Rename-Item -Path .coverage -NewName coverage.1"
+  - python run-mpitests.py --mpirun="mpiexec -n 4" --no-build --with-coverage -v
+  - "powershell Rename-Item -Path .coverage -NewName coverage.2"
+
+${DOC} mv .coverage coverage.parallel.2
 
 on_success:
+  - "powershell Rename-Item -Path coverage.1 -NewName .coverage.1"
+  - "powershell Rename-Item -Path coverage.2 -NewName .coverage.2"
+  - coverage combine
   - codecov -X gcov
