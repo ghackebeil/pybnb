@@ -55,8 +55,6 @@ test_script:
   - python run-mpitests.py --mpirun="mpiexec -n 4" --no-build --with-coverage -v
   - "powershell Rename-Item -Path .coverage -NewName coverage.2"
 
-${DOC} mv .coverage coverage.parallel.2
-
 on_success:
   - "powershell Rename-Item -Path coverage.1 -NewName .coverage.1"
   - "powershell Rename-Item -Path coverage.2 -NewName .coverage.2"
