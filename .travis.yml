@@ -6,6 +6,7 @@ env:
   global:
     - DH_ACCT_NAME=qkjqvazeqfjqftchxlgw
   matrix:
+    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi DEPLOY=1
     - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi SLIM=1
     - IMAGE_NAME=python-mpi-builds:python_3.6-mpich EXAMPLES=1
@@ -59,4 +60,4 @@ deploy:
   on:
     tags: true
     all_branches: true
-    condition: $IMAGE_NAME = python-mpi-builds:python_3.6-openmpi
+    condition: $DEPLOY = 1
