@@ -41,15 +41,15 @@ script:
   - "[[ -z $SLIM ]] || bash .travis/test_slim.sh"
   - "[[ -n $SLIM ]] || bash .travis/test_parallel.sh"
   - kill %1
+  # cleanup runtime files before deploy
+  - ${DOC} bash -c 'find . -name __pycache__ | xargs rm -rf'
+  - ${DOC} bash -c 'find . -name "*.egg-info" | xargs rm -rf'
+  - ${DOC} rm -rf .pytest_cache
 after_script:
   - ${DOC} find . -name "*.coverage*"
   - ${DOC} coverage combine
   - ${DOC} coverage report
   - ${DOC} codecov --env DH_ACCT_NAME IMAGE_NAME SLIM EXAMPLES
-  # cleanup runtime files before deploy
-  - ${DOC} bash -c 'find . -name __pycache__ | xargs rm -rf'
-  - ${DOC} bash -c 'find . -name "*.egg-info" | xargs rm -rf'
-  - ${DOC} rm -rf .pytest_cache
   - docker kill ${DOC_ID}
   - docker ps
 deploy:
