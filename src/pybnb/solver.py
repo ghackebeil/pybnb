@@ -225,14 +225,14 @@ class Solver(object):
                best_objective,
                converger,
                results):
-        infeasible_objective = problem.infeasible_objective
+        infeasible_objective = problem.infeasible_objective()
         assert infeasible_objective == converger.infeasible_objective
-        unbounded_objective = problem.unbounded_objective
+        unbounded_objective = problem.unbounded_objective()
         assert unbounded_objective == converger.unbounded_objective
 
         self._best_objective = best_objective
         children_data = ()
-        bound = problem.unbounded_objective
+        bound = unbounded_objective
         working_node = Node()
         assert working_node.tree_id is None
         # start the work loop
@@ -549,7 +549,7 @@ class Solver(object):
             self.comm.Barrier()
 
         if best_objective is None:
-            best_objective = problem.infeasible_objective
+            best_objective = problem.infeasible_objective()
 
         node_priority_strategy_int = _priority_to_int.get(
             node_priority_strategy, None)
@@ -608,7 +608,7 @@ class Solver(object):
         try:
             if self.is_dispatcher:
                 if initialize_queue is None:
-                    root.bound = problem.unbounded_objective
+                    root.bound = problem.unbounded_objective()
                     assert root.tree_id is None
                     Node._insert_tree_id(root._data, 0)
                     initialize_queue = DispatcherQueueData(

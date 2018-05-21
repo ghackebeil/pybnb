@@ -216,7 +216,7 @@ class BinPacking(pybnb.Problem):
                 for i in N:
                     if self.model.x[i,j].value == 1:
                         if self.model.y[i].ub == 0:
-                            return self.infeasible_objective
+                            return self.infeasible_objective()
                         else:
                             self.model.y[i].value = 1
             else:
@@ -254,7 +254,7 @@ class BinPacking(pybnb.Problem):
                         bin_weight[i] += self.W[j]
                         break
             else:
-                return self.infeasible_objective
+                return self.infeasible_objective()
 
         assert self._check_feasible()
         return self.model.objective()
@@ -269,16 +269,16 @@ class BinPacking(pybnb.Problem):
             return round(self.model.objective(), 7)
         elif str(results.solver.termination_condition) == "unbounded":
             assert str(results.solver.status) in ("ok","warning")
-            return self.unbounded_objective
+            return self.unbounded_objective()
         elif str(results.solver.termination_condition) == "infeasible":
             assert str(results.solver.status) in ("ok","warning")
-            return self.infeasible_objective
+            return self.infeasible_objective()
         else:
             assert str(results.solver.status) == "error"
             assert "Restoration Phase Failed" in \
                 results.solver.message
             # assume infeasible
-            return self.infeasible_objective
+            return self.infeasible_objective()
 
     def save_state(self, node):
         state_size = len(self.model.x)*2 + len(self.model.y)*2

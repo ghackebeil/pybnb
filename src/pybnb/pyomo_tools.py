@@ -199,7 +199,7 @@ class RangeReductionProblem(pybnb.Problem):
 
     def _tighten_bounds(self):
         self.range_reduction_model_setup()
-        assert self._best_objective != self.unbounded_objective
+        assert self._best_objective != self.unbounded_objective()
         # setup objective
         assert self.problem.pyomo_model_objective.active
         self.problem.pyomo_model_objective.deactivate()
@@ -211,7 +211,7 @@ class RangeReductionProblem(pybnb.Problem):
         # setup optimality bound if necessary
         tmp_optbound_name = None
         tmp_optbound = None
-        if self._best_objective != self.infeasible_objective:
+        if self._best_objective != self.infeasible_objective():
             tmp_optbound = _create_optimality_bound(
                 self,
                 self.problem.pyomo_model_objective,

@@ -6,7 +6,7 @@ class InfeasibleMin(pybnb.Problem):
                  branching_abstol=0.001,
                  fixed_objective=None):
         if fixed_objective is None:
-            fixed_objective = self.infeasible_objective
+            fixed_objective = self.infeasible_objective()
         assert branching_abstol > 0
         self._branching_abstol = branching_abstol
         self._fixed_objective = fixed_objective
@@ -26,7 +26,7 @@ class InfeasibleMin(pybnb.Problem):
     def bound(self):
         delta = self._xU - self._xL
         if delta < 0.01:
-            return self.infeasible_objective
+            return self.infeasible_objective()
         else:
             return 1.0/delta
 

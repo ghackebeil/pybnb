@@ -13,20 +13,20 @@ class Problem(object):
     branch-and-bound problems."""
     __slots__ = ()
 
-    @property
     def infeasible_objective(self):
-        """The value that represents an infeasible objective
-        (i.e., +inf or -inf depending on the sense)."""
+        """Returns the value that represents an infeasible
+        objective (i.e., +inf or -inf depending on the
+        sense)."""
         if self.sense() == minimize:
             return inf
         else:
             assert self.sense() == maximize
             return -inf
 
-    @property
     def unbounded_objective(self):
-        """The value that represents an unbounded objective
-        (i.e., +inf or -inf depending on the sense)."""
+        """Returns the value that represents an unbounded
+        objective (i.e., +inf or -inf depending on the
+        sense)."""
         if self.sense() == minimize:
             return -inf
         else:

@@ -195,10 +195,10 @@ class Rosenbrock2D(PyomoProblem):
         else:
             assert str(results.solver.status) == "warning"
             if str(results.solver.termination_condition) == "unbounded":
-                return self.unbounded_objective
+                return self.unbounded_objective()
             else:
                 assert str(results.solver.termination_condition) == "infeasible"
-                return self.infeasible_objective
+                return self.infeasible_objective()
 
     def bound(self):
         self.setup_model_for_bound()
@@ -212,10 +212,10 @@ class Rosenbrock2D(PyomoProblem):
         else:
             assert str(results.solver.status) == "warning"
             if str(results.solver.termination_condition) == "unbounded":
-                return self.unbounded_objective
+                return self.unbounded_objective()
             else:
                 assert str(results.solver.termination_condition) == "infeasible"
-                return self.infeasible_objective
+                return self.infeasible_objective()
 
     def save_state(self, node):
         node.resize(4)

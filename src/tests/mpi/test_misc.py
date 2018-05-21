@@ -48,7 +48,7 @@ def _logging_check(comm):
         assert (comm is None) or (comm.rank == 0)
         root = Node()
         p.save_state(root)
-        root.bound = p.unbounded_objective
+        root.bound = p.unbounded_objective()
         assert root.tree_id is None
         Node._insert_tree_id(root._data, 0)
         initialize_queue = DispatcherQueueData(
@@ -56,7 +56,7 @@ def _logging_check(comm):
             next_tree_id=1)
         out = StringIO()
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
-        opt._disp.initialize(p.infeasible_objective,
+        opt._disp.initialize(p.infeasible_objective(),
                              initialize_queue,
                              "bound",
                              ConvergenceChecker(p.sense()),
