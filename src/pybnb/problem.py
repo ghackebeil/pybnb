@@ -44,7 +44,7 @@ class Problem(object):
     def objective(self):                          #pragma:nocover
         """Returns a feasible value for the objective of the
         current problem state or
-        :attr:`self.infeasible_objective
+        :func:`self.infeasible_objective()
         <pybnb.problem.Problem.infeasible_objective>` if the
         current state is not feasible."""
         raise NotImplementedError()
@@ -52,7 +52,7 @@ class Problem(object):
     def bound(self):                              #pragma:nocover
         """Returns a value that is a bound on the objective
         of the current problem state or
-        :attr:`self.unbounded_objective
+        :func:`self.unbounded_objective()
         <pybnb.problem.Problem.unbounded_objective>` if no
         non-trivial bound is available."""
         raise NotImplementedError()
