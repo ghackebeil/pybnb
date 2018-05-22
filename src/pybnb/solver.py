@@ -283,9 +283,10 @@ class Solver(object):
                 self._bound_eval_time += self._time()-bound_eval_start
                 self._bound_eval_count += 1
                 if converger.bound_worsened(new_bound, bound):    #pragma:nocover
-                    self._disp.log_warning("WARNING: Bound became worse "
-                                           "(old=%r, new=%r)"
-                                           % (bound, new_bound))
+                    self._disp.log_warning(
+                        "WARNING: Bound became worse "
+                        "(old=%r, new=%r)"
+                        % (bound, new_bound))
                 working_node.bound = new_bound
                 bound = new_bound
 
@@ -316,8 +317,20 @@ class Solver(object):
                    converger.objective_can_improve(
                        self._best_objective,
                        bound):
-                    children_data = [child._data for child in
-                                     problem.branch(working_node)]
+                    children_data = []
+                    for child in problem.branch(working_node):
+                        assert child.parent_tree_id == working_node.tree_id
+                        assert child.tree_id is None
+                        assert child.tree_depth == working_node.tree_depth + 1
+                        children_data.append(child._data)
+                        child_bound = Node._extract_bound(child._data)
+                        if converger.bound_worsened(child_bound, bound):    #pragma:nocover
+                            self._disp.log_warning(
+                                "WARNING: Bound on child node "
+                                "returned from branch method "
+                                "is worse than parent node "
+                                "(child=%r, parent=%r)"
+                                % (bound, child_bound))
         results.objective = self._best_objective
         results.bound = self._disp.finalize()
 

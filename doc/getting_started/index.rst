@@ -138,6 +138,19 @@ description for each of these methods.
    issue a warning, as this is likely indicative of a
    programming error or other numerical issues.
 
+   When this method is called, the :attr:`parent_node.bound
+   <pybnb.node.Node.bound>` attribute will have been set to the
+   value returned from :func:`Problem.bound()
+   <pybnb.problem.Problem.bound>` after having the user
+   state stored on the `parent_node` loaded into the
+   problem. Any child nodes returned from
+   :func:`parent_node.new_child()
+   <pybnb.node.Node.new_child>` will inherit this bound,
+   which may affect their prioritization in the global work
+   queue. To override the default bound associated with a
+   child node, simply assign a new value to the :attr:`bound
+   <pybnb.node.Node.bound>` attribute.
+
 Solving a Problem
 -----------------
 
