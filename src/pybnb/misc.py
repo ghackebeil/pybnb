@@ -369,6 +369,15 @@ def create_command_line_solver(problem, parser=None):
                   "profile)."))
     args = parser.parse_args()
 
+    try:
+        import mpi4py
+    except ImportError:
+        if not args.disable_mpi:
+            raise ImportError("The mpi4py module is not "
+                              "available. To run this script "
+                              "without it, use the '--disable-mpi' "
+                              "option")
+
     if pstats_available and (args.profile):            #pragma:nocover
         #
         # Call the main routine with profiling.
