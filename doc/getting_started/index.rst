@@ -132,10 +132,10 @@ description for each of these methods.
    process to make sense in the context of a
    branch-and-bound solve, the bound computed from the child
    node states should improve (or not be worse than) the
-   bound compute from the parent node. Once the child bound
-   is computed, if it is found to be worse than the bound
-   from the parent node, then the branch-and-bound solver
-   will issue a warning, as this is likely indicated of a
+   bound for the parent node. Once the child bound is
+   computed, if it is found to be worse than the bound from
+   the parent node, then the branch-and-bound solver will
+   issue a warning, as this is likely indicative of a
    programming error or other numerical issues.
 
 Solving a Problem
