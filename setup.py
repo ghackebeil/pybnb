@@ -64,8 +64,8 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     keywords=["optimization","branch and bound"],
-    packages=['pybnb'],
-    package_dir={'pybnb': 'src/pybnb'},
+    packages=find_packages('src', exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    package_dir={'':'src'},
     install_requires=install_requires,
     cmdclass={
         "test": PyTest
