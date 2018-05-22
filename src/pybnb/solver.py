@@ -438,7 +438,7 @@ class Solver(object):
             reinitialize a solve (e.g., with different
             algorithms settings) by assigning it to the
             initialize_queue keyword of the
-            :attr:`pybnb.solver.Solver.solve` method.
+            :func:`Solver.solve` method.
         """
         ret = None
         if self.is_dispatcher:
@@ -462,14 +462,14 @@ class Solver(object):
 
         Parameters
         ----------
-        problem : :class:`pybnb.problem.Problem`
+        problem : :class:`pybnb.Problem <pybnb.problem.Problem>`
             An object defining a branch-and-bound problem.
         best_objective : float, optional
             Initializes the solve with an assumed best
             objective. (default: None)
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
             Can be assigned the return value of a call to
-            the :attr:`pybnb.solver.Solver.save_dispatcher_queue`
+            the :func:`Solver.save_dispatcher_queue`
             method after a previous solve to initialize the
             current solve with any nodes remaining in the
             queue after the previous solve. (default: None)
@@ -541,8 +541,8 @@ class Solver(object):
 
         Returns
         -------
-        results : :class:`pybnb.solver.SolverResults`
-            A object storing information about the solve.
+        results : :class:`SolverResults`
+            An object storing information about the solve.
         """
 
         if self.comm is not None:
@@ -807,13 +807,13 @@ def solve(problem,
     This function also collects and summarizes runtime
     workload statistics, which may introduce additional
     overhead. This overhead can be avoided by directly
-    instantiating a :class:`pybnb.solver.Solver` object and
-    calling the :attr:`pybnb.solver.Solver.solve` method.
+    instantiating a :class:`Solver` object and
+    calling the :func:`Solver.solve` method.
 
     Parameters
     ----------
-    problem : :class:`pybnb.problem.Problem`
-        A object that defines a branch-and-bound problem
+    problem : :class:`pybnb.Problem <pybnb.problem.Problem>`
+        An object that defines a branch-and-bound problem
     comm : ``mpi4py.MPI.Comm``, optional
         The MPI communicator to use. If unset, the
         mpi4py.MPI.COMM_WORLD communicator will be
@@ -835,12 +835,12 @@ def solve(problem,
         with the given name. (default: None)
     **kwds
         Additional keywords to be passed to
-        :func:`pybnb.solver.Solver.solve`
+        :func:`Solver.solve`
 
     Returns
     -------
-    results : :class:`pybnb.solver.SolverResults`
-        A object storing information about the solve.
+    results : :class:`SolverResults`
+        An object storing information about the solve.
     """
 
     opt = Solver(comm=comm)

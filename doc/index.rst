@@ -37,36 +37,8 @@ shown in the example below.
     >>> print(result.solution_status)
     'optimal'
 
-Installation
-============
-You can install ``pybnb`` with ``pip``:
-
-.. code-block:: console
-
-    $ pip install pybnb
-
-Getting Started
-===============
-
-Under construction...
-
 .. toctree::
     :maxdepth: 2
-    :caption: Public API Reference
 
-    reference/common
-    reference/problem
-    reference/node
-    reference/solver
-    reference/pyomo_tools
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Developer API Reference
-
-    reference/convergence_checker
-    reference/priority_queue
-    reference/dispatcher
-    reference/dispatcher_proxy
-    reference/mpi_utils
-    reference/misc
+    getting_started/index.rst
+    reference/index.rst

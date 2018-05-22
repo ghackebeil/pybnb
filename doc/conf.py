@@ -19,8 +19,9 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest',
               'sphinx.ext.viewcode',
               'sphinx.ext.intersphinx',
+              'sphinxcontrib.spelling',
               'sphinxcontrib.napoleon',
-              'sphinxcontrib.spelling']
+              'sphinxcontrib_trio']
 
 nitpicky = False
 source_suffix = '.rst'

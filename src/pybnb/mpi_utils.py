@@ -81,7 +81,7 @@ def recv_nothing(comm, status=None):
     Returns
     -------
     status : :class:`mpi4py.MPI.Status`
-        If the the original status argument was not None, it
+        If the original status argument was not None, it
         will be returned after being updated by the
         receive. Otherwise, the status object that was
         created will be returned.

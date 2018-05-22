@@ -5,4 +5,5 @@ pyomo
 sphinx
 sphinxcontrib-spelling
 sphinxcontrib.napoleon
+sphinxcontrib-trio
 sphinx_rtd_theme

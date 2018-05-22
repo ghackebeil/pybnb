@@ -17,3 +17,5 @@ typecodes
 typecode
 readonly
 dtype
+prioritization
+backend

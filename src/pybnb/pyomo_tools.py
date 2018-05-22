@@ -104,9 +104,9 @@ def generate_cids(model,
     return object_to_cid, cid_to_object
 
 class PyomoProblem(pybnb.Problem):
-    """An extension of the :class:`pybnb.problem.Problem`
-    base class for defining problems with a core Pyomo
-    model."""
+    """An extension of the :class:`pybnb.Problem
+    <pybnb.problem.Problem>` base class for defining
+    problems with a core Pyomo model."""
 
     def __init__(self, *args, **kwds):
         super(PyomoProblem, self).__init__(*args, **kwds)
@@ -151,9 +151,9 @@ class PyomoProblem(pybnb.Problem):
 
 class RangeReductionProblem(pybnb.Problem):
     """A specialized implementation of the
-    :class:`pybnb.problem.Problem` base class that can be
-    used to perform optimality-based range reduction on a
-    fully implemented :class:`pybnb.pyomo_tools.PyomoProblem`
+    :class:`pybnb.Problem <pybnb.problem.Problem>` base
+    class that can be used to perform optimality-based range
+    reduction on a fully implemented :class:`PyomoProblem`
     by defining additional abstract methods."""
 
     def __init__(self,

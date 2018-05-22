@@ -16,7 +16,8 @@ class Problem(object):
     def infeasible_objective(self):
         """Returns the value that represents an infeasible
         objective (i.e., +inf or -inf depending on the
-        sense)."""
+        sense). The :class:`Problem <pybnb.problem.Problem>`
+        base class implements this method. """
         if self.sense() == minimize:
             return inf
         else:
@@ -26,7 +27,8 @@ class Problem(object):
     def unbounded_objective(self):
         """Returns the value that represents an unbounded
         objective (i.e., +inf or -inf depending on the
-        sense)."""
+        sense). The :class:`Problem <pybnb.problem.Problem>`
+        base class implements this method."""
         if self.sense() == minimize:
             return -inf
         else:
@@ -38,7 +40,13 @@ class Problem(object):
     #
 
     def sense(self):                              #pragma:nocover
-        """Returns the objective sense for this problem."""
+        """Returns the objective sense for this problem.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
+        """
         raise NotImplementedError()
 
     def objective(self):                          #pragma:nocover
@@ -46,7 +54,13 @@ class Problem(object):
         current problem state or
         :func:`self.infeasible_objective()
         <pybnb.problem.Problem.infeasible_objective>` if the
-        current state is not feasible."""
+        current state is not feasible.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
+        """
         raise NotImplementedError()
 
     def bound(self):                              #pragma:nocover
@@ -54,13 +68,25 @@ class Problem(object):
         of the current problem state or
         :func:`self.unbounded_objective()
         <pybnb.problem.Problem.unbounded_objective>` if no
-        non-trivial bound is available."""
+        non-trivial bound is available.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
+        """
         raise NotImplementedError()
 
     def branch(self, parent_node):                #pragma:nocover
         """Returns a list of :class:`pybnb.node.Node`
         objects that partition the parent node state into
-        zero or more children."""
+        zero or more children.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
+        """
         raise NotImplementedError()
 
     def save_state(self, node):                   #pragma:nocover
@@ -73,13 +99,24 @@ class Problem(object):
         called additional times. When it is called for the
         root node, the :attr:`tree_id <pybnb.node.Node.tree_id`
         and :attr:`parent_tree_id <pybnb.node.Node.parent_tree_id`
-        will both be None on the node.
+        will both be None.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
         """
         raise NotImplementedError()
 
     def load_state(self, node):                   #pragma:nocover
         """Loads the problem state that is stored on the
-        given :class:`pybnb.node.Node` object."""
+        given :class:`pybnb.node.Node` object.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
+        """
         raise NotImplementedError()
 
     #
@@ -90,7 +127,10 @@ class Problem(object):
                                            worker_comm,
                                            best_objective):
         """Called when a branch-and-bound solver receives a
-        new best objective.
+        new best objective. The :class:`Problem
+        <pybnb.problem.Problem>` base class provides a
+        default implementation for this method that does
+        nothing.
 
         Parameters
         ----------
@@ -106,7 +146,10 @@ class Problem(object):
                                   worker_comm,
                                   best_objective):
         """Called when a branch-and-bound solver locally
-        computes a new best objective.
+        computes a new best objective. The :class:`Problem
+        <pybnb.problem.Problem>` base class provides a
+        default implementation for this method that does
+        nothing.
 
         Parameters
         ----------
@@ -122,7 +165,11 @@ class Problem(object):
                               comm,
                               worker_comm,
                               results):
-        """Called when a branch-and-bound solver finishes.
+        """Called when a branch-and-bound solver
+        finishes. The :class:`Problem
+        <pybnb.problem.Problem>` base class provides a
+        default implementation for this method that does
+        nothing.
 
         Parameters
         ----------
