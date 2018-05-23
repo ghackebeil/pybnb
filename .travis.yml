@@ -25,30 +25,30 @@ before_install:
   - export DOC_ID=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
   - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES ${DOC_ID}"
 install:
-  - "${DOC} pip install -U pip setuptools wheel"
-  - "${DOC} python --version"
-  - "${DOC} pip --version"
-  - "${DOC} mpirun --version"
-  - "${DOC} git clone https://github.com/Pyutilib/pyutilib.git"
-  - ${DOC} bash -c "cd ./pyutilib && python setup.py install && cd .. && rm -r ./pyutilib"
-  - "${DOC} git clone https://github.com/Pyomo/pyomo.git"
-  - ${DOC} bash -c "cd ./pyomo && python setup.py install && cd .. && rm -r ./pyomo"
-  - "${DOC} pip install -r test_requirements.txt"
-  - "${DOC} pip install codecov"
-  - "${DOC} python setup.py develop"
+  - ${DOC} pip install -U pip setuptools wheel
+  - ${DOC} python --version
+  - ${DOC} pip --version
+  - ${DOC} mpirun --version
+  - ${DOC} git clone https://github.com/Pyutilib/pyutilib.git
+  - ${DOC} bash -c 'cd ./pyutilib && python setup.py install && cd .. && rm -r ./pyutilib'
+  - ${DOC} git clone https://github.com/Pyomo/pyomo.git
+  - ${DOC} bash -c 'cd ./pyomo && python setup.py install && cd .. && rm -r ./pyomo'
+  - ${DOC} pip install -r test_requirements.txt
+  - ${DOC} pip install codecov
+  - ${DOC} python setup.py develop
 script:
   - while sleep 9m; do echo "still running..."; done &
   - "[[ -z $SLIM ]] || bash .travis/test_slim.sh"
   - "[[ -n $SLIM ]] || bash .travis/test_parallel.sh"
   - kill %1
-  - "${DOC} bash -c 'find . -name __pycache__ | xargs rm -rf'"
+  - ${DOC} bash -c 'find . -name __pycache__ | xargs rm -rf'
   - ${DOC} bash -c 'find . -name "*.egg-info" | xargs rm -rf'
-  - "${DOC} rm -rf .pytest_cache"
+  - ${DOC} rm -rf .pytest_cache
 after_script:
   - ${DOC} find . -name "*.coverage*"
-  - "${DOC} coverage combine"
-  - "${DOC} coverage report"
-  - "${DOC} codecov --env DH_ACCT_NAME IMAGE_NAME SLIM EXAMPLES"
+  - ${DOC} coverage combine
+  - ${DOC} coverage report
+  - ${DOC} codecov --env DH_ACCT_NAME IMAGE_NAME SLIM EXAMPLES
   - docker kill ${DOC_ID}
   - docker ps
 deploy:
