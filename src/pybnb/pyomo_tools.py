@@ -39,6 +39,10 @@ def _add_tmp_component(model, name, obj):
 def _create_optimality_bound(problem,
                              pyomo_objective,
                              best_objective_value):
+    """Returns a constraint that bounds an objective
+    function with a known best value. That is, the
+    constraint will require the objective function to be
+    better than the given value."""
     optbound = pmo.constraint(body=pyomo_objective)
     if problem.sense() == pybnb.minimize:
         assert pyomo_objective.sense == pmo.minimize
@@ -50,6 +54,14 @@ def _create_optimality_bound(problem,
     return optbound
 
 def _mpi_partition(comm, items, root=0):
+    """Creates an iterator that partitions the list of items
+    across processes in the communicator. If the
+    communicator size is greater than 1, the root process
+    iterates over no items, but rather serves them
+    dynamically after receiving requests from workers. This
+    function assumes each process has an identical copy of
+    the items list. Therefore, items in the list are not
+    transferred (only indices)."""
     assert root >= 0
     N = len(items)
     if N > 0:
@@ -151,8 +163,8 @@ class PyomoProblem(pybnb.Problem):
 
 class RangeReductionProblem(pybnb.Problem):
     """A specialized implementation of the
-    :class:`pybnb.Problem <pybnb.problem.Problem>` base
-    class that can be used to perform optimality-based range
+    :class:`pybnb.Problem <pybnb.problem.Problem>` interface
+    that can be used to perform optimality-based range
     reduction on a fully implemented :class:`PyomoProblem`
     by defining additional abstract methods."""
 

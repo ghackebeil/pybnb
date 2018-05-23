@@ -22,24 +22,18 @@ class TestNode(object):
         assert parent.parent_tree_id is None
         assert parent.tree_depth == 0
         assert len(parent.state) == 0
-        parent.tree_depth = 1
-        assert parent.queue_priority == 10
-        assert parent.tree_id is None
-        assert parent.parent_tree_id is None
-        assert parent.tree_depth == 1
-        assert len(parent.state) == 0
         parent.bound = -1
         assert parent.queue_priority == 10
         assert parent.tree_id is None
         assert parent.parent_tree_id is None
-        assert parent.tree_depth == 1
+        assert parent.tree_depth == 0
         assert parent.bound == -1
         assert len(parent.state) == 0
         parent.resize(5)
         assert parent.queue_priority == 10
         assert parent.tree_id is None
         assert parent.parent_tree_id is None
-        assert parent.tree_depth == 1
+        assert parent.tree_depth == 0
         assert parent.bound == -1
         assert len(parent.state) == 5
         children = [parent.new_child()
@@ -49,7 +43,7 @@ class TestNode(object):
             assert child.queue_priority is None
             assert child.tree_id is None
             assert child.parent_tree_id is None
-            assert child.tree_depth == 2
+            assert child.tree_depth == 1
             assert child.bound == -1
             assert len(child.state) == 5
         Node._insert_tree_id(parent._data, 0)
@@ -61,7 +55,7 @@ class TestNode(object):
             assert child.queue_priority is None
             assert child.tree_id is None
             assert child.parent_tree_id == 0
-            assert child.tree_depth == 2
+            assert child.tree_depth == 1
             assert child.bound == -1
             assert len(child.state) == 5
         children = [parent.new_child(size=10)
@@ -71,7 +65,7 @@ class TestNode(object):
             assert child.queue_priority is None
             assert child.tree_id is None
             assert child.parent_tree_id == 0
-            assert child.tree_depth == 2
+            assert child.tree_depth == 1
             assert child.bound == -1
             assert len(child.state) == 10
 

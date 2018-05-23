@@ -13,7 +13,7 @@ is included:
 
  - work load distribution through a central dispatcher
  - work task prioritization strategies (e.g., worst bound
-   first, breadth first)
+   first, breadth first, custom)
  - solver-like log output showing algorithm progress
 
 To use this package, one must implement a branch-and-bound

@@ -40,16 +40,17 @@ except ImportError:                               #pragma:nocover
 class DispatcherQueueData(
         collections.namedtuple("DispatcherQueueData",
                                ["nodes","next_tree_id"])):
-    """A namedtuple storing data that can be used
-    re-initialize a dispatcher queue.
+    """A namedtuple storing data that can be used to
+    initialize a dispatcher queue.
 
     Attributes
     ----------
-    nodes : tuple
-        A list of nodes stored in the order they were
-        found in the priority queue.
+    nodes : list
+        A list of :class:`Node <pybnb.node.Node>` objects.
     next_tree_id : int
-        The next tree_id that will be assigned to a node.
+        The next tree_id that will be assigned to a
+        node. This must be an integer that is larger than
+        any tree_id in the nodes list.
     """
 
 class StatusPrinter(object):
@@ -162,13 +163,13 @@ class StatusPrinter(object):
         Parameters
         ----------
         report : bool, optional
-            Indicate whether or not to force the next `tick`
+            Indicate whether or not to force the next `tic`
             log output. (default: False)
         """
         self._new_objective = True
         self._report_new_objective = report
 
-    def tick(self, force=False):
+    def tic(self, force=False):
         """Provide an opportunity to log output if certain
         criteria are met.
 
@@ -263,7 +264,7 @@ class Dispatcher(object):
     comm : ``mpi4py.MPI.Comm``, optional
         The MPI communicator to use. If set to None, this
         will disable the use of MPI and avoid an attempted
-        import of mpi4py.MPI (which avoids triggering a call
+        import of `mpi4py.MPI` (which avoids triggering a call
         to `MPI_Init()`).
     """
 
@@ -485,10 +486,10 @@ class Dispatcher(object):
             elif tag == DispatcherAction.finalize:
                 msg.recv()
                 assert msg.data is None
-                best_bound = self.finalize()
-                assert best_bound is not None
+                global_bound = self.finalize()
+                assert global_bound is not None
                 self.comm.Bcast(
-                    [array.array("d",[best_bound]),
+                    [array.array("d",[global_bound]),
                      mpi4py.MPI.DOUBLE],
                     root=self.comm.rank)
                 break
@@ -532,16 +533,19 @@ class Dispatcher(object):
             has been set by the user. For all other
             strategies, the :attr:`queue_priority
             <pybnb.node.Node.queue_priority>` node attribute
-            will be set automatically. In all cases, the
-            largest priority node is always selected first,
-            with ties being broken by insertion order.
+            will be set automatically (any existing value
+            will be overwritten). In all cases, the node
+            with the largest priority in the queue is always
+            selected next, with ties being broken by
+            insertion order.
         converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
             The branch-and-bound convergence checker object.
         node_limit : int or None
-            In integer representing the maximum number of
+            An integer representing the maximum number of
             nodes to processes before beginning to terminate
-            the solve. If None, no node limit will be enforced.
-        time_limit : float
+            the solve. If None, no node limit will be
+            enforced.
+        time_limit : float or None
             The maximum amount of time to spend processing
             nodes before beginning to terminate the
             solve. If None, no time limit will be enforced.
@@ -613,7 +617,7 @@ class Dispatcher(object):
             added = self._add_work_to_queue(node._data)
             assert added
         self._check_update_best_objective(best_objective)
-        self.journalist.tick()
+        self.journalist.tic()
 
     def update(self,
                best_objective,
@@ -669,7 +673,7 @@ class Dispatcher(object):
         self.first_update[_source] = False
         self._check_convergence()
         ret = self._send_work()
-        self.journalist.tick()
+        self.journalist.tic()
         return ret
 
     def finalize(self):
@@ -677,21 +681,20 @@ class Dispatcher(object):
 
         Returns
         -------
-        best_bound : float
-            The best objective bound known to the
-            dispatcher.
+        global_bound : float
+            The global bound known to the dispatcher.
         """
-        self.journalist.tick(force=True)
+        self.journalist.tic(force=True)
         self.journalist.log_info("--------------------"
                                  "--------------------"
                                  "--------------------"
                                  "--------------------"
                                  "--------------------"
                                  "-------------")
-        best_bound = self._get_current_bound()
+        global_bound = self._get_current_bound()
         assert self.initialized
         self.initialized = False
-        return best_bound
+        return global_bound
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""

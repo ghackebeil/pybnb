@@ -12,8 +12,8 @@ class Node(object):
 
     This class maintains an internal storage array and
     exposes a portion of that array to the user through the
-    :attr:`state <pybnb.node.Node.state>` attribute.  The
-    :func:`resize <pybnb.node.Node.resize>` method should be
+    :attr:`state <Node.state>` attribute.  The
+    :func:`resize <Node.resize>` method should be
     called to set the amount of available user state
     storage, which will be adjusted to the appropriate
     internal array size.
@@ -64,7 +64,7 @@ class Node(object):
             assert int(self._data[-2]) == 0
             assert self._data[-2] == 0
             # set the tree depth
-            self.tree_depth = tree_depth
+            self._insert_tree_depth(self._data, tree_depth)
 
     def _set_data(self, data):
         assert len(data) >= self._extra_data_slots
@@ -99,7 +99,7 @@ class Node(object):
             # set the has_parent_tree_id flag to False on the child
             child._data[-2] = 0
         child.bound = bound
-        child.tree_depth = tree_depth + 1
+        child._insert_tree_depth(child._data, tree_depth + 1)
         assert child.tree_id is None
         return child
 
@@ -121,7 +121,7 @@ class Node(object):
         ----
             If a new array is allocated, the previous user
             state array (accessible via the :attr:`state
-            <pybnb.node.Node.state>` attribute), will become
+            <Node.state>` attribute), will become
             readonly as it will be invalidated.
         """
         assert size >= 0
@@ -151,10 +151,10 @@ class Node(object):
 
         Note
         ----
-            The :func:`resize <pybnb.node.Node.resize>`
+            The :func:`resize <Node.resize>`
             method is provided to allow users to change the
             amount of storage available in this array. If
-            the previous user state view becomes invalid due
+            the previous user state view becomes stale due
             to a resize, that array view will be marked as
             readonly.
 
@@ -208,24 +208,20 @@ class Node(object):
     @property
     def parent_tree_id(self):
         """Get the tree id of the parent for this node. This
-        attribute will be automatically set on nodes returned
-        from the :func:`pybnb.node.Node.new_child`
-        method."""
+        attribute will be automatically set on nodes
+        returned from the :func:`Node.new_child` method."""
         if self._has_parent_tree_id(self._data):
             return self._extract_parent_tree_id(self._data)
         return None
 
     @property
     def tree_depth(self):
-        """Get/set the tree depth for this node. This
+        """Get the tree depth for this node. This
         attribute will be automatically set on nodes
         returned from the
-        :func:`pybnb.node.Node.new_child` method (to 1
+        :func:`Node.new_child` method (to 1
         more than the value stored on this node)."""
         return self._extract_tree_depth(self._data)
-    @tree_depth.setter
-    def tree_depth(self, tree_depth):
-        self._insert_tree_depth(self._data, tree_depth)
 
     #
     # class-level methods used by lower-level routines

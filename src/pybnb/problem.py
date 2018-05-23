@@ -97,8 +97,8 @@ class Problem(object):
         start of the solve by all processes involved to
         collect the root node problem state, but it may be
         called additional times. When it is called for the
-        root node, the :attr:`tree_id <pybnb.node.Node.tree_id`
-        and :attr:`parent_tree_id <pybnb.node.Node.parent_tree_id`
+        root node, the :attr:`node.tree_id <pybnb.node.Node.tree_id>`
+        and :attr:`node.parent_tree_id <pybnb.node.Node.parent_tree_id>`
         will both be None.
 
         Note
@@ -135,8 +135,9 @@ class Problem(object):
         Parameters
         ----------
         worker_comm : ``mpi4py.MPI.Comm``
-            The MPI communicator to used by the
-            workers. Will be None if MPI has been disabled.
+            The MPI communicator that includes only worker
+            processes. Will be None if MPI has been
+            disabled.
         best_objective : float
             The new best objective value.
         """
@@ -154,8 +155,9 @@ class Problem(object):
         Parameters
         ----------
         worker_comm : ``mpi4py.MPI.Comm``
-            The MPI communicator to used by the
-            workers. Will be None if MPI has been disabled.
+            The MPI communicator that includes only worker
+            processes. Will be None if MPI has been
+            disabled.
         best_objective : float
             The new best objective value.
         """
@@ -174,12 +176,13 @@ class Problem(object):
         Parameters
         ----------
         comm : ``mpi4py.MPI.Comm``
-            The full MPI communicator to used by all
-            processes.  Will be None if MPI has been
+            The full MPI communicator that includes all
+            processes. Will be None if MPI has been
             disabled.
         worker_comm : ``mpi4py.MPI.Comm``
-            The MPI communicator to used by the
-            workers. Will be None if MPI has been disabled.
+            The MPI communicator that includes only worker
+            processes. Will be None if MPI has been
+            disabled.
         results : :class:`pybnb.solver.SolverResults`
             The fully populated results container that will
             be returned from the solver.

@@ -481,12 +481,15 @@ class Solver(object):
             Initializes the solve with an assumed best
             objective. (default: None)
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
-            Can be assigned the return value of a call to
-            the :func:`Solver.save_dispatcher_queue`
-            method after a previous solve to initialize the
-            current solve with any nodes remaining in the
-            queue after the previous solve. (default: None)
-        node_priority_strategy : {"bound", "breadth", "depth", "custom"}
+            Initializes the dispatcher queue with that
+            remaining from a previous solve (obtained by
+            calling :func:`Solver.save_dispatcher_queue`
+            after the solve). If left as None, the queue
+            will be initialized with a single root node
+            created by calling :func:`problem.save_state
+            <pybnb.problem.Problem.save_state`.
+            (default: None)
+        node_priority_strategy : {"bound", "breadth", "depth", "custom"}, optional
             Indicates the strategy for ordering nodes in the
             work queue. The "bound" strategy always selects
             the node with the worst bound first. The
@@ -501,10 +504,12 @@ class Solver(object):
             has been set by the user. For all other
             strategies, the :attr:`queue_priority
             <pybnb.node.Node.queue_priority>` node attribute
-            will be set automatically. In all cases, the
-            largest priority node is always selected first,
-            with ties being broken by insertion
-            order. (default: "bound")
+            will be set automatically (any existing value
+            will be overwritten). In all cases, the node
+            with the largest priority in the queue is always
+            selected next, with ties being broken by
+            insertion order.
+            (default: "bound")
         absolute_gap : float, optional
             The solver will terminate with an optimal status
             when the absolute gap between the objective and
@@ -516,8 +521,9 @@ class Solver(object):
         cutoff : float, optional
             If provided, when the best objective is proven
             worse than this value, the solver will begin to
-            terminate, and the termination_condition flag
-            will be set to the string "cutoff". (default: None)
+            terminate, and the termination_condition flag on
+            the results object will be set to the string
+            "cutoff". (default: None)
         node_limit : int, optional
             If provided, the solver will begin to terminate
             once this many nodes have been processed. It is
@@ -525,8 +531,9 @@ class Solver(object):
             running there are multiple workers, but not by
             more than the number of available workers. If
             this setting initiates a shutdown, then the
-            termination_condition flag will be set to
-            the string "node_limit". (default: None)
+            termination_condition flag on the results object
+            will be set to the string
+            "node_limit". (default: None)
         time_limit : float, optional
             If provided, the solver will begin to terminate
             the solve once this amount of time has
@@ -534,12 +541,16 @@ class Solver(object):
             longer amount of time, depending how long
             workers spend processing their current node. If
             this setting initiates a shutdown, then the
-            termination_condition flag will be set to
-            the string "time_limit". (default: None)
+            termination_condition flag on the results object
+            will be set to the string
+            "time_limit". (default: None)
         absolute_tolerance : float, optional
-            The absolute tolerance use when deciding if two
-            objective values are sufficiently
-            different. (default: 1e-10)
+            The absolute tolerance used when deciding if two
+            objective / bound values are sufficiently
+            different. For instance, this option controls
+            what nodes are added to the queue by checking if
+            their bound is at this much better than the
+            current best object. (default: 1e-10)
         log_interval_seconds : float, optional
             The approximate maximum time (in seconds)
             between solver log updates. More time may pass
@@ -747,7 +758,7 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
     ----------
     stats : dict
         A dictionary of worker statistics returned from
-        a call to :attr:`collect_worker_statistics`.
+        a call to :func:`collect_worker_statistics`.
     stream : file-like object, or string, optional
         A file-like object or a filename where results
         should be written to. (default: ``sys.stdout``)
@@ -835,20 +846,21 @@ def solve(problem,
         mpi4py.MPI (which avoids triggering a call to
         `MPI_Init()`).
     dispatcher_rank : int, optional
-        The process with this rank will be designated as the
+        The process with this rank will be designated the
         dispatcher process. If MPI functionality is disabled
-        (by setting comm=None), this keyword must be 0.
-        (default: 0)
+        (by setting comm=None, or when comm.size==1), this
+        keyword must be left at 0. (default: 0)
     log_filename : string, optional
         A filename where solver output should be sent in
         addition to console. This keyword will be ignored if
-        the 'log' keyword is set. (default: None)
+        the `log` keyword is set. (default: None)
     results_filename : string, optional
         Saves the solver results into a YAML-formatted file
         with the given name. (default: None)
     **kwds
         Additional keywords to be passed to
-        :func:`Solver.solve`
+        :func:`Solver.solve`. See that method for additional
+        keyword documentation.
 
     Returns
     -------
