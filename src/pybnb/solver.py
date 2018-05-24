@@ -142,6 +142,7 @@ class Solver(object):
         mpi = True
         if comm is None:
             mpi = False
+        self._comm = None
         self._worker_flag = None
         self._dispatcher_flag = None
         self._disp = None
@@ -152,16 +153,6 @@ class Solver(object):
             assert comm is not None
             if comm is _notset:
                 comm = mpi4py.MPI.COMM_WORLD
-            if comm.size == 1:
-                mpi = False
-                comm = None
-        if (not mpi) and \
-           ((comm is not None) or (dispatcher_rank != 0)):
-            raise ValueError("MPI functionality has been disabled but "
-                             "the 'comm' keyword is set to something "
-                             "other than None or the 'dispatcher_rank' "
-                             "keyword is set to something other than 0.")
-        if mpi:
             if (int(dispatcher_rank) != dispatcher_rank) or \
                (dispatcher_rank < 0) or \
                (dispatcher_rank >= comm.size):
@@ -170,19 +161,29 @@ class Solver(object):
                                  "an available rank given the "
                                  "size of the MPI communicator (%d)."
                                  % (dispatcher_rank, comm.size))
-            dispatcher_rank = int(dispatcher_rank)
-            if comm.rank == dispatcher_rank:
-                self._disp = Dispatcher(comm.Dup())
-                self._worker_flag = False
-                self._dispatcher_flag = True
+            self._comm = comm
+            if comm.size > 1:
+                dispatcher_rank = int(dispatcher_rank)
+                if comm.rank == dispatcher_rank:
+                    self._disp = Dispatcher(comm)
+                    self._worker_flag = False
+                    self._dispatcher_flag = True
+                else:
+                    self._disp = DispatcherProxy(comm)
+                    self._worker_flag = True
+                    self._dispatcher_flag = False
             else:
-                self._disp = DispatcherProxy(comm.Dup())
+                self._disp = Dispatcher(None)
                 self._worker_flag = True
-                self._dispatcher_flag = False
+                self._dispatcher_flag = True
             self._time = mpi4py.MPI.Wtime
         else:
-            assert comm is None
-            assert dispatcher_rank == 0
+            if dispatcher_rank != 0:
+                raise ValueError(
+                    "MPI functionality has been disabled but "
+                    "the 'dispatcher_rank' keyword is set to "
+                    "something other than 0.")
+            assert self._comm is None
             self._disp = Dispatcher(None)
             self._worker_flag = True
             self._dispatcher_flag = True
@@ -378,14 +379,17 @@ class Solver(object):
         """The full MPI communicator that includes the
         dispatcher and all workers. Will be None if MPI
         functionality has been disabled."""
-        return self._disp.comm
+        return self._comm
 
     @property
     def worker_comm(self):
-        """The worker MPI communicator. Will be None if this
-        process is designated as a dispatcher or if MPI
-        functionality has been disabled."""
-        if not self.is_dispatcher:
+        """The worker MPI communicator. Will be None on any
+        processes for which :attr:`Solver.is_worker` is
+        False, or if MPI functionality has been disabled."""
+        if (self._comm is None) or \
+           (self._comm.size == 1):
+            return self._comm
+        elif not self.is_dispatcher:
             return self._disp.worker_comm
         return None
 
@@ -401,7 +405,8 @@ class Solver(object):
             storing a value for each worker.
         """
         stats = {}
-        if self.comm is not None:
+        if (self.comm is not None) and \
+           (self.comm.size > 1):
             if self.is_worker:
                 assert self.worker_comm is not None
                 assert not self.is_dispatcher
@@ -420,13 +425,17 @@ class Solver(object):
                 stats['comm_time'] = self.worker_comm.allgather(
                     self._disp.comm_time)
                 if self.worker_comm.rank == 0:
-                    self.comm.send(stats, self._disp.dispatcher_rank)
+                    self.comm.send(stats,
+                                   self._disp.dispatcher_rank,
+                                   tag=11112111)
             else:
                 assert self.worker_comm is None
                 assert self.is_dispatcher
-                stats = self.comm.recv(source=self._disp.root_worker_rank)
+                stats = self.comm.recv(source=self._disp.root_worker_rank,
+                                       tag=11112111)
         else:
-            assert self.worker_comm is None
+            assert self.is_worker
+            assert self.is_dispatcher
             stats['wall_time'] = [self._wall_time]
             stats['objective_eval_time'] = [self._objective_eval_time]
             stats['objective_eval_count'] = [self._objective_eval_count]
@@ -569,7 +578,8 @@ class Solver(object):
             An object storing information about the solve.
         """
 
-        if self.comm is not None:
+        if (self.comm is not None) and \
+           (self.comm.size > 1):
             self.comm.Barrier()
 
         if best_objective is None:
@@ -584,7 +594,8 @@ class Solver(object):
 
         # broadcast options from dispatcher to everyone else
         # to ensure consistency
-        if self.comm is not None:
+        if (self.comm is not None) and \
+           (self.comm.size > 1):
             settings = array.array("d", [best_objective,
                                          node_priority_strategy_int,
                                          absolute_gap,
@@ -669,7 +680,8 @@ class Solver(object):
             problem.load_state(root)
         stop = self._time()
         self._wall_time = stop-start
-        if self.comm is not None:
+        if (self.comm is not None) and \
+           (self.comm.size > 1):
             if self.is_worker:
                 nodes_buf_local = array.array("i", [self._explored_nodes_count])
                 nodes_buf_global = array.array("i", [0])
@@ -691,9 +703,12 @@ class Solver(object):
             del wtime_buf_local
             if self.is_worker and (self.worker_comm.rank == 0):
                 assert not self.is_dispatcher
-                self.comm.send(results, self._disp.dispatcher_rank)
+                self.comm.send(results,
+                               self._disp.dispatcher_rank,
+                               tag=5555578)
             elif self.is_dispatcher:
-                results = self.comm.recv(source=self._disp.root_worker_rank)
+                results = self.comm.recv(source=self._disp.root_worker_rank,
+                                         tag=5555578)
                 results.termination_condition = self._disp.get_termination_condition()
             results.termination_condition = self.comm.bcast(results.termination_condition,
                                                             root=self._disp.dispatcher_rank)

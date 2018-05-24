@@ -3,7 +3,6 @@ import tempfile
 import logging
 
 import pytest
-from runtests.mpi import MPITest
 
 from pybnb.common import minimize
 from pybnb.convergence_checker import ConvergenceChecker
@@ -13,10 +12,10 @@ from pybnb.problem import Problem
 from pybnb.dispatcher import DispatcherQueueData
 from pybnb.misc import get_simple_logger
 
-from six import StringIO
-
 from .common import mpi_available
 
+from six import StringIO
+from runtests.mpi import MPITest
 
 def _get_logging_baseline(size):
     out = \

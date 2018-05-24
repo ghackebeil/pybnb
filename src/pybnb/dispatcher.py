@@ -264,8 +264,8 @@ class Dispatcher(object):
     comm : ``mpi4py.MPI.Comm``, optional
         The MPI communicator to use. If set to None, this
         will disable the use of MPI and avoid an attempted
-        import of `mpi4py.MPI` (which avoids triggering a call
-        to `MPI_Init()`).
+        import of `mpi4py.MPI` (which avoids triggering a
+        call to `MPI_Init()`).
     """
 
     def __init__(self, comm):
@@ -299,6 +299,7 @@ class Dispatcher(object):
         self._start_time = None
 
         if self.comm is not None:
+            assert comm.size > 1
             # send rank of dispatcher to all workers
             self.dispatcher_rank, self.root_worker_rank = \
                 DispatcherProxy._init(
@@ -497,6 +498,11 @@ class Dispatcher(object):
                 msg.recv()
                 assert msg.data is None
                 break
+            else:
+                raise RuntimeError("Dispatcher received invalid "
+                                   "message tag '%s' from rank '%s'"
+                                   % (tag, source))
+
     #
     # Local Interface
     #
