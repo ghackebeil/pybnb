@@ -76,25 +76,32 @@ def _mpi_partition(comm, items, root=0):
             last_tag = {}
             if comm.rank == root:
                 i = 0
+                requests = []
                 for dest in range(1, comm.size):
                     last_tag[dest] = i
-                    comm.Send(_null, dest, tag=i)
+                    requests.append(comm.Isend(_null, dest, tag=i))
                     i += 1
                 status = mpi4py.MPI.Status()
                 while i < N:
                     comm.Recv(_null, status=status)
                     last_tag[status.Get_source()] = i
-                    comm.Send(_null, status.Get_source(), tag=i)
+                    requests.append(comm.Isend(_null, status.Get_source(), tag=i))
                     i += 1
+                final_recv = []
                 for dest in last_tag:
                     if last_tag[dest] < N:
-                        comm.Send(_null, dest, tag=N)
+                        requests.append(comm.Isend(_null, dest, tag=N))
+                    requests.append(comm.Irecv(_null, dest))
+                mpi4py.MPI.Request.Waitall(requests)
             else:
                 status = mpi4py.MPI.Status()
-                comm.Recv(_null, source=0, status=status)
+                comm.Recv(_null, source=root, status=status)
                 while status.Get_tag() < N:
                     yield items[status.Get_tag()]
-                    comm.Sendrecv(_null, 0, recvbuf=_null, source=0, status=status)
+                    comm.Sendrecv(_null,
+                                  root,
+                                  recvbuf=_null,
+                                  source=root, status=status)
 
 def generate_cids(model,
                   prefix=(),

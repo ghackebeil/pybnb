@@ -113,7 +113,7 @@ if __name__ == "__main__":
     best_objective = None
     if (comm is None) or (comm.rank == 0):
         best_objective = problem.objective()
-    if (comm is not None):
+    if (comm is not None) and (comm.size > 1):
         best_objective = comm.bcast(best_objective, root=0)
     assert best_objective != problem.unbounded_objective
 
@@ -124,7 +124,6 @@ if __name__ == "__main__":
         comm=comm)
 
     dispatcher_queue = None
-    best_objective = None
     if (comm is None) or (comm.rank == 0):
         opt_obrr = pybnb.Solver(comm=None)
         results = opt_obrr.solve(obrr, node_limit=7,
