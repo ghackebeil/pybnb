@@ -578,9 +578,9 @@ class Solver(object):
             An object storing information about the solve.
         """
 
-        if (self.comm is not None) and \
-           (self.comm.size > 1):
-            self.comm.Barrier()
+        #if (self.comm is not None) and \
+        #   (self.comm.size > 1):
+        #    self.comm.Barrier()
 
         if best_objective is None:
             best_objective = problem.infeasible_objective()
