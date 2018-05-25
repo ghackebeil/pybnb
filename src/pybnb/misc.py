@@ -155,15 +155,29 @@ def get_keyword_docs(doc):
             break
     else:                                              #pragma:nocover
         assert False
+    i = i_start
     args = {}
-    assert re.match(r".+ : .+(, optional)?", lines[i_start])
-    last = lines[i_start].split(' : ')[0].strip()
+    choices = {}
+    assert re.match(r".+ : .+(, optional)?", lines[i])
+    last = lines[i].split(' : ')[0].strip()
+    if re.match(r".+ : \{.+\}(, optional)?", lines[i]):
+        assert lines[i].count("{") == 1
+        assert lines[i].count("}") == 1
+        opts = lines[i].split("{")[1].split("}")[0]
+        opts = [eval(c.strip()) for c in opts.split(",")]
+        choices[last] = opts
     args[last] = ""
-    i = i_start + 1
+    i += 1
     while i != i_stop:
         if re.match(r".+ : .+(, optional)?", lines[i]):
             args[last] = args[last].strip()
             last = lines[i].split(' : ')[0].strip()
+            if re.match(r".+ : \{.+\}(, optional)?", lines[i]):
+                assert lines[i].count("{") == 1
+                assert lines[i].count("}") == 1
+                opts = lines[i].split("{")[1].split("}")[0]
+                opts = [eval(c.strip()) for c in opts.split(",")]
+                choices[last] = opts
             args[last] = ""
         else:
             args[last] += (lines[i].strip() + " ")
@@ -182,6 +196,8 @@ def get_keyword_docs(doc):
             assert len(doc) == 2
             assert doc[1].strip() == ""
             data[key]["doc"] = doc[0].strip()
+        if key in choices:
+            data[key]["choices"] = choices[key]
 
     return data
 
@@ -307,11 +323,19 @@ def create_command_line_solver(problem, parser=None):
     for key in solve_defaults:
         assert solve_defaults[key] == \
             solve_docs[key]["default"]
+        if key == "node_priority_strategy":
+            assert "choices" in solve_docs[key]
+        else:
+            assert "choices" not in solve_docs[key]
     parser.add_argument(
         "--node-priority-strategy",
         type=str,
+        choices=solve_docs["node_priority_strategy"]["choices"],
         default=solve_defaults.pop("node_priority_strategy"),
-        help=solve_docs["absolute_gap"]["doc"])
+        help=solve_docs["node_priority_strategy"]["doc"].\
+           replace(r":attr:`queue_priority "
+                   r"<pybnb.node.Node.queue_priority>`",
+                   "queue_priority"))
     parser.add_argument(
         "--absolute-gap",
         type=float,

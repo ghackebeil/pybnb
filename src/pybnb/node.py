@@ -71,7 +71,7 @@ class Node(object):
         assert type(data) is numpy.ndarray
         self._data = data
         self._user_state = self._data[:-self._extra_data_slots]
-        # make _user_state is a view of _data
+        # make sure _user_state is a view of _data
         if self._data.base is None:
             assert self._user_state.base is self._data
         else:

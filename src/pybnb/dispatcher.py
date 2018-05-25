@@ -30,7 +30,8 @@ from pybnb.mpi_utils import (Message,
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   CustomPriorityQueue,
                                   BreadthFirstPriorityQueue,
-                                  DepthFirstPriorityQueue)
+                                  DepthFirstPriorityQueue,
+                                  FIFOQueue)
 
 try:
     import mpi4py
@@ -577,6 +578,9 @@ class Dispatcher(object):
                 self.converger.sense)
         elif node_priority_strategy == "custom":
             self.queue = CustomPriorityQueue(
+                self.converger.sense)
+        elif node_priority_strategy == "fifo":
+            self.queue = FIFOQueue(
                 self.converger.sense)
         elif node_priority_strategy == "breadth":
             self.queue = BreadthFirstPriorityQueue(

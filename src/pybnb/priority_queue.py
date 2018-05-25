@@ -5,6 +5,7 @@ used by the dispatcher.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 
+import collections
 import heapq
 
 from pybnb.common import (minimize,
@@ -20,6 +21,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
 
     This queue implementation is not allowed to store None.
     """
+    requires_priority = True
 
     def __init__(self):
         self._count = 0
@@ -51,14 +53,15 @@ class _NoThreadingMaxPriorityFirstQueue(object):
             return None
 
     def next(self):
-        """Returns, but does not remove, the highest
-        priority item in the queue, where ties are broken by
-        the order items were placed in the queue. If the
-        queue is empty, returns None."""
+        """Returns, without modifying the queue, a tuple of
+        the form (cnt, item), where item is highest priority
+        entry in the queue and cnt is the unique counter
+        assigned to it when it was added to the queue. If
+        the queue is empty, raises IndexError."""
         if len(self._heap) > 0:
-            return self._heap[0][2]
+            return self._heap[0][1:]
         else:
-            return None
+            raise IndexError("The queue is empty")
 
     def filter(self, func, include_counters=False):
         """Removes items from the queue for which
@@ -87,6 +90,79 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         for _,_,item in self._heap:
             yield item
 
+class _NoThreadingFIFOQueue(object):
+    """A simple first-in, first-out queue implementation
+    that is not thread safe.
+
+    This queue implementation is not allowed to store None.
+    """
+    requires_priority = False
+
+    def __init__(self):
+        self._count = 0
+        self._deque = collections.deque()
+
+    def size(self):
+        """Returns the size of the queue."""
+        return len(self._deque)
+
+    def put(self, item):
+        """Puts item at the end of the queue. Items placed
+        in the queue may not be None. This method returns a
+        unique counter associated with each put."""
+        assert item is not None
+        cnt = self._count
+        self._count += 1
+        self._deque.append((cnt, item))
+        return cnt
+
+    def get(self):
+        """Removes and returns the highest priority item in
+        the queue, where ties are broken by the order items
+        were placed in the queue. If the queue is empty,
+        returns None."""
+        if len(self._deque) > 0:
+            return self._deque.popleft()[1]
+        else:
+            return None
+
+    def next(self):
+        """Returns, without modifying the queue, a tuple of
+        the form (cnt, item), where item is highest priority
+        entry in the queue and cnt is the unique counter
+        assigned to it when it was added to the queue. If
+        the queue is empty, raises IndexError."""
+        if len(self._deque) > 0:
+            return self._deque[0]
+        else:
+            raise IndexError("The queue is empty")
+
+    def filter(self, func, include_counters=False):
+        """Removes items from the queue for which
+        `func(item)` returns False. The list of items
+        removed is returned. If `include_counters` is set to
+        True, values in the returned list will have the form
+        (cnt, item), where cnt is a unique counter that was
+        created for the item when it was added to the
+        queue."""
+        deque_new = collections.deque()
+        removed = []
+        for cnt, item in self._deque:
+            if func(item):
+                deque_new.append((cnt, item))
+            elif not include_counters:
+                removed.append(item)
+            else:
+                removed.append((cnt,item))
+        self._deque = deque_new
+        return removed
+
+    def items(self):
+        """Iterates over the queued items in arbitrary order
+        without modifying the queue."""
+        for _,item in self._deque:
+            yield item
+
 class IPriorityQueue(object):
     """The abstract interface for priority queues that store
     node data for the dispatcher."""
@@ -99,7 +175,8 @@ class IPriorityQueue(object):
         """Puts a node data item in the queue, possibly
         updating the value of :attr:`queue_priority
         <pybnb.node.Node.queue_priority>`, depending on the
-        queue implementation."""
+        queue implementation. This method returns a unique
+        counter associated with each put."""
         raise NotImplementedError()
 
     def get(self):                                #pragma:nocover
@@ -150,7 +227,7 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
         else:
             priority = bound
         Node._insert_queue_priority(data, priority)
-        self._queue.put(data, priority)
+        return self._queue.put(data, priority)
 
     def get(self):
         return self._queue.get()
@@ -158,7 +235,7 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
     def bound(self):
         bound = None
         if self._queue.size() > 0:
-            data = self._queue.next()
+            _,data = self._queue.next()
             bound = Node._extract_bound(data)
             priority = Node._extract_queue_priority(data)
             if self._sense == minimize:
@@ -171,8 +248,6 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
         return self._queue.filter(func)
 
     def items(self):
-        """Iterates over the queued items in arbitrary order
-        without modifying the queue."""
         return self._queue.items()
 
 class CustomPriorityQueue(IPriorityQueue):
@@ -187,10 +262,12 @@ class CustomPriorityQueue(IPriorityQueue):
         The objective sense for the problem.
     """
 
-    def __init__(self, sense):
+    def __init__(self,
+                 sense,
+                 _queue_type_=_NoThreadingMaxPriorityFirstQueue):
         assert sense in (minimize, maximize)
         self._sense = sense
-        self._queue = _NoThreadingMaxPriorityFirstQueue()
+        self._queue = _queue_type_()
         self._sorted_by_bound = SortedList()
 
     def size(self):
@@ -198,18 +275,22 @@ class CustomPriorityQueue(IPriorityQueue):
 
     def put(self, data):
         bound = Node._extract_bound(data)
-        if not Node._has_queue_priority(data):
-            raise ValueError("A node queue priority is required")
-        priority = Node._extract_queue_priority(data)
-        cnt = self._queue.put(data, priority)
+        if self._queue.requires_priority:
+            if not Node._has_queue_priority(data):
+                raise ValueError("A node queue priority is required")
+            priority = Node._extract_queue_priority(data)
+            cnt = self._queue.put(data, priority)
+        else:
+            cnt = self._queue.put(data)
         if self._sense == maximize:
             self._sorted_by_bound.add((-bound, cnt, data))
         else:
             self._sorted_by_bound.add((bound, cnt, data))
+        return cnt
 
     def get(self):
         if self._queue.size() > 0:
-            _,cnt,data_ = self._queue._heap[0]
+            cnt,data_ = self._queue.next()
             assert type(cnt) is int
             data = self._queue.get()
             assert data_ is data
@@ -242,8 +323,6 @@ class CustomPriorityQueue(IPriorityQueue):
         return removed
 
     def items(self):
-        """Iterates over the queued items in arbitrary order
-        without modifying the queue."""
         return self._queue.items()
 
 class BreadthFirstPriorityQueue(CustomPriorityQueue):
@@ -258,7 +337,7 @@ class BreadthFirstPriorityQueue(CustomPriorityQueue):
         depth = Node._extract_tree_depth(data)
         assert depth >= 0
         Node._insert_queue_priority(data, -depth)
-        super(BreadthFirstPriorityQueue, self).put(data)
+        return super(BreadthFirstPriorityQueue, self).put(data)
 
 class DepthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -272,4 +351,22 @@ class DepthFirstPriorityQueue(CustomPriorityQueue):
         depth = Node._extract_tree_depth(data)
         assert depth >= 0
         Node._insert_queue_priority(data, depth)
-        super(DepthFirstPriorityQueue, self).put(data)
+        return super(DepthFirstPriorityQueue, self).put(data)
+
+class FIFOQueue(CustomPriorityQueue):
+    """A priority queue implementation that serves nodes in
+    first-in, first-out order.
+
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
+        The objective sense for the problem.
+    """
+
+    def __init__(self, sense):
+        super(FIFOQueue, self).__init__(
+            sense,
+            _queue_type_=_NoThreadingFIFOQueue)
+
+    def put(self, data):
+        cnt = super(FIFOQueue, self).put(data)
+        Node._insert_queue_priority(data, -cnt)
+        return cnt

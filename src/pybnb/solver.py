@@ -34,13 +34,15 @@ _priority_to_int = {}
 _priority_to_int["bound"] = 0
 _priority_to_int["breadth"] = 1
 _priority_to_int["depth"] = 2
-_priority_to_int["custom"] = 3
+_priority_to_int["fifo"] = 3
+_priority_to_int["custom"] = 4
 
-_int_to_priority = [None]*4
+_int_to_priority = [None]*5
 _int_to_priority[0] = "bound"
 _int_to_priority[1] = "breadth"
 _int_to_priority[2] = "depth"
-_int_to_priority[3] = "custom"
+_int_to_priority[3] = "fifo"
+_int_to_priority[4] = "custom"
 
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve."""
@@ -498,7 +500,7 @@ class Solver(object):
             created by calling :func:`problem.save_state
             <pybnb.problem.Problem.save_state`.
             (default: None)
-        node_priority_strategy : {"bound", "breadth", "depth", "custom"}, optional
+        node_priority_strategy : {"bound", "breadth", "depth", "fifo", "custom"}, optional
             Indicates the strategy for ordering nodes in the
             work queue. The "bound" strategy always selects
             the node with the worst bound first. The
@@ -507,8 +509,9 @@ class Solver(object):
             breadth-first search). The "depth" strategy
             always selects the node with the largest tree
             depth first (i.e., depth-first search). The
-            "custom" strategy assumes the
-            :attr:`queue_priority
+            "fifo" strategy selects nodes in first-in,
+            first-out order. The "custom" strategy assumes
+            the :attr:`queue_priority
             <pybnb.node.Node.queue_priority>` node attribute
             has been set by the user. For all other
             strategies, the :attr:`queue_priority
@@ -517,8 +520,7 @@ class Solver(object):
             will be overwritten). In all cases, the node
             with the largest priority in the queue is always
             selected next, with ties being broken by
-            insertion order.
-            (default: "bound")
+            insertion order. (default: "bound")
         absolute_gap : float, optional
             The solver will terminate with an optimal status
             when the absolute gap between the objective and

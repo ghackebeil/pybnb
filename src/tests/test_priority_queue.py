@@ -8,10 +8,12 @@ from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.node import Node
 from pybnb.priority_queue import \
     (_NoThreadingMaxPriorityFirstQueue,
+     _NoThreadingFIFOQueue,
      WorstBoundFirstPriorityQueue,
      CustomPriorityQueue,
      BreadthFirstPriorityQueue,
-     DepthFirstPriorityQueue)
+     DepthFirstPriorityQueue,
+     FIFOQueue)
 
 def assert_isheap(x):
     for k in range(len(x)):
@@ -26,13 +28,16 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
         q = _NoThreadingMaxPriorityFirstQueue()
         assert_isheap(q._heap)
         assert q.size() == 0
-        assert q.next() is None
+        with pytest.raises(IndexError):
+            q.next()
+        cntr = {}
         for i in range(10):
-            q.put(i,0)
+            cntr[i] = q.put(i,0)
             assert q.size() == i+1
             assert_isheap(q._heap)
         for i in range(10):
-            x_ = q.next()
+            c_, x_ = q.next()
+            assert c_ == cntr[x_]
             x = q.get()
             assert x_ is x
             assert x == i
@@ -40,7 +45,8 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             assert_isheap(q._heap)
         assert q.size() == 0
         assert q.get() is None
-        assert q.next() is None
+        with pytest.raises(IndexError):
+            q.next()
         assert_isheap(q._heap)
 
     def test_put_get(self):
@@ -49,35 +55,37 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             q.put(None, 0)
         assert sorted(q.items()) == []
         assert_isheap(q._heap)
-        q.put(1,1)
+        cntr = {}
+        cntr[1] = q.put(1,1)
         assert sorted(q.items()) == [1]
         assert_isheap(q._heap)
-        q.put(2,2)
+        cntr[2] = q.put(2,2)
         assert sorted(q.items()) == [1,2]
         assert_isheap(q._heap)
-        q.put(3,2)
+        cntr[3] = q.put(3,2)
         assert sorted(q.items()) == [1,2,3]
         assert_isheap(q._heap)
-        q.put(4,-4)
+        cntr[4] = q.put(4,-4)
         assert sorted(q.items()) == [1,2,3,4]
         assert_isheap(q._heap)
-        assert q.next() == 2
+        assert q.next() == (cntr[q.next()[1]], 2)
         assert q.get() == 2
         assert sorted(q.items()) == [1,3,4]
         assert_isheap(q._heap)
-        assert q.next() == 3
+        assert q.next() == (cntr[q.next()[1]], 3)
         assert q.get() == 3
         assert sorted(q.items()) == [1,4]
         assert_isheap(q._heap)
-        assert q.next() == 1
+        assert q.next() == (cntr[q.next()[1]], 1)
         assert q.get() == 1
         assert sorted(q.items()) == [4]
         assert_isheap(q._heap)
-        assert q.next() == 4
+        assert q.next() == (cntr[q.next()[1]], 4)
         assert q.get() == 4
         assert sorted(q.items()) == []
         assert_isheap(q._heap)
-        assert q.next() is None
+        with pytest.raises(IndexError):
+            q.next()
 
     def test_filter(self):
         for k in range(-10,11):
@@ -103,6 +111,106 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             assert_isheap(q._heap)
             check = []
             for _,_,item in q._heap:
+                check.append(item)
+            assert sorted(correct) == sorted(check)
+
+class Test_NoThreadingFIFOQueue(object):
+
+    def test_size(self):
+        q = _NoThreadingFIFOQueue()
+        assert q.size() == 0
+        with pytest.raises(IndexError):
+            q.next()
+        cntr = {}
+        for i in range(10):
+            cntr[i] = q.put(i)
+            assert q.size() == i+1
+        for i in range(10):
+            c_, x_ = q.next()
+            assert c_ == cntr[x_]
+            x = q.get()
+            assert x_ is x
+            assert x == i
+            assert q.size() == 10-(i+1)
+        assert q.size() == 0
+        assert q.get() is None
+        with pytest.raises(IndexError):
+            q.next()
+
+    def test_put_get(self):
+        q = _NoThreadingFIFOQueue()
+        with pytest.raises(AssertionError):
+            q.put(None)
+        assert list(q.items()) == []
+        cntr = {}
+        cntr[1] = q.put(1)
+        assert list(q.items()) == [1]
+        cntr[2] = q.put(2)
+        assert list(q.items()) == [1,2]
+        cntr[3] = q.put(3)
+        assert list(q.items()) == [1,2,3]
+        cntr[4] = q.put(4)
+        assert list(q.items()) == [1,2,3,4]
+        assert q.next() == (cntr[q.next()[1]], 1)
+        assert q.get() == 1
+        assert list(q.items()) == [2,3,4]
+        assert q.next() == (cntr[q.next()[1]], 2)
+        assert q.get() == 2
+        assert list(q.items()) == [3,4]
+        assert q.next() == (cntr[q.next()[1]], 3)
+        assert q.get() == 3
+        assert list(q.items()) == [4]
+        assert q.next() == (cntr[q.next()[1]], 4)
+        assert q.get() == 4
+        assert list(q.items()) == []
+        with pytest.raises(IndexError):
+            q.next()
+
+    def test_filter(self):
+        for k in range(-10,11):
+            cutoff = k*11
+            def _filter(item):
+                if item <= cutoff:
+                    return True
+            items = list(range(-1000,1000))
+            random.shuffle(items)
+            q = _NoThreadingFIFOQueue()
+            for i in items:
+                q.put(i)
+            correct = []
+            removed = []
+            for _,item in q._deque:
+                if item <= cutoff:
+                    correct.append(item)
+                else:
+                    removed.append(item)
+            removed_ = q.filter(_filter)
+            assert removed_ == removed
+            check = []
+            for _,item in q._deque:
+                check.append(item)
+            assert sorted(correct) == sorted(check)
+        for k in range(-10,11):
+            cutoff = k*11
+            def _filter(item):
+                if item <= cutoff:
+                    return True
+            items = list(range(-1000,1000))
+            random.shuffle(items)
+            q = _NoThreadingFIFOQueue()
+            for i in items:
+                q.put(i)
+            correct = []
+            removed = []
+            for cnt,item in q._deque:
+                if item <= cutoff:
+                    correct.append(item)
+                else:
+                    removed.append((cnt,item))
+            removed_ = q.filter(_filter, include_counters=True)
+            assert removed_ == removed
+            check = []
+            for _,item in q._deque:
                 check.append(item)
             assert sorted(correct) == sorted(check)
 
@@ -227,7 +335,7 @@ class TestCustomPriorityQueue(object):
             node = Node(size=0)
             node.bound = i
             node.queue_priority = -i
-            q.put(node._data)
+            assert q.put(node._data) == i-1
             assert node.queue_priority == -i
             items.append(node._data)
             assert q.size() == i
@@ -263,7 +371,7 @@ class TestCustomPriorityQueue(object):
             node = Node(size=0)
             node.bound = -i
             node.queue_priority = i
-            q.put(node._data)
+            assert q.put(node._data) == i-1
             assert node.queue_priority == i
             items.append(node._data)
             assert q.size() == i
@@ -294,13 +402,13 @@ class TestBreadthFirstPriorityQueue(object):
         q = BreadthFirstPriorityQueue(minimize)
         node = Node(size=0)
         assert node.queue_priority is None
-        q.put(node._data)
+        assert q.put(node._data) == 0
         assert node.tree_depth == 0
         assert node.queue_priority == 0
         child = node.new_child()
         assert child.tree_depth == 1
         assert child.queue_priority is None
-        q.put(child._data)
+        assert q.put(child._data) == 1
         assert child.queue_priority == -child.tree_depth
 
 class TestDepthFirstPriorityQueue(object):
@@ -309,11 +417,24 @@ class TestDepthFirstPriorityQueue(object):
         q = DepthFirstPriorityQueue(minimize)
         node = Node(size=0)
         assert node.queue_priority is None
-        q.put(node._data)
+        assert q.put(node._data) == 0
         assert node.tree_depth == 0
         assert node.queue_priority == 0
         child = node.new_child()
         assert child.tree_depth == 1
         assert child.queue_priority is None
-        q.put(child._data)
+        assert q.put(child._data) == 1
         assert child.queue_priority == child.tree_depth
+
+class TestFIFOQueue(object):
+
+    def test_overwrites_queue_priority(self):
+        q = FIFOQueue(minimize)
+        node = Node(size=0)
+        assert node.queue_priority is None
+        assert q.put(node._data) == 0
+        assert node.queue_priority == 0
+        child = node.new_child()
+        assert child.queue_priority is None
+        assert q.put(child._data) == 1
+        assert child.queue_priority == -1
