@@ -158,19 +158,13 @@ def get_keyword_docs(doc):
     i = i_start
     args = {}
     choices = {}
-    assert re.match(r".+ : .+(, optional)?", lines[i])
-    last = lines[i].split(' : ')[0].strip()
-    if re.match(r".+ : \{.+\}(, optional)?", lines[i]):
-        assert lines[i].count("{") == 1
-        assert lines[i].count("}") == 1
-        opts = lines[i].split("{")[1].split("}")[0]
-        opts = [eval(c.strip()) for c in opts.split(",")]
-        choices[last] = opts
-    args[last] = ""
-    i += 1
+    i = i_start
     while i != i_stop:
+        if i == i_start:
+            assert re.match(r".+ : .+(, optional)?", lines[i])
         if re.match(r".+ : .+(, optional)?", lines[i]):
-            args[last] = args[last].strip()
+            if i != i_start:
+                args[last] = args[last].strip()
             last = lines[i].split(' : ')[0].strip()
             if re.match(r".+ : \{.+\}(, optional)?", lines[i]):
                 assert lines[i].count("{") == 1
