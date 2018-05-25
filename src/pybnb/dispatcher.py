@@ -499,7 +499,7 @@ class Dispatcher(object):
                 msg.recv()
                 assert msg.data is None
                 break
-            else:
+            else:                                 #pragma:nocover
                 raise RuntimeError("Dispatcher received invalid "
                                    "message tag '%s' from rank '%s'"
                                    % (tag, source))

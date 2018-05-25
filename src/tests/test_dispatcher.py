@@ -10,7 +10,8 @@ from pybnb.dispatcher import (Dispatcher,
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   CustomPriorityQueue,
                                   BreadthFirstPriorityQueue,
-                                  DepthFirstPriorityQueue)
+                                  DepthFirstPriorityQueue,
+                                  FIFOQueue)
 
 class TestDispatcherSimple(object):
 
@@ -72,3 +73,13 @@ class TestDispatcherSimple(object):
             log,
             log_interval_seconds)
         assert type(disp.queue) is DepthFirstPriorityQueue
+        disp.initialize(
+            inf,
+            initialize_queue,
+            'fifo',
+            converger,
+            node_limit,
+            time_limit,
+            log,
+            log_interval_seconds)
+        assert type(disp.queue) is FIFOQueue
