@@ -395,7 +395,7 @@ def create_command_line_solver(problem, parser=None):
 
     try:
         import mpi4py
-    except ImportError:
+    except ImportError:                                #pragma:nocover
         if not args.disable_mpi:
             raise ImportError("The mpi4py module is not "
                               "available. To run this script "
