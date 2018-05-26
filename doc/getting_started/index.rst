@@ -154,4 +154,26 @@ description for each of these methods.
 Solving a Problem
 -----------------
 
-Under construction ... (see :func:`pybnb.solve <pybnb.solver.solve>` for now)
+There are two approaches to solving a branch-and-bound
+problem with ``pybnb``. The first is to simply call the
+convenience function :func:`pybnb.solve
+<pybnb.solver.solve>`, and the second is to create a
+:class:`pybnb.Solver <pybnb.solver.Solver>` object and call
+the :func:`Solver.solve <pybnb.solver.Solver.solve>` method.
+
+Both approaches can solve a problem in serial or
+parallel. The difference between the two approaches is that
+the :func:`pybnb.solve <pybnb.solver.solve>` function
+provides a few additional keywords that simplify the process
+of saving solver output and results to a file. Additionally,
+this function collects and reports workload and timing
+statistics for the solve, which can add some overhead. These
+statistics are not collected by the :func:`Solver.solve
+<pybnb.solver.Solver.solve>` method, thus, the second
+approach of directly using a :class:`pybnb.Solver
+<pybnb.solver.Solver>` object can be used to avoid this
+overhead. There is also some overhead associated with
+creating a :class:`pybnb.Solver <pybnb.solver.Solver>`
+object, but once created the :func:`Solver.solve
+<pybnb.solver.Solver.solve>` method can be called any number
+of time.
