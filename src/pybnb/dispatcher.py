@@ -423,7 +423,8 @@ class Dispatcher(object):
     def _check_update_best_objective(self, objective):
         if self.converger.objective_improved(objective,
                                              self.best_objective):
-            self.journalist.new_objective(report=True)
+            if self.journalist is not None:
+                self.journalist.new_objective(report=True)
             self.best_objective = objective
             removed = self.queue.filter(
                 lambda data_: self.converger.objective_can_improve(
@@ -656,29 +657,33 @@ class Dispatcher(object):
         self.first_update = \
             {_r: True for _r in self.worker_ranks}
         self.has_work = set()
-        self.journalist = StatusPrinter(
-            self,
-            log,
-            log_interval_seconds=log_interval_seconds)
+        self._start_time = time.time()
+        if (log is not None) and (not log.disabled):
+            self.journalist = StatusPrinter(
+                self,
+                log,
+                log_interval_seconds=log_interval_seconds)
+            self.log_info("Starting branch & bound solve:\n"
+                          " - worker processes: %d\n"
+                          " - node priority strategy: %s"
+                          % (len(self.worker_ranks),
+                             node_priority_strategy))
+        else:
+            self.journalist = None
         self.next_tree_id = initialize_queue.next_tree_id
         self.stop_optimality = False
         self.stop_node_limit = False
         self.stop_time_limit = False
         self.stop_cutoff = False
         self.initialized = True
-        self._start_time = time.time()
-        self.journalist.log_info("Starting branch & bound solve:\n"
-                                 " - worker processes: %d\n"
-                                 " - node priority strategy: %s"
-                                 % (len(self.worker_ranks),
-                                    node_priority_strategy))
         for node in initialize_queue.nodes:
             assert node.tree_id is not None
             assert self.next_tree_id > node.tree_id
             added = self._add_work_to_queue(node._data)
             assert added
         self._check_update_best_objective(best_objective)
-        self.journalist.tic()
+        if self.journalist is not None:
+            self.journalist.tic()
 
     def update(self,
                best_objective,
@@ -741,7 +746,8 @@ class Dispatcher(object):
         self.first_update[_source] = False
         self._check_convergence()
         ret = self._send_work()
-        self.journalist.tic()
+        if self.journalist is not None:
+            self.journalist.tic()
         return ret
 
     def finalize(self):
@@ -752,13 +758,14 @@ class Dispatcher(object):
         global_bound : float
             The global bound known to the dispatcher.
         """
-        self.journalist.tic(force=True)
-        self.journalist.log_info("--------------------"
-                                 "--------------------"
-                                 "--------------------"
-                                 "--------------------"
-                                 "--------------------"
-                                 "-------------")
+        if self.journalist is not None:
+            self.journalist.tic(force=True)
+            self.journalist.log_info("--------------------"
+                                     "--------------------"
+                                     "--------------------"
+                                     "--------------------"
+                                     "--------------------"
+                                     "-------------")
         global_bound = self._get_current_bound()
         assert self.initialized
         self.initialized = False
@@ -766,19 +773,23 @@ class Dispatcher(object):
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
-        self.journalist.log_info(msg)
+        if self.journalist is not None:
+            self.journalist.log_info(msg)
 
     def log_warning(self, msg):
         """Pass a message to ``log.warn``"""
-        self.journalist.log_warn(msg)
+        if self.journalist is not None:
+            self.journalist.log_warn(msg)
 
     def log_debug(self, msg):
         """Pass a message to ``log.debug``"""
-        self.journalist.log_debug(msg)
+        if self.journalist is not None:
+            self.journalist.log_debug(msg)
 
     def log_error(self, msg):
         """Pass a message to ``log.error``"""
-        self.journalist.log_error(msg)
+        if self.journalist is not None:
+            self.journalist.log_error(msg)
 
     def save_dispatcher_queue(self):
         """Saves the current dispatcher queue. The result can

@@ -649,9 +649,6 @@ class Solver(object):
                         next_tree_id=1)
                 if log is _notset:
                     log = get_simple_logger()
-                elif log is None:
-                    log = get_simple_logger(console=False)
-                    assert log.disabled
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
@@ -729,7 +726,9 @@ class Solver(object):
         problem.notify_solve_finished(self.comm,
                                       self.worker_comm,
                                       results)
-        if self.is_dispatcher:
+        if self.is_dispatcher and \
+           (log is not None) and \
+           (not log.disabled):
             self._disp.log_info("")
             if results.solution_status in ("feasible", "optimal"):
                 agap = converger.compute_absolute_gap(

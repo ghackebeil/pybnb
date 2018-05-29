@@ -53,16 +53,10 @@ class Node(object):
                                        dtype=float))
             # set the has_queue_priority marker to false
             self._data[-6] = 0
-            assert int(self._data[-6]) == 0
-            assert self._data[-6] == 0
             # set the has_tree_id marker to false
             self._data[-4] = 0
-            assert int(self._data[-4]) == 0
-            assert self._data[-4] == 0
             # set the has_parent_tree_id marker to false
             self._data[-2] = 0
-            assert int(self._data[-2]) == 0
-            assert self._data[-2] == 0
             # set the tree depth
             self._insert_tree_depth(self._data, tree_depth)
 
@@ -229,51 +223,39 @@ class Node(object):
 
     @classmethod
     def _insert_best_objective(cls, data, best_objective):
-        assert len(data) >= cls._extra_data_slots
         data[-9] = best_objective
         assert float(data[-9]) == float(best_objective)
-        assert data[-9] == best_objective
 
     @classmethod
     def _extract_best_objective(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return float(data[-9])
 
     @classmethod
     def _insert_bound(cls, data, bound):
-        assert len(data) >= cls._extra_data_slots
         data[-8] = bound
         assert float(data[-8]) == float(bound)
-        assert data[-8] == bound
 
     @classmethod
     def _extract_bound(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return float(data[-8])
 
     @classmethod
     def _insert_queue_priority(cls, data, queue_priority):
-        assert len(data) >= cls._extra_data_slots
         data[-7] = queue_priority
-        assert data[-7] == queue_priority
+        assert float(data[-7]) == queue_priority
         # set the has_queue_priority marker to true
         data[-6] = 1
-        assert int(data[-6]) == 1
-        assert data[-6] == 1
 
     @classmethod
     def _extract_queue_priority(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return float(data[-7])
 
     @classmethod
     def _has_queue_priority(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return int(data[-6]) == 1
 
     @classmethod
     def _insert_tree_id(cls, data, tree_id):
-        assert len(data) >= cls._extra_data_slots
         data[-5] = tree_id
         # make sure the floating point representation is
         # exact (tree_id is likely an integer)
@@ -281,22 +263,17 @@ class Node(object):
         assert data[-5] == tree_id
         # set the has_tree_id marker to true
         data[-4] = 1
-        assert int(data[-4]) == 1
-        assert data[-4] == 1
 
     @classmethod
     def _extract_tree_id(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return int(data[-5])
 
     @classmethod
     def _has_tree_id(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return int(data[-4]) == 1
 
     @classmethod
     def _insert_parent_tree_id(cls, data, tree_id):
-        assert len(data) >= cls._extra_data_slots
         data[-3] = tree_id
         # make sure the floating point representation is
         # exact (tree_id is likely an integer)
@@ -304,8 +281,6 @@ class Node(object):
         assert data[-3] == tree_id
         # set the has_tree_id marker to true
         data[-2] = 1
-        assert int(data[-2]) == 1
-        assert data[-2] == 1
 
     @classmethod
     def _extract_parent_tree_id(cls, data):
@@ -314,19 +289,15 @@ class Node(object):
 
     @classmethod
     def _has_parent_tree_id(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return int(data[-2]) == 1
 
     @classmethod
     def _insert_tree_depth(cls, data, tree_depth):
-        assert len(data) >= cls._extra_data_slots
         data[-1] = tree_depth
         # make sure the floating point representation is
         # exact (tree_depth is likely an integer)
         assert int(data[-1]) == int(tree_depth)
-        assert data[-1] == tree_depth
 
     @classmethod
     def _extract_tree_depth(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return int(data[-1])
