@@ -38,6 +38,8 @@ try:
 except ImportError:                               #pragma:nocover
     pass
 
+from sortedcontainers import SortedList
+
 class DispatcherQueueData(
         collections.namedtuple("DispatcherQueueData",
                                ["nodes","next_tree_id"])):
@@ -236,7 +238,7 @@ class StatusPrinter(object):
                 rgap="9999+",
                 agap=agap,
                 runtime=current_time-self._start_time,
-                starved=self._dispatcher.needs_work_queue.qsize(),
+                starved=len(self._dispatcher.needs_work_queue),
                 rate=rate))
             self._last_rgap = None
         else:
@@ -249,7 +251,7 @@ class StatusPrinter(object):
                 rgap=rgap,
                 agap=agap,
                 runtime=current_time-self._start_time,
-                starved=self._dispatcher.needs_work_queue.qsize(),
+                starved=len(self._dispatcher.needs_work_queue),
                 rate=rate))
             self._last_rgap = rgap
         self._last_explored_nodes_count = explored_nodes_count
@@ -288,6 +290,7 @@ class Dispatcher(object):
         self._explored_nodes_count_by_source = None
         self.explored_nodes_count = 0
         self.last_known_bound = None
+        self.external_bounds = None
         self.worst_terminal_bound = None
         self.first_update = None
         self.has_work = None
@@ -298,6 +301,7 @@ class Dispatcher(object):
         self.stop_cutoff = False
         self.initialized = False
         self._start_time = None
+        self._send_requests = None
 
         if self.comm is not None:
             assert comm.size > 1
@@ -326,23 +330,33 @@ class Dispatcher(object):
             return False
 
     def _get_current_bound(self):
-        bounds = []
-        if self.queue.size() > 0:
-            bounds.append(self.queue.bound())
-        bounds.extend(self.last_known_bound.values())
-        if self.worst_terminal_bound is not None:
-            bounds.append(self.worst_terminal_bound)
+        bound = self.queue.bound()
         if self.converger.sense == maximize:
-            return max(bounds)
+            if len(self.external_bounds) and \
+               ((bound is None) or \
+                (self.external_bounds[-1] > bound)):
+                bound = self.external_bounds[-1]
+            if (self.worst_terminal_bound is not None) and \
+               ((bound is None) or \
+                (self.worst_terminal_bound > bound)):
+                bound = self.worst_terminal_bound
         else:
-            assert self.converger.sense == minimize
-            return min(bounds)
+            if len(self.external_bounds) and \
+               ((bound is None) or \
+                (self.external_bounds[0] < bound)):
+                bound = self.external_bounds[0]
+            if (self.worst_terminal_bound is not None) and \
+               ((bound is None) or \
+                (self.worst_terminal_bound < bound)):
+                bound = self.worst_terminal_bound
+        return bound
 
     def _get_work_to_send(self, dest):
         data = self.queue.get()
         assert data is not None
         bound = Node._extract_bound(data)
         self.last_known_bound[dest] = bound
+        self.external_bounds.add(bound)
         Node._insert_best_objective(
             data,
             self.best_objective)
@@ -351,11 +365,10 @@ class Dispatcher(object):
         return data
 
     def _send_work(self):
-
-        if not self.needs_work_queue.empty():
+        if len(self.needs_work_queue) > 0:
             if self.comm is None:
-                assert self.needs_work_queue.qsize() == 1
-                _source = self.needs_work_queue.get_nowait()
+                assert len(self.needs_work_queue) == 1
+                _source = self.needs_work_queue.popleft()
                 assert _source == 0
                 if not (self.stop_optimality or \
                         self.stop_node_limit or \
@@ -367,29 +380,36 @@ class Dispatcher(object):
                             self.best_objective
                         return (self.best_objective, data)
             else:
-                requests = []
+                if self._send_requests is None:
+                    self._send_requests = {i: None for i in self.worker_ranks}
                 if not (self.stop_optimality or \
                         self.stop_node_limit or \
                         self.stop_time_limit or \
                         self.stop_cutoff):
                     while (self.queue.size() > 0) and \
-                          (not self.needs_work_queue.empty()):
-                        dest = self.needs_work_queue.get_nowait()
+                          (len(self.needs_work_queue) > 0):
+                        dest = self.needs_work_queue.popleft()
                         data = self._get_work_to_send(dest)
-                        requests.append(self.comm.Isend([data,mpi4py.MPI.DOUBLE],
-                                                        dest,
-                                                        tag=DispatcherResponse.work))
-                if len(requests):
-                    mpi4py.MPI.Request.Waitall(requests)
-                elif self.needs_work_queue.qsize() == (self.comm.size-1):
-                    assert len(requests) == 0
+                        if self._send_requests[dest] is not None:
+                            self._send_requests[dest].Wait()
+                        self._send_requests[dest] = \
+                            self.comm.Isend([data,mpi4py.MPI.DOUBLE],
+                                            dest,
+                                            tag=DispatcherResponse.work)
+                if len(self.needs_work_queue) == (self.comm.size-1):
+                    mpi4py.MPI.Request.Waitall(
+                        list(r_ for r_ in self._send_requests.values()
+                             if r_ is not None))
+                    self._send_requests = None
                     send_data = array.array('d',[self.best_objective])
                     # everyone needs work, so we must be done
-                    while not self.needs_work_queue.empty():
-                        dest = self.needs_work_queue.get()
-                        requests.append(self.comm.Isend([send_data,mpi4py.MPI.DOUBLE],
-                                                        dest,
-                                                        DispatcherResponse.nowork))
+                    requests = []
+                    while len(self.needs_work_queue) > 0:
+                        dest = self.needs_work_queue.popleft()
+                        requests.append(
+                            self.comm.Isend([send_data,mpi4py.MPI.DOUBLE],
+                                            dest,
+                                            DispatcherResponse.nowork))
                     mpi4py.MPI.Request.Waitall(requests)
 
         return (self.best_objective, None)
@@ -412,6 +432,29 @@ class Dispatcher(object):
             for data in removed:
                 self._check_update_worst_terminal_bound(
                     Node._extract_bound(data))
+            # trim the sorted external_bounds list
+            N = len(self.external_bounds)
+            if self.converger.sense == maximize:
+                i = 0
+                for i in range(N):
+                    if self.converger.objective_can_improve(
+                            objective,
+                            self.external_bounds[i]):
+                        break
+                if i != 0:
+                    self.external_bounds = SortedList(
+                        self.external_bounds.islice(i, N))
+            else:
+                i = N-1
+                for i in range(N-1,-1,-1):
+                    if self.converger.objective_can_improve(
+                            objective,
+                            self.external_bounds[i]):
+                        break
+                if i != N-1:
+                    self.external_bounds = SortedList(
+                        self.external_bounds.islice(0, i+1))
+
 
     def _check_convergence(self):
         # check if we are done
@@ -445,26 +488,32 @@ class Dispatcher(object):
 
     def _listen(self):
         msg = Message(self.comm)
+        update_data = array.array("d",[0])
         while (1):
             msg.probe()
             tag = msg.tag
             source = msg.source
             if tag == DispatcherAction.update:
-                msg.recv(mpi4py.MPI.DOUBLE)
-                best_objective = float(msg.data[0])
-                previous_bound = float(msg.data[1])
-                assert int(msg.data[2]) == msg.data[2]
-                source_explored_nodes_count = int(msg.data[2])
-                assert int(msg.data[3]) == msg.data[3]
-                nodes_receiving_count = int(msg.data[3])
+                size = msg.status.Get_count(datatype=mpi4py.MPI.DOUBLE)
+                if len(update_data) < size:
+                    update_data = array.array("d",[0])*size
+                msg.recv(datatype=mpi4py.MPI.DOUBLE,
+                         data=update_data)
+                data = msg.data
+                best_objective = float(data[0])
+                previous_bound = float(data[1])
+                assert int(data[2]) == data[2]
+                source_explored_nodes_count = int(data[2])
+                assert int(data[3]) == data[3]
+                nodes_receiving_count = int(data[3])
                 if nodes_receiving_count > 0:
                     node_list = [None]*nodes_receiving_count
                     pos = 4
                     for i in range(nodes_receiving_count):
-                        assert int(msg.data[pos]) == msg.data[pos]
-                        data_size = int(msg.data[pos])
+                        assert int(data[pos]) == data[pos]
+                        data_size = int(data[pos])
                         pos += 1
-                        node_list[i] = msg.data[pos:pos+data_size]
+                        node_list[i] = data[pos:pos+data_size]
                         pos += data_size
                 else:
                     node_list = ()
@@ -570,7 +619,8 @@ class Dispatcher(object):
              (node_limit == int(node_limit)))
         assert (time_limit is None) or \
             (time_limit >= 0)
-        self.needs_work_queue = Queue.Queue()
+        self.needs_work_queue = collections.deque([],
+                                                  len(self.worker_ranks))
         self.converger = converger
         self.best_objective = converger.infeasible_objective
         if node_priority_strategy == "bound":
@@ -600,6 +650,7 @@ class Dispatcher(object):
         self._explored_nodes_count_by_source = \
             {i: 0 for i in self.worker_ranks}
         self.last_known_bound = dict()
+        self.external_bounds = SortedList()
         self.worst_terminal_bound = None
         self.explored_nodes_count = 0
         self.first_update = \
@@ -664,10 +715,17 @@ class Dispatcher(object):
         self._update_explored_nodes_count(
             source_explored_nodes_count,
             _source)
-        self.needs_work_queue.put(_source)
+        self.needs_work_queue.append(_source)
         self.has_work.discard(_source)
         if _source in self.last_known_bound:
-            del self.last_known_bound[_source]
+            val_ = self.last_known_bound[_source]
+            try:
+                self.external_bounds.remove(val_)
+            except ValueError:
+                # rare, but can happen when
+                # _check_update_best_objective modifies
+                # the external_bounds list
+                pass
         self._check_update_best_objective(best_objective)
         if len(node_data):
             for data in node_data:

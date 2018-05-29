@@ -26,7 +26,7 @@ class Message(object):
         """Perform a blocking test for a message"""
         self.comm.Probe(status=self.status)
         self.data = None
-    def recv(self, datatype=None):
+    def recv(self, datatype=None, data=None):
         """Complete the receive for the most recent message
         probe and return the data as a numeric array or a
         string, depending on the datatype keyword.
@@ -37,14 +37,9 @@ class Message(object):
             An MPI datatype used to interpret the received
             data. If None, ``mpi4py.MPI.DOUBLE`` will be
             used. (default: None)
-
-        Returns
-        -------
-        ``array.array`` or string
-            When the datatype is ``mpi4py.MPI.DOUBLE``, an
-            array with typecode "d" is returned. When the
-            datatype ``mpi4py.MPI.CHAR``, a string is
-            returned.
+        data : array.array or None, optional
+            An existing data array to store data into. If
+            None, one will be created. (default: None)
         """
         assert not self.status.Get_error()
         if datatype is None:
@@ -57,7 +52,8 @@ class Message(object):
         else:
             self.data = recv_data(self.comm,
                                   self.status,
-                                  datatype=datatype)
+                                  datatype=datatype,
+                                  out=data)
     @property
     def tag(self): return self.status.Get_tag()
     @property
@@ -148,7 +144,8 @@ def recv_data(comm, status, datatype=None, out=None):
     out : buffer-like object, optional
         A buffer-like object that is compatible with the datatype
         argument and can be passed to comm.Recv. If None, one will be
-        created using the built-in ``array`` module.
+        created using the built-in ``array`` module. If not None, the
+        array must be at least as large as the incoming data.
 
     Returns
     -------
@@ -172,7 +169,7 @@ def recv_data(comm, status, datatype=None, out=None):
             assert datatype == mpi4py.MPI.CHAR
             out = array.array("B",b"\0")*size
     else:
-        assert len(out) == size
+        assert len(out) >= size
     comm.Recv([out,datatype],
               source=status.Get_source(),
               tag=status.Get_tag(),

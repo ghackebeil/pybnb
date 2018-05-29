@@ -167,6 +167,7 @@ class DispatcherProxy(object):
                 pos += 1
                 data[pos:pos+len(udata)] = udata[:]
                 pos += len(udata)
+
         self.comm.Send([data,mpi4py.MPI.DOUBLE],
                        self.dispatcher_rank,
                        tag=DispatcherAction.update)
