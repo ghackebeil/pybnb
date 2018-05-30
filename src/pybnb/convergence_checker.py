@@ -3,6 +3,7 @@ Convergence checking implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+from __future__ import division
 
 import math
 
@@ -103,8 +104,13 @@ class ConvergenceChecker(object):
         rgap = self.compute_absolute_gap(bound, objective)
         if math.isinf(rgap):
             return rgap
-        rgap /= max(1.0, abs(objective))
-        return rgap
+        # avoid using abs() as it is slow
+        if objective > 1.0:
+            return rgap / objective
+        elif objective < -1.0:
+            return rgap / -objective
+        else:
+            return rgap
 
     def objective_is_optimal(self, objective, bound):
         """Determines if the objective is optimal by

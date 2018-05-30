@@ -56,11 +56,16 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         """Returns, without modifying the queue, a tuple of
         the form (cnt, item), where item is highest priority
         entry in the queue and cnt is the unique counter
-        assigned to it when it was added to the queue. If
-        the queue is empty, raises IndexError."""
-        if len(self._heap) > 0:
+        assigned to it when it was added to the queue.
+
+        Raises
+        ------
+        IndexError
+            If the queue is empty.
+        """
+        try:
             return self._heap[0][1:]
-        else:
+        except IndexError:
             raise IndexError("The queue is empty")
 
     def filter(self, func, include_counters=False):
@@ -130,11 +135,16 @@ class _NoThreadingFIFOQueue(object):
         """Returns, without modifying the queue, a tuple of
         the form (cnt, item), where item is highest priority
         entry in the queue and cnt is the unique counter
-        assigned to it when it was added to the queue. If
-        the queue is empty, raises IndexError."""
-        if len(self._deque) > 0:
+        assigned to it when it was added to the queue.
+
+        Raises
+        ------
+        IndexError
+            If the queue is empty.
+        """
+        try:
             return self._deque[0]
-        else:
+        except IndexError:
             raise IndexError("The queue is empty")
 
     def filter(self, func, include_counters=False):
@@ -233,8 +243,7 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
         return self._queue.get()
 
     def bound(self):
-        bound = None
-        if self._queue.size() > 0:
+        try:
             _,data = self._queue.next()
             bound = Node._extract_bound(data)
             priority = Node._extract_queue_priority(data)
@@ -242,7 +251,9 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
                 assert bound == -priority
             else:
                 assert bound == priority
-        return bound
+            return bound
+        except IndexError:
+            return None
 
     def filter(self, func):
         return self._queue.filter(func)
@@ -304,10 +315,9 @@ class CustomPriorityQueue(IPriorityQueue):
             return None
 
     def bound(self):
-        assert self._queue.size() == len(self._sorted_by_bound)
-        if self._queue.size() > 0:
+        try:
             return Node._extract_bound(self._sorted_by_bound[0][2])
-        else:
+        except IndexError:
             return None
 
     def filter(self, func):
