@@ -199,6 +199,8 @@ class Solver(object):
         self._objective_eval_count = None
         self._bound_eval_time = None
         self._bound_eval_count = None
+        self._branch_time = None
+        self._branch_count = None
         self._explored_nodes_count = None
         self._best_objective = None
 
@@ -208,6 +210,8 @@ class Solver(object):
         self._objective_eval_count = 0
         self._bound_eval_time = 0.0
         self._bound_eval_count = 0
+        self._branch_time = 0.0
+        self._branch_count = 0
         self._explored_nodes_count = 0
         self._best_objective = None
         if not self.is_dispatcher:
@@ -320,8 +324,12 @@ class Solver(object):
                    converger.objective_can_improve(
                        self._best_objective,
                        bound):
+                    branch_start = self._time()
+                    clist = problem.branch(working_node)
+                    self._branch_time += self._time()-branch_start
+                    self._branch_count += 1
                     children_data = []
-                    for child in problem.branch(working_node):
+                    for child in clist:
                         assert child.parent_tree_id == working_node.tree_id
                         assert child.tree_id is None
                         assert child.tree_depth == working_node.tree_depth + 1
@@ -422,6 +430,10 @@ class Solver(object):
                     self._bound_eval_time)
                 stats['bound_eval_count'] = self.worker_comm.allgather(
                     self._bound_eval_count)
+                stats['branch_time'] = self.worker_comm.allgather(
+                    self._branch_time)
+                stats['branch_count'] = self.worker_comm.allgather(
+                    self._branch_count)
                 stats['explored_nodes_count'] = self.worker_comm.allgather(
                     self._explored_nodes_count)
                 stats['comm_time'] = self.worker_comm.allgather(
@@ -443,6 +455,8 @@ class Solver(object):
             stats['objective_eval_count'] = [self._objective_eval_count]
             stats['bound_eval_time'] = [self._bound_eval_time]
             stats['bound_eval_count'] = [self._bound_eval_count]
+            stats['branch_time'] = [self._branch_time]
+            stats['branch_count'] = [self._branch_count]
             stats['explored_nodes_count'] = [self._explored_nodes_count]
             stats['comm_time'] = [0.0]
 
@@ -788,6 +802,10 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                                   dtype=float)
     bound_eval_count = numpy.array(stats['bound_eval_count'],
                                    dtype=int)
+    branch_time = numpy.array(stats['branch_time'],
+                              dtype=float)
+    branch_count = numpy.array(stats['branch_count'],
+                               dtype=int)
     comm_time = numpy.array(stats['comm_time'], dtype=float)
     work_time = wall_time - comm_time
 
@@ -825,8 +843,14 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                      % (numpy.mean((bound_eval_time/div1))*100.0,
                         metric_fmt(numpy.mean(bound_eval_time/div2), unit='s'),
                         bound_eval_count.sum()))
+        div3 = numpy.copy(branch_count)
+        div3[div3==0] = 1
+        stream.write("   - branching:      %6.2f%% (avg time=%s, count=%d)\n"
+                     % (numpy.mean((branch_time/div1))*100.0,
+                        metric_fmt(numpy.mean(branch_time/div3), unit='s'),
+                        branch_count.sum()))
         stream.write("   - other:          %6.2f%%\n"
-                     % (numpy.mean((work_time - objective_eval_time - bound_eval_time) / \
+                     % (numpy.mean((work_time - objective_eval_time - bound_eval_time - branch_time) / \
                                    div1)*100.0))
 
 def solve(problem,
