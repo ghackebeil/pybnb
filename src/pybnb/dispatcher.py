@@ -87,30 +87,38 @@ class StatusPrinter(object):
         if self._dispatcher.converger.relative_gap_tolerance != 0:
             percent_relative_gap_tol = 100.0 * \
                 self._dispatcher.converger.relative_gap_tolerance
-        rgap_label_str, rgap_number_str = \
+        rgap_str_length, rgap_label_str, rgap_number_str = \
             get_gap_labels(percent_relative_gap_tol, key="rgap")
 
         absolute_gap_tol = 1e-8
         if self._dispatcher.converger.absolute_gap_tolerance != 0:
             absolute_gap_tol = \
                 self._dispatcher.converger.absolute_gap_tolerance
-        agap_label_str, agap_number_str = \
+        agap_str_length, agap_label_str, agap_number_str = \
             get_gap_labels(absolute_gap_tol, key="agap", format='g')
 
+        assert rgap_str_length >= 10
+        assert agap_str_length >= 10
+        extra_space = (rgap_str_length-10) + (agap_str_length-10)
+        extra_space_left = extra_space // 2
+        extra_space_right = (extra_space // 2) + (extra_space % 2)
         if dispatcher.comm is None:
             self._time = time.time
         else:
             self._time = mpi4py.MPI.Wtime
+        self._lines = ("--------------------"
+                       "--------------------"
+                       "--------------------"
+                       "--------------------"
+                       "--------------------"
+                       "---------")+("-"*extra_space)
         self._initial_header_line = \
-            ("--------------------"
-             "--------------------"
-             "--------------------"
-             "--------------------"
-             "--------------------"
-             "-------------\n"
-             "         Nodes        |"
-             "                     Objective Bounds                      |"
-             "              Work              ")
+            (self._lines + "\n"
+             "         Nodes        |" + \
+             (" "*extra_space_left) + \
+             "                   Objective Bounds                    " + \
+             (" "*extra_space_right) + \
+             "|              Work              ")
         self._header_line = \
             (" {explored:>9} {unexplored:>9}  |{objective:>15} "
              "{bound:>15} "+rgap_label_str+"  "+agap_label_str+" |{runtime:>10} {rate:>10} "
@@ -760,12 +768,7 @@ class Dispatcher(object):
         """
         if self.journalist is not None:
             self.journalist.tic(force=True)
-            self.journalist.log_info("--------------------"
-                                     "--------------------"
-                                     "--------------------"
-                                     "--------------------"
-                                     "--------------------"
-                                     "-------------")
+            self.journalist.log_info(self.journalist._lines)
         global_bound = self._get_current_bound()
         assert self.initialized
         self.initialized = False

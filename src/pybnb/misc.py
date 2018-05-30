@@ -54,7 +54,7 @@ def get_gap_labels(gap,
     gap_label_str = "{"+key+":>"+str(gap_length)+"}"
     gap_number_str = "{"+key+":>"+str(gap_length)+"." + \
                      str(gap_digits)+format+"}"
-    return gap_label_str, gap_number_str
+    return gap_length, gap_label_str, gap_number_str
 
 class _NullCM(object):
     """A context manager that does nothing"""

@@ -27,28 +27,36 @@ class Test(object):
         assert metric_fmt(0.23334, digits=2) == "233.34 ms"
 
     def test_get_gap_labels(self):
-        l1, l2 = get_gap_labels(1)
+        l0, l1, l2 = get_gap_labels(1)
+        assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.1f}"
-        l1, l2 = get_gap_labels(0.1)
+        l0, l1, l2 = get_gap_labels(0.1)
+        assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.2f}"
-        l1, l2 = get_gap_labels(0.01)
+        l0, l1, l2 = get_gap_labels(0.01)
+        assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.3f}"
-        l1, l2 = get_gap_labels(0.001)
+        l0, l1, l2 = get_gap_labels(0.001)
+        assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.4f}"
-        l1, l2 = get_gap_labels(0.0001)
+        l0, l1, l2 = get_gap_labels(0.0001)
+        assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.5f}"
-        l1, l2 = get_gap_labels(0.00001)
+        l0, l1, l2 = get_gap_labels(0.00001)
+        assert l0 == 11
         assert l1 == "{gap:>11}"
         assert l2 == "{gap:>11.6f}"
-        l1, l2 = get_gap_labels(0.000001,key='rgap')
+        l0, l1, l2 = get_gap_labels(0.000001,key='rgap')
+        assert l0 == 12
         assert l1 == "{rgap:>12}"
         assert l2 == "{rgap:>12.7f}"
-        l1, l2 = get_gap_labels(0.0000001,key='agap',format='g')
+        l0, l1, l2 = get_gap_labels(0.0000001,key='agap',format='g')
+        assert l0 == 13
         assert l1 == "{agap:>13}"
         assert l2 == "{agap:>13.8g}"
 
