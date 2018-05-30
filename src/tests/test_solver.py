@@ -52,12 +52,14 @@ class TestSolverSimple(object):
         assert b.is_dispatcher == True
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()
-        assert len(stats) == 7
+        assert len(stats) == 9
         assert stats['wall_time'] == [0]
-        assert stats['objective_eval_time'] == [0]
-        assert stats['objective_eval_count'] == [0]
-        assert stats['bound_eval_time'] == [0]
-        assert stats['bound_eval_count'] == [0]
+        assert stats['objective_time'] == [0]
+        assert stats['objective_count'] == [0]
+        assert stats['bound_time'] == [0]
+        assert stats['bound_count'] == [0]
+        assert stats['branch_time'] == [0]
+        assert stats['branch_count'] == [0]
         assert stats['explored_nodes_count'] == [0]
         assert stats['comm_time'] == [0]
         out = \
@@ -67,9 +69,10 @@ Work Load Imbalance:   0.00%
 Average Worker Timing:
  - communication:   0.00%
  - work:            0.00%
-   - objective eval:   0.00% (avg time=0.0 s, count=0)
-   - bound eval:       0.00% (avg time=0.0 s, count=0)
-   - other:            0.00%
+   - objective:   0.00% (avg time=0.0 s, count=0)
+   - bound:       0.00% (avg time=0.0 s, count=0)
+   - branch:      0.00% (avg time=0.0 s, count=0)
+   - other:       0.00%
 """
         tmp = StringIO()
         summarize_worker_statistics(stats, stream=tmp)

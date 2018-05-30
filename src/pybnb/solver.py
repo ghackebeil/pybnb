@@ -195,10 +195,10 @@ class Solver(object):
         assert self._disp is not None
         assert self._time is not None
         self._wall_time = None
-        self._objective_eval_time = None
-        self._objective_eval_count = None
-        self._bound_eval_time = None
-        self._bound_eval_count = None
+        self._objective_time = None
+        self._objective_count = None
+        self._bound_time = None
+        self._bound_count = None
         self._branch_time = None
         self._branch_count = None
         self._explored_nodes_count = None
@@ -206,10 +206,10 @@ class Solver(object):
 
     def _reset_local_solve_stats(self):
         self._wall_time = 0.0
-        self._objective_eval_time = 0.0
-        self._objective_eval_count = 0
-        self._bound_eval_time = 0.0
-        self._bound_eval_count = 0
+        self._objective_time = 0.0
+        self._objective_count = 0
+        self._bound_time = 0.0
+        self._bound_count = 0
         self._branch_time = 0.0
         self._branch_count = 0
         self._explored_nodes_count = 0
@@ -285,10 +285,10 @@ class Solver(object):
 
                 problem.load_state(working_node)
 
-                bound_eval_start = self._time()
+                bound_start = self._time()
                 new_bound = problem.bound()
-                self._bound_eval_time += self._time()-bound_eval_start
-                self._bound_eval_count += 1
+                self._bound_time += self._time()-bound_start
+                self._bound_count += 1
                 if converger.bound_worsened(new_bound, bound):    #pragma:nocover
                     self._disp.log_warning(
                         "WARNING: Bound became worse "
@@ -302,10 +302,10 @@ class Solver(object):
                     self._best_objective,
                     bound) and \
                 (not converger.cutoff_is_met(bound)):
-                objective_eval_start = self._time()
+                objective_start = self._time()
                 obj = problem.objective()
-                self._objective_eval_time += self._time()-objective_eval_start
-                self._objective_eval_count += 1
+                self._objective_time += self._time()-objective_start
+                self._objective_count += 1
                 if obj is not None:
                     if converger.bound_is_suboptimal(bound, obj): #pragma:nocover
                         self._disp.log_warning(
@@ -422,14 +422,14 @@ class Solver(object):
                 assert not self.is_dispatcher
                 stats['wall_time'] = self.worker_comm.allgather(
                     self._wall_time)
-                stats['objective_eval_time'] = self.worker_comm.allgather(
-                    self._objective_eval_time)
-                stats['objective_eval_count'] = self.worker_comm.allgather(
-                    self._objective_eval_count)
-                stats['bound_eval_time'] = self.worker_comm.allgather(
-                    self._bound_eval_time)
-                stats['bound_eval_count'] = self.worker_comm.allgather(
-                    self._bound_eval_count)
+                stats['objective_time'] = self.worker_comm.allgather(
+                    self._objective_time)
+                stats['objective_count'] = self.worker_comm.allgather(
+                    self._objective_count)
+                stats['bound_time'] = self.worker_comm.allgather(
+                    self._bound_time)
+                stats['bound_count'] = self.worker_comm.allgather(
+                    self._bound_count)
                 stats['branch_time'] = self.worker_comm.allgather(
                     self._branch_time)
                 stats['branch_count'] = self.worker_comm.allgather(
@@ -451,10 +451,10 @@ class Solver(object):
             assert self.is_worker
             assert self.is_dispatcher
             stats['wall_time'] = [self._wall_time]
-            stats['objective_eval_time'] = [self._objective_eval_time]
-            stats['objective_eval_count'] = [self._objective_eval_count]
-            stats['bound_eval_time'] = [self._bound_eval_time]
-            stats['bound_eval_count'] = [self._bound_eval_count]
+            stats['objective_time'] = [self._objective_time]
+            stats['objective_count'] = [self._objective_count]
+            stats['bound_time'] = [self._bound_time]
+            stats['bound_count'] = [self._bound_count]
             stats['branch_time'] = [self._branch_time]
             stats['branch_count'] = [self._branch_count]
             stats['explored_nodes_count'] = [self._explored_nodes_count]
@@ -794,13 +794,13 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                                        dtype=int)
     wall_time = numpy.array(stats['wall_time'],
                             dtype=float)
-    objective_eval_time = numpy.array(stats['objective_eval_time'],
+    objective_time = numpy.array(stats['objective_time'],
                                       dtype=float)
-    objective_eval_count = numpy.array(stats['objective_eval_count'],
+    objective_count = numpy.array(stats['objective_count'],
                                        dtype=int)
-    bound_eval_time = numpy.array(stats['bound_eval_time'],
+    bound_time = numpy.array(stats['bound_time'],
                                   dtype=float)
-    bound_eval_count = numpy.array(stats['bound_eval_count'],
+    bound_count = numpy.array(stats['bound_count'],
                                    dtype=int)
     branch_time = numpy.array(stats['branch_time'],
                               dtype=float)
@@ -831,26 +831,26 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                      % (numpy.mean(work_time/div)*100.0))
         div1 = numpy.copy(work_time)
         div1[div1==0] = 1
-        div2 = numpy.copy(objective_eval_count)
+        div2 = numpy.copy(objective_count)
         div2[div2==0] = 1
-        stream.write("   - objective eval: %6.2f%% (avg time=%s, count=%d)\n"
-                     % (numpy.mean((objective_eval_time/div1))*100.0,
-                        metric_fmt(numpy.mean(objective_eval_time/div2), unit='s'),
-                        objective_eval_count.sum()))
-        div2 = numpy.copy(bound_eval_count)
+        stream.write("   - objective: %6.2f%% (avg time=%s, count=%d)\n"
+                     % (numpy.mean((objective_time/div1))*100.0,
+                        metric_fmt(numpy.mean(objective_time/div2), unit='s'),
+                        objective_count.sum()))
+        div2 = numpy.copy(bound_count)
         div2[div2==0] = 1
-        stream.write("   - bound eval:     %6.2f%% (avg time=%s, count=%d)\n"
-                     % (numpy.mean((bound_eval_time/div1))*100.0,
-                        metric_fmt(numpy.mean(bound_eval_time/div2), unit='s'),
-                        bound_eval_count.sum()))
+        stream.write("   - bound:     %6.2f%% (avg time=%s, count=%d)\n"
+                     % (numpy.mean((bound_time/div1))*100.0,
+                        metric_fmt(numpy.mean(bound_time/div2), unit='s'),
+                        bound_count.sum()))
         div3 = numpy.copy(branch_count)
         div3[div3==0] = 1
-        stream.write("   - branching:      %6.2f%% (avg time=%s, count=%d)\n"
+        stream.write("   - branch:    %6.2f%% (avg time=%s, count=%d)\n"
                      % (numpy.mean((branch_time/div1))*100.0,
                         metric_fmt(numpy.mean(branch_time/div3), unit='s'),
                         branch_count.sum()))
-        stream.write("   - other:          %6.2f%%\n"
-                     % (numpy.mean((work_time - objective_eval_time - bound_eval_time - branch_time) / \
+        stream.write("   - other:     %6.2f%%\n"
+                     % (numpy.mean((work_time - objective_time - bound_time - branch_time) / \
                                    div1)*100.0))
 
 def solve(problem,
