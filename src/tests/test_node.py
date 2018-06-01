@@ -9,6 +9,28 @@ class TestNode(object):
         node._insert_best_objective(node._data, 10.5)
         assert node._extract_best_objective(node._data) == 10.5
 
+    def test_assign_None(self):
+        node = Node()
+        assert node.queue_priority is None
+        assert node.tree_id is None
+        assert node.parent_tree_id is None
+        assert node.tree_depth == 0
+        assert len(node.state) == 0
+        node.queue_priority = 1
+        with pytest.raises(AttributeError):
+            node.tree_id = 2
+        with pytest.raises(AttributeError):
+            node.parent_tree_id = 3
+        with pytest.raises(AttributeError):
+            node.tree_depth = 4
+        assert node.queue_priority == 1
+        assert node.tree_id is None
+        assert node.parent_tree_id is None
+        assert node.tree_depth == 0
+        assert len(node.state) == 0
+        node.queue_priority = None
+        assert node.queue_priority is None
+
     def test_children(self):
         parent = Node()
         assert parent.queue_priority is None

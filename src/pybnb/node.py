@@ -179,7 +179,11 @@ class Node(object):
         return None
     @queue_priority.setter
     def queue_priority(self, queue_priority):
-        self._insert_queue_priority(self._data, queue_priority)
+        if queue_priority is not None:
+            self._insert_queue_priority(self._data, queue_priority)
+        else:
+            # set the has_queue_priority marker to false
+            self._data[-6] = 0
 
     @property
     def bound(self):
