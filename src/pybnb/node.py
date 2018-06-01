@@ -6,6 +6,8 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
 import numpy
 
+_zero, _one = numpy.array([0,1],dtype=float)
+
 class Node(object):
     """A branch-and-bound node that stores problem state
     information inside of a NumPy array (dtype=float).
@@ -52,11 +54,11 @@ class Node(object):
             self._set_data(numpy.empty(size + self._extra_data_slots,
                                        dtype=float))
             # set the has_queue_priority marker to false
-            self._data[-6] = 0
+            self._data[-6] = _zero
             # set the has_tree_id marker to false
-            self._data[-4] = 0
+            self._data[-4] = _zero
             # set the has_parent_tree_id marker to false
-            self._data[-2] = 0
+            self._data[-2] = _zero
             # set the tree depth
             self._insert_tree_depth(self._data, tree_depth)
 
@@ -91,7 +93,7 @@ class Node(object):
             self._insert_parent_tree_id(child._data, tree_id)
         else:
             # set the has_parent_tree_id flag to False on the child
-            child._data[-2] = 0
+            child._data[-2] = _zero
         child.bound = bound
         child._insert_tree_depth(child._data, tree_depth + 1)
         assert child.tree_id is None
@@ -183,7 +185,7 @@ class Node(object):
             self._insert_queue_priority(self._data, queue_priority)
         else:
             # set the has_queue_priority marker to false
-            self._data[-6] = 0
+            self._data[-6] = _zero
 
     @property
     def bound(self):
@@ -248,7 +250,7 @@ class Node(object):
         data[-7] = queue_priority
         assert float(data[-7]) == queue_priority
         # set the has_queue_priority marker to true
-        data[-6] = 1
+        data[-6] = _one
 
     @classmethod
     def _extract_queue_priority(cls, data):
@@ -266,7 +268,7 @@ class Node(object):
         assert int(data[-5]) == int(tree_id)
         assert data[-5] == tree_id
         # set the has_tree_id marker to true
-        data[-4] = 1
+        data[-4] = _one
 
     @classmethod
     def _extract_tree_id(cls, data):
@@ -274,7 +276,7 @@ class Node(object):
 
     @classmethod
     def _has_tree_id(cls, data):
-        return int(data[-4]) == 1
+        return bool(data[-4] == _one)
 
     @classmethod
     def _insert_parent_tree_id(cls, data, tree_id):
@@ -284,7 +286,7 @@ class Node(object):
         assert int(data[-3]) == int(tree_id)
         assert data[-3] == tree_id
         # set the has_tree_id marker to true
-        data[-2] = 1
+        data[-2] = _one
 
     @classmethod
     def _extract_parent_tree_id(cls, data):
@@ -293,7 +295,7 @@ class Node(object):
 
     @classmethod
     def _has_parent_tree_id(cls, data):
-        return int(data[-2]) == 1
+        return bool(data[-2] == _one)
 
     @classmethod
     def _insert_tree_depth(cls, data, tree_depth):
