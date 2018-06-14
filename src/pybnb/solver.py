@@ -197,6 +197,8 @@ class Solver(object):
         assert self._disp is not None
         assert self._time is not None
         self._wall_time = None
+        self._update_time = None
+        self._update_count = None
         self._objective_time = None
         self._objective_count = None
         self._bound_time = None
@@ -208,6 +210,8 @@ class Solver(object):
 
     def _reset_local_solve_stats(self):
         self._wall_time = 0.0
+        self._update_time = 0.0
+        self._update_count = 0
         self._objective_time = 0.0
         self._objective_count = 0
         self._bound_time = 0.0
@@ -246,11 +250,14 @@ class Solver(object):
         assert working_node.tree_id is None
         # start the work loop
         while (1):
+            update_start = self._time()
             new_objective, data = \
                 self._disp.update(self._best_objective,
                                   bound,
                                   self._explored_nodes_count,
                                   children_data)
+            self._update_time += self._time()-update_start
+            self._update_count += 1
 
             updated = self._check_update_best_objective(
                 converger,
@@ -424,6 +431,10 @@ class Solver(object):
                 assert not self.is_dispatcher
                 stats['wall_time'] = self.worker_comm.allgather(
                     self._wall_time)
+                stats['update_time'] = self.worker_comm.allgather(
+                    self._update_time)
+                stats['update_count'] = self.worker_comm.allgather(
+                    self._update_count)
                 stats['objective_time'] = self.worker_comm.allgather(
                     self._objective_time)
                 stats['objective_count'] = self.worker_comm.allgather(
@@ -453,6 +464,8 @@ class Solver(object):
             assert self.is_worker
             assert self.is_dispatcher
             stats['wall_time'] = [self._wall_time]
+            stats['update_time'] = [self._update_time]
+            stats['update_count'] = [self._update_count]
             stats['objective_time'] = [self._objective_time]
             stats['objective_count'] = [self._objective_count]
             stats['bound_time'] = [self._bound_time]
@@ -460,7 +473,7 @@ class Solver(object):
             stats['branch_time'] = [self._branch_time]
             stats['branch_count'] = [self._branch_count]
             stats['explored_nodes_count'] = [self._explored_nodes_count]
-            stats['comm_time'] = [0.0]
+            stats['comm_time'] = [self._update_time]
 
         return stats
 
@@ -797,19 +810,24 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                                        dtype=int)
     wall_time = numpy.array(stats['wall_time'],
                             dtype=float)
+    update_time = numpy.array(stats['update_time'],
+                              dtype=float)
+    update_count = numpy.array(stats['update_count'],
+                               dtype=int)
     objective_time = numpy.array(stats['objective_time'],
-                                      dtype=float)
+                                 dtype=float)
     objective_count = numpy.array(stats['objective_count'],
-                                       dtype=int)
+                                  dtype=int)
     bound_time = numpy.array(stats['bound_time'],
-                                  dtype=float)
+                             dtype=float)
     bound_count = numpy.array(stats['bound_count'],
-                                   dtype=int)
+                              dtype=int)
     branch_time = numpy.array(stats['branch_time'],
                               dtype=float)
     branch_count = numpy.array(stats['branch_count'],
                                dtype=int)
-    comm_time = numpy.array(stats['comm_time'], dtype=float)
+    comm_time = numpy.array(stats['comm_time'],
+                            dtype=float)
     work_time = wall_time - comm_time
 
     with as_stream(stream) as stream:
@@ -826,11 +844,15 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
             stream.write("Work Load Imbalance: %6.2f%%\n"
                          % ((numpy.max(explored_nodes_count)/div - 1.0)*100.0))
         stream.write("Average Worker Timing:\n")
-        div = numpy.copy(wall_time)
-        div[div == 0] = 1
-        stream.write(" - communication: %6.2f%%\n"
-                     % (numpy.mean(comm_time/div)*100.0))
-        stream.write(" - work:          %6.2f%%\n"
+        div1 = numpy.copy(wall_time)
+        div1[div1 == 0] = 1
+        div2 = numpy.copy(update_count)
+        div2[div2 == 0] = 1
+        stream.write(" - queue: %6.2f%% (avg time=%s, count=%d)\n"
+                     % (numpy.mean(comm_time/div1)*100.0,
+                        metric_fmt(numpy.mean(update_time/div2), unit='s'),
+                        update_count.sum()))
+        stream.write(" - work:  %6.2f%%\n"
                      % (numpy.mean(work_time/div)*100.0))
         div1 = numpy.copy(work_time)
         div1[div1==0] = 1

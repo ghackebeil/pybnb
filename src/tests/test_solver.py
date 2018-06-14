@@ -52,8 +52,10 @@ class TestSolverSimple(object):
         assert b.is_dispatcher == True
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()
-        assert len(stats) == 9
+        assert len(stats) == 11
         assert stats['wall_time'] == [0]
+        assert stats['update_time'] == [0]
+        assert stats['update_count'] == [0]
         assert stats['objective_time'] == [0]
         assert stats['objective_count'] == [0]
         assert stats['bound_time'] == [0]
@@ -67,8 +69,8 @@ class TestSolverSimple(object):
 Average Work Load:     0.00%
 Work Load Imbalance:   0.00%
 Average Worker Timing:
- - communication:   0.00%
- - work:            0.00%
+ - queue:   0.00% (avg time=0.0 s, count=0)
+ - work:    0.00%
    - objective:   0.00% (avg time=0.0 s, count=0)
    - bound:       0.00% (avg time=0.0 s, count=0)
    - branch:      0.00% (avg time=0.0 s, count=0)

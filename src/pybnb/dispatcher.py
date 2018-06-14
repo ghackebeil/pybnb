@@ -192,8 +192,6 @@ class StatusPrinter(object):
             output, even if logging criteria are not
             met. (default: False)
         """
-        if self._log.disabled:
-            return
         current_time = self._time()
         new_objective = self._new_objective
         report_new_objective = self._report_new_objective
