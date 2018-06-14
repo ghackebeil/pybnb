@@ -315,6 +315,7 @@ class Solver(object):
                 obj = problem.objective()
                 self._objective_time += self._time()-objective_start
                 self._objective_count += 1
+                working_node.objective = obj
                 if obj is not None:
                     if converger.bound_is_suboptimal(bound, obj): #pragma:nocover
                         self._disp.log_warning(
@@ -672,6 +673,7 @@ class Solver(object):
             if self.is_dispatcher:
                 if initialize_queue is None:
                     root.bound = problem.unbounded_objective()
+                    root.objective = best_objective
                     assert root.tree_id is None
                     Node._insert_tree_id(root._data, 0)
                     initialize_queue = DispatcherQueueData(
