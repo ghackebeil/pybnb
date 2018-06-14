@@ -69,7 +69,7 @@ class TestSolverSimple(object):
 Average Work Load:     0.00%
 Work Load Imbalance:   0.00%
 Average Worker Timing:
- - queue:   0.00% (avg time=0.0 s, count=0)
+ - queue:   0.00%       (avg time=0.0 s, count=0)
  - work:    0.00%
    - objective:   0.00% (avg time=0.0 s, count=0)
    - bound:       0.00% (avg time=0.0 s, count=0)
