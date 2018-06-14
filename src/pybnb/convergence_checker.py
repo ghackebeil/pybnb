@@ -11,6 +11,47 @@ from pybnb.common import (minimize,
                           maximize,
                           inf)
 
+def compute_absolute_gap(sense, bound, objective):
+    """Returns the absolute gap between the bound and
+    the objective, respecting the sign relative to the
+    objective sense of this problem."""
+    if bound == objective:
+        return 0.0
+    elif math.isinf(bound) or math.isinf(objective):
+        if sense == minimize:
+            if (bound == -inf) or \
+               (objective == inf):
+                return inf
+            else:
+                return -inf
+        else:
+            if (bound == inf) or \
+               (objective == -inf):
+                return inf
+            else:
+                return -inf
+    else:
+        if sense == minimize:
+            gap = objective - bound
+        else:
+            gap = bound - objective
+        return gap
+
+def compute_relative_gap(sense, bound, objective):
+    """Returns the relative gap between the bound and
+    the objective, respecting the sign relative to the
+    objective sense of this problem."""
+    rgap = compute_absolute_gap(sense, bound, objective)
+    if math.isinf(rgap):
+        return rgap
+    # avoid using abs() as it is slow
+    if objective > 1.0:
+        return rgap / objective
+    elif objective < -1.0:
+        return rgap / -objective
+    else:
+        return rgap
+
 class ConvergenceChecker(object):
     """A class used to check convergence.
 
@@ -75,42 +116,13 @@ class ConvergenceChecker(object):
         """Returns the absolute gap between the bound and
         the objective, respecting the sign relative to the
         objective sense of this problem."""
-        if bound == objective:
-            return 0.0
-        elif math.isinf(bound) or math.isinf(objective):
-            if self.sense == minimize:
-                if (bound == -inf) or \
-                   (objective == inf):
-                    return inf
-                else:
-                    return -inf
-            else:
-                if (bound == inf) or \
-                   (objective == -inf):
-                    return inf
-                else:
-                    return -inf
-        else:
-            if self.sense == minimize:
-                gap = objective - bound
-            else:
-                gap = bound - objective
-            return gap
+        return compute_absolute_gap(self.sense, bound, objective)
 
     def compute_relative_gap(self, bound, objective):
         """Returns the relative gap between the bound and
         the objective, respecting the sign relative to the
         objective sense of this problem."""
-        rgap = self.compute_absolute_gap(bound, objective)
-        if math.isinf(rgap):
-            return rgap
-        # avoid using abs() as it is slow
-        if objective > 1.0:
-            return rgap / objective
-        elif objective < -1.0:
-            return rgap / -objective
-        else:
-            return rgap
+        return compute_relative_gap(self.sense, bound, objective)
 
     def objective_is_optimal(self, objective, bound):
         """Determines if the objective is optimal by
