@@ -848,12 +848,12 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         div1[div1 == 0] = 1
         div2 = numpy.copy(update_count)
         div2[div2 == 0] = 1
-        stream.write(" - queue: %6.2f%% (avg time=%s, count=%d)\n"
+        stream.write(" - queue: %6.2f%%       (avg time=%s, count=%d)\n"
                      % (numpy.mean(comm_time/div1)*100.0,
                         metric_fmt(numpy.mean(update_time/div2), unit='s'),
                         update_count.sum()))
         stream.write(" - work:  %6.2f%%\n"
-                     % (numpy.mean(work_time/div)*100.0))
+                     % (numpy.mean(work_time/div1)*100.0))
         div1 = numpy.copy(work_time)
         div1[div1==0] = 1
         div2 = numpy.copy(objective_count)
