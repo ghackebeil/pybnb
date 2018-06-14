@@ -412,6 +412,138 @@ class TestProblems(object):
                                   relative_gap=0.0001,
                                   absolute_gap=0.0)
 
+class TestProblems_BestObjectiveFirstPriorityQueue(object):
+
+    def _execute_single_test(self,
+                             problem,
+                             baseline,
+                             **kwds):
+        solver = Solver(comm=None)
+        orig = pybnb.node.Node()
+        problem.save_state(orig)
+        results = solver.solve(problem,
+                               node_priority_strategy='objective',
+                               **kwds)
+
+        current = pybnb.node.Node()
+        problem.save_state(current)
+        assert len(current.state) == len(orig.state)
+        for i in range(len(current.state)):
+            assert current.state[i] == orig.state[i]
+        assert len(vars(results)) > 0
+        assert len(vars(results)) == len(vars(baseline))
+        for name in sorted(sorted(list(vars(results).keys()))):
+            if getattr(baseline, name) is _ignore_value_:
+                continue
+            assert getattr(results, name) == getattr(baseline, name), \
+                ("value for '"+str(name)+"' ("+
+                 str(getattr(results, name))+") does "
+                 "not match baseline ("+
+                 str(getattr(baseline, name))+")")
+        assert solver.is_dispatcher
+        q = solver.save_dispatcher_queue()
+        assert len(q) == 2
+        assert q.next_tree_id >= 0
+        assert len(q.nodes) == solver._disp.queue.size()
+
+    def test_infeasible_max(self):
+        baseline = SolverResults()
+        baseline.solution_status = "infeasible"
+        baseline.termination_condition = "optimality"
+        baseline.objective = -inf
+        baseline.bound = -inf
+        baseline.nodes = 255
+        baseline.wall_time = _ignore_value_
+        problem = infeasible_max.InfeasibleMax()
+        self._execute_single_test(problem, baseline)
+
+    def test_infeasible_min(self):
+        baseline = SolverResults()
+        baseline.solution_status = "infeasible"
+        baseline.termination_condition = "optimality"
+        baseline.objective = inf
+        baseline.bound = inf
+        baseline.nodes = 255
+        baseline.wall_time = _ignore_value_
+        problem = infeasible_min.InfeasibleMin()
+        self._execute_single_test(problem, baseline)
+
+    def test_root_infeasible_max(self):
+        baseline = SolverResults()
+        baseline.solution_status = "infeasible"
+        baseline.termination_condition = "optimality"
+        baseline.objective = -inf
+        baseline.bound = -inf
+        baseline.nodes = 1
+        baseline.wall_time = _ignore_value_
+        problem = root_infeasible_max.RootInfeasibleMax()
+        self._execute_single_test(problem, baseline)
+
+    def test_root_infeasible_min(self):
+        baseline = SolverResults()
+        baseline.solution_status = "infeasible"
+        baseline.termination_condition = "optimality"
+        baseline.objective = inf
+        baseline.bound = inf
+        baseline.nodes = 1
+        baseline.wall_time = _ignore_value_
+        problem = root_infeasible_min.RootInfeasibleMin()
+        self._execute_single_test(problem, baseline)
+
+    def test_unbounded_max(self):
+        baseline = SolverResults()
+        baseline.solution_status = "unbounded"
+        baseline.termination_condition = "no_nodes"
+        baseline.objective = inf
+        baseline.bound = inf
+        baseline.nodes = 1
+        baseline.wall_time = _ignore_value_
+        problem = unbounded_max.UnboundedMax()
+        self._execute_single_test(problem, baseline)
+
+    def test_unbounded_min(self):
+        baseline = SolverResults()
+        baseline.solution_status = "unbounded"
+        baseline.termination_condition = "no_nodes"
+        baseline.objective = -inf
+        baseline.bound = -inf
+        baseline.nodes = 1
+        baseline.wall_time = _ignore_value_
+        problem = unbounded_min.UnboundedMin()
+        self._execute_single_test(problem, baseline)
+
+    def test_zero_objective_max(self):
+        baseline = SolverResults()
+        baseline.solution_status = "optimal"
+        baseline.termination_condition = "optimality"
+        baseline.objective = 0.0
+        baseline.bound = 0.0078125
+        baseline.absolute_gap = 0.0078125
+        baseline.relative_gap = 0.0078125
+        baseline.nodes = 255
+        baseline.wall_time = _ignore_value_
+        problem = zero_objective_max.ZeroObjectiveMax()
+        self._execute_single_test(problem,
+                                  baseline,
+                                  relative_gap=0.01,
+                                  absolute_gap=0.01)
+
+    def test_zero_objective_min(self):
+        baseline = SolverResults()
+        baseline.solution_status = "optimal"
+        baseline.termination_condition = "optimality"
+        baseline.objective = 0.0
+        baseline.bound = -0.0078125
+        baseline.absolute_gap = 0.0078125
+        baseline.relative_gap = 0.0078125
+        baseline.nodes = 255
+        baseline.wall_time = _ignore_value_
+        problem = zero_objective_min.ZeroObjectiveMin()
+        self._execute_single_test(problem,
+                                  baseline,
+                                  relative_gap=0.01,
+                                  absolute_gap=0.01)
+
 class TestProblems_BreadthFirstPriorityQueue(object):
 
     def _execute_single_test(self,

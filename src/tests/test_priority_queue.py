@@ -11,6 +11,7 @@ from pybnb.priority_queue import \
      _NoThreadingFIFOQueue,
      WorstBoundFirstPriorityQueue,
      CustomPriorityQueue,
+     BestObjectiveFirstPriorityQueue,
      BreadthFirstPriorityQueue,
      DepthFirstPriorityQueue,
      FIFOQueue)
@@ -395,6 +396,37 @@ class TestCustomPriorityQueue(object):
             else:
                 assert q.bound() is None
         assert q.size() == 0
+
+class TestBestObjectiveFirstPriorityQueue(object):
+
+    def test_overwrites_queue_priority(self):
+        q = BestObjectiveFirstPriorityQueue(minimize)
+        node = Node(size=0)
+        assert node.queue_priority is None
+        node.objective = 1
+        assert q.put(node._data) == 0
+        assert node.objective == 1
+        assert node.queue_priority == -1
+        child = node.new_child()
+        assert child.objective == 1
+        child.objective = 2
+        assert child.queue_priority is None
+        assert q.put(child._data) == 1
+        assert child.queue_priority == -2
+
+        q = BestObjectiveFirstPriorityQueue(maximize)
+        node = Node(size=0)
+        assert node.queue_priority is None
+        node.objective = 1
+        assert q.put(node._data) == 0
+        assert node.objective == 1
+        assert node.queue_priority == 1
+        child = node.new_child()
+        assert child.objective == 1
+        child.objective = 2
+        assert child.queue_priority is None
+        assert q.put(child._data) == 1
+        assert child.queue_priority == 2
 
 class TestBreadthFirstPriorityQueue(object):
 

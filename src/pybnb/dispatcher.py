@@ -29,6 +29,7 @@ from pybnb.mpi_utils import (Message,
                              recv_nothing)
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   CustomPriorityQueue,
+                                  BestObjectiveFirstPriorityQueue,
                                   BreadthFirstPriorityQueue,
                                   DepthFirstPriorityQueue,
                                   FIFOQueue)
@@ -583,17 +584,19 @@ class Dispatcher(object):
             The assumed best objective to start with.
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`
             The initial queue.
-        node_priority_strategy : {"bound", "breadth", "depth", "custom"}
+        node_priority_strategy : {"bound", "objective", "breadth", "depth", "fifo", "custom"}, optional
             Indicates the strategy for ordering nodes in the
             work queue. The "bound" strategy always selects
             the node with the worst bound first. The
-            "breadth" strategy always selects the node with
-            the smallest tree depth first (i.e.,
-            breadth-first search). The "depth" strategy
-            always selects the node with the largest tree
-            depth first (i.e., depth-first search). The
-            "custom" strategy assumes the
-            :attr:`queue_priority
+            "objective" strategy always selects the node
+            with the best objective first. The "breadth"
+            strategy always selects the node with the
+            smallest tree depth first (i.e., breadth-first
+            search). The "depth" strategy always selects the
+            node with the largest tree depth first (i.e.,
+            depth-first search). The "fifo" strategy selects
+            nodes in first-in, first-out order. The "custom"
+            strategy assumes the :attr:`queue_priority
             <pybnb.node.Node.queue_priority>` node attribute
             has been set by the user. For all other
             strategies, the :attr:`queue_priority
@@ -637,6 +640,9 @@ class Dispatcher(object):
                 self.converger.sense)
         elif node_priority_strategy == "custom":
             self.queue = CustomPriorityQueue(
+                self.converger.sense)
+        elif node_priority_strategy == "objective":
+            self.queue = BestObjectiveFirstPriorityQueue(
                 self.converger.sense)
         elif node_priority_strategy == "fifo":
             self.queue = FIFOQueue(

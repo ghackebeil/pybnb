@@ -30,16 +30,17 @@ class Node(object):
     """
     __slots__ = ("_data", "_user_state")
 
-    _extra_data_slots = 9
-    # data[-9] = best_objective
-    # data[-8] = bound
-    # data[-7] = queue_priority
-    # data[-6] = has_queue_priority
-    # data[-5] = tree_id
-    # data[-4] = has_tree_id
-    # data[-3] = parent_tree_id
-    # data[-2] = has_parent_tree_id
-    # data[-1] = tree_depth
+    _extra_data_slots = 10
+    # data[-10] = best_objective
+    # data[-9]  = objective
+    # data[-8]  = bound
+    # data[-7]  = queue_priority
+    # data[-6]  = has_queue_priority
+    # data[-5]  = tree_id
+    # data[-4]  = has_tree_id
+    # data[-3]  = parent_tree_id
+    # data[-2]  = has_parent_tree_id
+    # data[-1]  = tree_depth
 
     def __init__(self, size=0, tree_depth=0, data_=None):
         self._data = None
@@ -86,6 +87,7 @@ class Node(object):
         if size is None:
             size = len(self._user_state)
         tree_id = self.tree_id
+        objective = self.objective
         bound = self.bound
         tree_depth = self.tree_depth
         child = Node(size=size)
@@ -94,6 +96,7 @@ class Node(object):
         else:
             # set the has_parent_tree_id flag to False on the child
             child._data[-2] = _zero
+        child.objective = objective
         child.bound = bound
         child._insert_tree_depth(child._data, tree_depth + 1)
         assert child.tree_id is None
@@ -188,6 +191,14 @@ class Node(object):
             self._data[-6] = _zero
 
     @property
+    def objective(self):
+        """Get/set the objective for this node."""
+        return self._extract_objective(self._data)
+    @objective.setter
+    def objective(self, objective):
+        self._insert_objective(self._data, objective)
+
+    @property
     def bound(self):
         """Get/set the bound for this node."""
         return self._extract_bound(self._data)
@@ -229,17 +240,23 @@ class Node(object):
 
     @classmethod
     def _insert_best_objective(cls, data, best_objective):
-        data[-9] = best_objective
-        assert float(data[-9]) == float(best_objective)
+        data[-10] = best_objective
 
     @classmethod
     def _extract_best_objective(cls, data):
+        return float(data[-10])
+
+    @classmethod
+    def _insert_objective(cls, data, objective):
+        data[-9] = objective
+
+    @classmethod
+    def _extract_objective(cls, data):
         return float(data[-9])
 
     @classmethod
     def _insert_bound(cls, data, bound):
         data[-8] = bound
-        assert float(data[-8]) == float(bound)
 
     @classmethod
     def _extract_bound(cls, data):
@@ -248,7 +265,6 @@ class Node(object):
     @classmethod
     def _insert_queue_priority(cls, data, queue_priority):
         data[-7] = queue_priority
-        assert float(data[-7]) == queue_priority
         # set the has_queue_priority marker to true
         data[-6] = _one
 
@@ -266,7 +282,6 @@ class Node(object):
         # make sure the floating point representation is
         # exact (tree_id is likely an integer)
         assert int(data[-5]) == int(tree_id)
-        assert data[-5] == tree_id
         # set the has_tree_id marker to true
         data[-4] = _one
 
@@ -284,13 +299,11 @@ class Node(object):
         # make sure the floating point representation is
         # exact (tree_id is likely an integer)
         assert int(data[-3]) == int(tree_id)
-        assert data[-3] == tree_id
         # set the has_tree_id marker to true
         data[-2] = _one
 
     @classmethod
     def _extract_parent_tree_id(cls, data):
-        assert len(data) >= cls._extra_data_slots
         return int(data[-3])
 
     @classmethod

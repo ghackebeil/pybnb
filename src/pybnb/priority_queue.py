@@ -213,8 +213,8 @@ class IPriorityQueue(object):
         raise NotImplementedError()
 
 class WorstBoundFirstPriorityQueue(IPriorityQueue):
-    """A priority queue implementation that returns the node
-    data item with the worst bound first.
+    """A priority queue implementation that serves nodes
+    with the worst bound first.
 
     Parameters
     ----------
@@ -334,6 +334,23 @@ class CustomPriorityQueue(IPriorityQueue):
 
     def items(self):
         return self._queue.items()
+
+class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
+    """A priority queue implementation that serves nodes
+    with the best objective first.
+
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
+        The objective sense for the problem.
+    """
+
+    def put(self, data):
+        objective = Node._extract_objective(data)
+        if self._sense == minimize:
+            priority = -objective
+        else:
+            priority = objective
+        Node._insert_queue_priority(data, priority)
+        return super(BestObjectiveFirstPriorityQueue, self).put(data)
 
 class BreadthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in

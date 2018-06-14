@@ -90,7 +90,7 @@ Average Worker Timing:
             time.sleep(0.1)
             try:
                 os.remove(fname)
-            except:
+            except:                               #pragma:nocover
                 pass
 
     def test_bad_node_priority_strategy(self):
