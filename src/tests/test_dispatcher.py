@@ -20,12 +20,15 @@ class TestDispatcherSimple(object):
             Dispatcher(None).serve()
 
     def test_node_priority_strategy(self):
+        converger = ConvergenceChecker(minimize)
         root = Node(size=0)
         Node._insert_tree_id(root._data, 0)
+        Node._insert_bound(root._data,
+                           converger.unbounded_objective)
         initialize_queue = DispatcherQueueData(
             nodes=[root],
             next_tree_id=1)
-        converger = ConvergenceChecker(minimize)
+
         node_limit = None
         time_limit = None
         log = get_simple_logger()

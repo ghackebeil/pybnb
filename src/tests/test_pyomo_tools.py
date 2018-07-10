@@ -46,7 +46,7 @@ class Test(object):
         con = _create_optimality_bound(problem,
                                        model.objective,
                                        100)
-        assert con.ctype is pmo.constraint.ctype
+        assert con.ctype is pmo.constraint._ctype
         assert con.body is model.objective
         assert con.lb == 100
         # min
@@ -56,6 +56,6 @@ class Test(object):
         con = _create_optimality_bound(problem,
                                        model.objective,
                                        100)
-        assert con.ctype is pmo.constraint.ctype
+        assert con.ctype is pmo.constraint._ctype
         assert con.body is model.objective
         assert con.ub == 100
