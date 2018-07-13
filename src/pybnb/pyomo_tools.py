@@ -111,15 +111,29 @@ def generate_cids(model,
     are safe to serialize or use as dictionary keys."""
     object_to_cid = pmo.ComponentMap()
     cid_to_object = collections.OrderedDict()
-    traversal = model.preorder_traversal(return_key=True, **kwds)
-    obj_ = six.next(traversal)[1]
-    assert obj_ is model
-    object_to_cid[model] = prefix
-    cid_to_object[prefix] = model
-    for key, obj in traversal:
-        parent = obj.parent
-        cid_ = object_to_cid[obj] = object_to_cid[parent]+(key,)
-        cid_to_object[cid_] = obj
+    try:
+        model.preorder_traversal(return_key=True)
+    except TypeError:
+        traversal = model.preorder_traversal(**kwds)
+        obj_ = six.next(traversal)
+        assert obj_ is model
+        object_to_cid[model] = prefix
+        cid_to_object[prefix] = model
+        for obj in traversal:
+            parent = obj.parent
+            key = obj.storage_key
+            cid_ = object_to_cid[obj] = object_to_cid[parent]+(key,)
+            cid_to_object[cid_] = obj
+    else:                                         #pragma:nocover
+        traversal = model.preorder_traversal(return_key=True, **kwds)
+        obj_ = six.next(traversal)[1]
+        assert obj_ is model
+        object_to_cid[model] = prefix
+        cid_to_object[prefix] = model
+        for key, obj in traversal:
+            parent = obj.parent
+            cid_ = object_to_cid[obj] = object_to_cid[parent]+(key,)
+            cid_to_object[cid_] = obj
     return object_to_cid, cid_to_object
 
 class PyomoProblem(pybnb.Problem):
