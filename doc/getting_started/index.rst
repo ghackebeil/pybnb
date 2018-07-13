@@ -139,17 +139,18 @@ description for each of these methods.
    programming error or other numerical issues.
 
    When this method is called, the :attr:`parent_node.bound
-   <pybnb.node.Node.bound>` attribute will have been set to the
-   value returned from :func:`Problem.bound()
-   <pybnb.problem.Problem.bound>` after having the user
-   state stored on the `parent_node` loaded into the
-   problem. Any child nodes returned from
-   :func:`parent_node.new_child()
-   <pybnb.node.Node.new_child>` will inherit this bound,
-   which may affect their prioritization in the global work
-   queue. To override the default bound associated with a
-   child node, simply assign a new value to the :attr:`bound
-   <pybnb.node.Node.bound>` attribute.
+   <pybnb.node.Node.bound>` and :attr:`parent_node.objective
+   <pybnb.node.Node.objective>` attributes will have been
+   set to the value returned from :func:`Problem.bound()
+   <pybnb.problem.Problem.bound>` and
+   :func:`Problem.objective()
+   <pybnb.problem.Problem.objective>`, respectively.  Any
+   child nodes returned from :func:`parent_node.new_child()
+   <pybnb.node.Node.new_child>` will inherit this bound and
+   objective, which may affect their prioritization in the
+   global work queue. As user can assign a new value to one
+   or both of these attributes before returning a child
+   node.
 
 Solving a Problem
 -----------------
