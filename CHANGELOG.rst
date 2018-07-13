@@ -6,6 +6,12 @@ Changelog
 
 * TODO
 
+0.2.6 - 2018-07-13
+~~~~~~~~~~~~~~~~~~
+
+* adding a best objective first node priority strategy
+* performance improvements
+
 0.2.5 - 2018-05-30
 ~~~~~~~~~~~~~~~~~~
 
