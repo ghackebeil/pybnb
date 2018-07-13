@@ -495,19 +495,33 @@ class Dispatcher(object):
             explored_count
 
     def _listen(self):
+
+        def rebuild_update_requests(size):
+            update_requests = {}
+            update_data = array.array("d",[0])*size
+            for i in self.worker_ranks:
+                update_requests[i] = self.comm.Recv_init(
+                    update_data,
+                    source=i,
+                    tag=DispatcherAction.update)
+            return update_requests, update_data
+
+        update_requests = None
+        data = None
         msg = Message(self.comm)
-        update_data = array.array("d",[0])
         while (1):
             msg.probe()
             tag = msg.tag
             source = msg.source
             if tag == DispatcherAction.update:
                 size = msg.status.Get_count(datatype=mpi4py.MPI.DOUBLE)
-                if len(update_data) < size:
-                    update_data = array.array("d",[0])*size
-                msg.recv(datatype=mpi4py.MPI.DOUBLE,
-                         data=update_data)
-                data = msg.data
+                if (data is None) or \
+                   (len(data) < size):
+                    update_requests, data = \
+                        rebuild_update_requests(size)
+                req = update_requests[msg.status.Get_source()]
+                req.Start()
+                req.Wait()
                 best_objective = float(data[0])
                 previous_bound = float(data[1])
                 assert int(data[2]) == data[2]
