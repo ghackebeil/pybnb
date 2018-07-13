@@ -17,7 +17,7 @@ try:
     import pyomo.kernel as pmo
     if getattr(pmo,'version_info',(0,)*3) >= (5,4,3):  #pragma:nocover
         pyomo_available = True
-except ImportError:                                    #pragma:nocover
+except:                                                #pragma:nocover
     pass
 
 ipopt_available = False

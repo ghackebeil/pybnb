@@ -12,6 +12,11 @@ import hashlib
 import pybnb
 
 import pyomo.kernel as pmo
+if getattr(pmo,'version_info',(0,)*3) < (5,4,3):   #pragma:nocover
+    raise ImportError(
+        "Pyomo 5.4.3 or later is not available")
+
+import pyomo.kernel as pmo
 
 import six
 from six.moves import xrange as range
@@ -22,7 +27,6 @@ try:
     import mpi4py
 except ImportError:                               #pragma:nocover
     pass
-
 
 def _hash_joblist(jobs):
     x = hashlib.sha1()

@@ -5,13 +5,11 @@ import pybnb
 pyomo_available = False
 try:
     import pyomo.kernel as pmo
-    pyomo_available = True
-except ImportError:
-    pass
-
-if pyomo_available:
     from pybnb.pyomo_tools import (_add_tmp_component,
                                    _create_optimality_bound)
+    pyomo_available = True
+except:
+    pass
 
 class MinProblem(pybnb.Problem):
     def sense(self): return pybnb.minimize
