@@ -115,10 +115,14 @@ def generate_cids(model,
     are safe to serialize or use as dictionary keys."""
     object_to_cid = pmo.ComponentMap()
     cid_to_object = collections.OrderedDict()
+    if hasattr(pmo, 'preorder_traversal'):
+        fn = lambda *args, **kwds: pmo.preorder_traversal(model, *args, **kwds)
+    else:
+        fn = model.preorder_traversal
     try:
-        model.preorder_traversal(return_key=True)
+        fn(return_key=True)
     except TypeError:
-        traversal = model.preorder_traversal(**kwds)
+        traversal = fn(**kwds)
         obj_ = six.next(traversal)
         assert obj_ is model
         object_to_cid[model] = prefix
@@ -129,7 +133,7 @@ def generate_cids(model,
             cid_ = object_to_cid[obj] = object_to_cid[parent]+(key,)
             cid_to_object[cid_] = obj
     else:                                         #pragma:nocover
-        traversal = model.preorder_traversal(return_key=True, **kwds)
+        traversal = fn(return_key=True, **kwds)
         obj_ = six.next(traversal)[1]
         assert obj_ is model
         object_to_cid[model] = prefix
