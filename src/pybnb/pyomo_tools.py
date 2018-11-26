@@ -115,7 +115,7 @@ def generate_cids(model,
     are safe to serialize or use as dictionary keys."""
     object_to_cid = pmo.ComponentMap()
     cid_to_object = collections.OrderedDict()
-    if hasattr(pmo, 'preorder_traversal'):
+    if hasattr(pmo, 'preorder_traversal'):        #pragma:nocover
         fn = lambda *args, **kwds: pmo.preorder_traversal(model, *args, **kwds)
     else:
         fn = model.preorder_traversal
