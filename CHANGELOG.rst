@@ -6,6 +6,11 @@ Changelog
 
 * TODO
 
+0.2.8 - 2018-11-26
+~~~~~~~~~~~~~~~~~~
+
+* removing code that causes deprecation warnings in Python 3.7
+
 0.2.7 - 2018-11-26
 ~~~~~~~~~~~~~~~~~~
 
