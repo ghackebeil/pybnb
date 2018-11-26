@@ -157,9 +157,9 @@ class StatusPrinter(object):
         """Pass a message to ``log.info``"""
         self._log.info(msg)
 
-    def log_warn(self, msg):
-        """Pass a message to ``log.warn``"""
-        self._log.warn(msg)
+    def log_warning(self, msg):
+        """Pass a message to ``log.warning``"""
+        self._log.warning(msg)
 
     def log_debug(self, msg):
         """Pass a message to ``log.debug``"""
@@ -798,9 +798,9 @@ class Dispatcher(object):
             self.journalist.log_info(msg)
 
     def log_warning(self, msg):
-        """Pass a message to ``log.warn``"""
+        """Pass a message to ``log.warning``"""
         if self.journalist is not None:
-            self.journalist.log_warn(msg)
+            self.journalist.log_warning(msg)
 
     def log_debug(self, msg):
         """Pass a message to ``log.debug``"""
