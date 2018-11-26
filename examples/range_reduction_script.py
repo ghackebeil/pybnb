@@ -117,7 +117,8 @@ if __name__ == "__main__":
         best_objective = comm.bcast(best_objective, root=0)
     assert best_objective != problem.unbounded_objective
 
-    # do parallel bounds tightening for the first three nodes
+    # do parallel bounds tightening on the
+    # first 7 nodes that are processed
     obrr = Rosenbrock2D_RangeReduction(
         problem,
         best_objective,
@@ -134,8 +135,8 @@ if __name__ == "__main__":
         obrr.listen(root=0)
     del obrr
 
-    # continue the solve without bounds tightening at the
-    # remaining nodes
+    # continue the solve in parallel, without bounds
+    # tightening on the remaining nodes
     results = pybnb.solve(problem,
                           comm=comm,
                           dispatcher_rank=0,
