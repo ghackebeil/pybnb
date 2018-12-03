@@ -92,22 +92,24 @@ class Lipschitz1D(pybnb.Problem):
 
         # branch
         xL, xU = self._xL, self._xU
+        fL, fU = self._fL_cached, self._fU_cached
+        fmid = self._fmid_cached
         children = [node.new_child() for i in range(2)]
         mid = 0.5*(xL + xU)
 
         # left child
         self._xL = xL
         self._xU = mid
-        self._fL_cached = self._fL_cached
-        self._fU_cached = self._fmid_cached
+        self._fL_cached = fL
+        self._fU_cached = fmid
         self._fmid_cached = pybnb.nan
         self.save_state(children[0])
 
         # right child
         self._xL = mid
         self._xU = xU
-        self._fL_cached = self._fmid_cached
-        self._fU_cached = self._fU_cached
+        self._fL_cached = fmid
+        self._fU_cached = fU
         self._fmid_cached = pybnb.nan
         self.save_state(children[1])
 

@@ -9,24 +9,15 @@ import time
 import array
 import collections
 
-if sys.version_info >= (3, 0):
-    import queue as Queue
-else:
-    import Queue
-
-from pybnb.common import (minimize,
-                          maximize,
-                          inf,
-                          nan)
+from pybnb.common import (maximize,
+                          inf)
 from pybnb.misc import get_gap_labels
 from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     DispatcherResponse,
                                     DispatcherProxy)
 from pybnb.node import Node
-from pybnb.convergence_checker import ConvergenceChecker
-from pybnb.mpi_utils import (Message,
-                             recv_nothing)
+from pybnb.mpi_utils import Message
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   CustomPriorityQueue,
                                   BestObjectiveFirstPriorityQueue,

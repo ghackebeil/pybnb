@@ -697,7 +697,6 @@ class Solver(object):
                             best_objective,
                             converger,
                             results)
-                pass
         except:                                        #pragma:nocover
             sys.stderr.write("Exception caught: "+str(sys.exc_info()[1])+"\n")
             sys.stderr.write("Attempting to shut down, but this may hang.\n")

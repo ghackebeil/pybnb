@@ -28,13 +28,15 @@ def metric_fmt(num, unit="s", digits=1):
     if (num >= 1.0) or (num == 0.0):
         if num >= 1000.0:
             num /= 1000.0
-            for prefix in ['K','M','G','T','P','E','Z','Yi']:
+            for p in ['K','M','G','T','P','E','Z','Yi']:
+                prefix = p
                 if abs(num) < 1000.0:
                     break
                 num /= 1000.0
     else:
         num *= 1000.0
-        for prefix in ['m','u','n','p','f']:
+        for p in ['m','u','n','p','f']:
+            prefix = p
             if abs(num) > 1:
                 break
             num *= 1000.0
@@ -155,7 +157,7 @@ def get_keyword_docs(doc):
             break
     else:                                              #pragma:nocover
         assert False
-    i = i_start
+
     args = {}
     choices = {}
     i = i_start

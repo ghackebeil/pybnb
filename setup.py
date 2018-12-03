@@ -2,7 +2,6 @@ import os
 import sys
 import setuptools
 import setuptools.command.test
-from setuptools import setup, find_packages
 from codecs import open
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -40,7 +39,7 @@ class PyTest(setuptools.command.test.test):
         errno = pytest.main(shlex.split(self.pytest_args))
         sys.exit(errno)
 
-setup(
+setuptools.setup(
     name=about["__title__"],
     version=about["__version__"],
     description=about["__summary__"],
@@ -64,7 +63,7 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     keywords=["optimization","branch and bound"],
-    packages=find_packages('src', exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    packages=setuptools.find_packages('src', exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     package_dir={'':'src'},
     install_requires=install_requires,
     cmdclass={

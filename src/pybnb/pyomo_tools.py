@@ -91,7 +91,6 @@ def _mpi_partition(comm, items, root=0):
                     last_tag[status.Get_source()] = i
                     requests.append(comm.Isend(_null, status.Get_source(), tag=i))
                     i += 1
-                final_recv = []
                 for dest in last_tag:
                     if last_tag[dest] < N:
                         requests.append(comm.Isend(_null, dest, tag=N))
