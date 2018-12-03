@@ -8,6 +8,7 @@ env:
   matrix:
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi DEPLOY=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYOMO_RELEASE=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi SLIM=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-mpich EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
@@ -30,10 +31,14 @@ install:
   - ${DOC} python --version
   - ${DOC} pip --version
   - ${DOC} mpirun --version
-  - ${DOC} git clone https://github.com/Pyutilib/pyutilib.git
-  - ${DOC} bash -c 'cd ./pyutilib && python setup.py install && cd .. && rm -r ./pyutilib'
-  - ${DOC} git clone https://github.com/Pyomo/pyomo.git
-  - ${DOC} bash -c 'cd ./pyomo && python setup.py install && cd .. && rm -r ./pyomo'
+  - |
+    if [ -z "$PYOMO_RELEASE" ]
+    then
+        ${DOC} git clone https://github.com/Pyutilib/pyutilib.git
+        ${DOC} bash -c 'cd ./pyutilib && python setup.py install && cd .. && rm -r ./pyutilib'
+        ${DOC} git clone https://github.com/Pyomo/pyomo.git
+        ${DOC} bash -c 'cd ./pyomo && python setup.py install && cd .. && rm -r ./pyomo'
+    fi
   - ${DOC} pip install -r test_requirements.txt
   - ${DOC} pip install codecov
   - ${DOC} python setup.py develop
