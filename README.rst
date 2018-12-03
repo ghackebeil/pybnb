@@ -1,17 +1,9 @@
 pybnb
 =====
 
-.. image:: https://travis-ci.org/ghackebeil/pybnb.svg?branch=master
-  :target: https://travis-ci.org/ghackebeil/pybnb
-.. image::  https://ci.appveyor.com/api/projects/status/gfbrxja9v08rm7a2?svg=true
-  :target: https://ci.appveyor.com/project/ghackebeil/pybnb
-.. image:: https://codecov.io/gh/ghackebeil/pybnb/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/ghackebeil/pybnb
-.. image:: https://img.shields.io/pypi/v/pybnb.svg
-  :target: https://pypi.python.org/pypi/pybnb/
-.. image:: https://readthedocs.org/projects/pybnb/badge/?version=latest
-  :target: http://pybnb.readthedocs.io/en/latest/?badge=latest
-  :alt: Documentation Status
+|PyPI-Status| |PyPI-Versions| |Codacy-Grade|
+
+|Travis-Status| |Appveyor-Status| |Coverage-Status| |Documentation-Status|
 
 A parallel branch-and-bound engine for Python. (https://pybnb.readthedocs.io)
 
@@ -112,3 +104,19 @@ Quick Start
    - relative_gap: 6.105006e-05
    - nodes: 16386
    - wall_time: 784.6 ms
+
+
+.. |Travis-Status| image:: https://travis-ci.org/ghackebeil/pybnb.svg?branch=master
+  :target: https://travis-ci.org/ghackebeil/pybnb
+.. |Appveyor-Status| image::  https://ci.appveyor.com/api/projects/status/gfbrxja9v08rm7a2?svg=true
+  :target: https://ci.appveyor.com/project/ghackebeil/pybnb
+.. |Coverage-Status| image:: https://codecov.io/gh/ghackebeil/pybnb/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/ghackebeil/pybnb
+.. |Documentation-Status| image:: https://readthedocs.org/projects/pybnb/badge/?version=latest
+  :target: http://pybnb.readthedocs.io/en/latest/?badge=latest
+.. |PyPI-Status| image:: https://img.shields.io/pypi/v/pybnb.svg
+  :target: https://pypi.python.org/pypi/pybnb/
+.. |PyPI-Versions| image:: https://img.shields.io/pypi/pyversions/pybnb.svg
+   :target: https://pypi.org/project/pybnb
+.. |Codacy-Grade| image:: https://img.shields.io/lgtm/grade/python/g/ghackebeil/pybnb.svg?logo=lgtm&logoWidth=18
+   :target: https://lgtm.com/projects/g/ghackebeil/pybnb/context:python
