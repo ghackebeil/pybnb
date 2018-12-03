@@ -6,6 +6,11 @@ Changelog
 
 * TODO
 
+0.2.9 - 2018-12-03
+~~~~~~~~~~~~~~~~~~
+
+* tagging with explicit support for Python 3.7 on PyPI
+
 0.2.8 - 2018-11-26
 ~~~~~~~~~~~~~~~~~~
 
