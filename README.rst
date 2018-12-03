@@ -13,7 +13,7 @@ pybnb
   :target: http://pybnb.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
 
-A parallel branch-and-bound engine for Python.
+A parallel branch-and-bound engine for Python. (https://pybnb.readthedocs.io)
 
 This software is copyright (c) by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
