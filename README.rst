@@ -23,48 +23,54 @@ This license, including disclaimer, is available in the 'LICENSE' file.
 Quick Start
 -----------
 
-Define
+1. Define a problem:
 
-.. code:: python
+  .. code:: python
 
-    # simple.py
-    import pybnb
+   # simple.py
 
-    class Simple(pybnb.Problem):
+   import pybnb
 
-        def __init__(self):
-            self.bounds = [0.0,1.0]
-        def sense(self):
-            return pybnb.minimize
-        def objective(self):
-            return self.bounds[1] - self.bounds[0]
-        def bound(self):
-            return -(self.bounds[0] - self.bounds[1])**2
-        def save_state(self, node):
-            node.resize(2)
-            node.state[:] = self.bounds
-        def load_state(self, node):
-            self.bounds = node.state.tolist()
-        def branch(self, parent):
-            L, U = self.bounds
-            if U-L <= 1e-8:
-                return ()
-            mid = 0.5 * (L + U)
-            left = parent.new_child()
-            left.state[:] = (L, mid)
-            right = parent.new_child()
-            right.state[:] = (mid, U)
-            return left, right
+   class Simple(pybnb.Problem):
 
-.. code:: python
+       def __init__(self):
+           self.bounds = [0.0,1.0]
+       def sense(self):
+           return pybnb.minimize
+       def objective(self):
+           return self.bounds[1] - self.bounds[0]
+       def bound(self):
+           return -(self.bounds[0] - self.bounds[1])**2
+       def save_state(self, node):
+           node.resize(2)
+           node.state[:] = self.bounds
+       def load_state(self, node):
+           self.bounds = node.state.tolist()
+       def branch(self, parent):
+           L, U = self.bounds
+           if U-L <= 1e-8:
+               return ()
+           mid = 0.5 * (L + U)
+           left = parent.new_child()
+           left.state[:] = (L, mid)
+           right = parent.new_child()
+           right.state[:] = (mid, U)
+           return left, right
 
-    # solve_simple.py
-    import mpi4py.MPI
-    import simple
-    problem = simple.Simple()
-    results = pybnb.solve(problem,
+2. Write a solve script:
+
+  .. code:: python
+
+   # solve_simple.py
+
+   import mpi4py.MPI
+   import simple
+   problem = simple.Simple()
+   results = pybnb.solve(problem,
                           comm=mpi4py.MPI.COMM_WORLD)
 
-.. code:: bash
+3. Run the script:
 
-   mpirun -np 4 python solve_simple.py
+  .. code:: bash
+
+   $ mpirun -np 4 python solve_simple.py
