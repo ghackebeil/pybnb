@@ -4,7 +4,6 @@ Branch-and-bound dispatcher implementation.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import array
-import sys
 import time
 import array
 import collections
