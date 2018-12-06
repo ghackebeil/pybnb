@@ -18,8 +18,6 @@ from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (Dispatcher,
                               DispatcherQueueData)
 
-
-
 try:
     import mpi4py
 except ImportError:                               #pragma:nocover
@@ -274,6 +272,30 @@ class Solver(object):
         else:
             return False
 
+    def _fill_results(self, results, converger):
+        if results.bound == converger.infeasible_objective:
+            assert results.objective == converger.infeasible_objective, \
+                str(results.objective)
+            results.solution_status = "infeasible"
+        elif results.objective == converger.infeasible_objective:
+            results.solution_status = "unknown"
+        elif results.objective == converger.unbounded_objective:
+            assert results.bound == converger.unbounded_objective, \
+                str(results.bound)
+            results.solution_status = "unbounded"
+        else:
+            results.absolute_gap = converger.\
+                                   compute_absolute_gap(results.bound,
+                                                        results.objective)
+            results.relative_gap = converger.\
+                                   compute_relative_gap(results.bound,
+                                                        results.objective)
+            if converger.objective_is_optimal(results.objective,
+                                              results.bound):
+                results.solution_status = "optimal"
+            else:
+                results.solution_status = "feasible"
+
     def _solve(self,
                problem,
                best_objective,
@@ -393,31 +415,14 @@ class Solver(object):
                                 "is worse than parent node "
                                 "(child=%r, parent=%r)"
                                 % (bound, child_bound))
-        results.objective = self._best_objective
-        results.bound = self._disp.finalize()
 
-        if results.bound == infeasible_objective:
-            assert results.objective == infeasible_objective, \
-                str(results.objective)
-            results.solution_status = "infeasible"
-        elif results.objective == infeasible_objective:
-            results.solution_status = "unknown"
-        elif results.objective == unbounded_objective:
-            assert results.bound == unbounded_objective, \
-                str(results.bound)
-            results.solution_status = "unbounded"
-        else:
-            results.absolute_gap = converger.\
-                                   compute_absolute_gap(results.bound,
-                                                        results.objective)
-            results.relative_gap = converger.\
-                                   compute_relative_gap(results.bound,
-                                                        results.objective)
-            if converger.objective_is_optimal(results.objective,
-                                              results.bound):
-                results.solution_status = "optimal"
+            if problem.explored_nodes_count is not None:
+                self._explored_nodes_count = problem.explored_nodes_count
             else:
-                results.solution_status = "feasible"
+                self._explored_nodes_count += 1
+
+        global_bound = self._disp.finalize()
+        return self._best_objective, global_bound
 
     #
     # Interface
@@ -733,12 +738,15 @@ class Solver(object):
                     log,
                     log_interval_seconds)
             if not self.is_worker:
-                self._disp.serve()
+                results.objective, results.bound = \
+                    self._disp.serve()
             else:
-                self._solve(problem,
-                            best_objective,
-                            converger,
-                            results)
+                results.objective, results.bound = \
+                    self._solve(problem,
+                                best_objective,
+                                converger,
+                                results)
+            self._fill_results(results, converger)
         except:                                        #pragma:nocover
             sys.stderr.write("Exception caught: "+str(sys.exc_info()[1])+"\n")
             sys.stderr.write("Attempting to shut down, but this may hang.\n")
@@ -751,35 +759,28 @@ class Solver(object):
         if (self.comm is not None) and \
            (self.comm.size > 1):
             if self.is_worker:
-                nodes_buf_local = array.array("i", [self._explored_nodes_count])
-                nodes_buf_global = array.array("i", [0])
-                self.worker_comm.Allreduce(
-                    [nodes_buf_local,mpi4py.MPI.INT],
-                    [nodes_buf_global,mpi4py.MPI.INT],
-                    op=mpi4py.MPI.SUM)
-                results.nodes = int(nodes_buf_global[0])
-                del nodes_buf_local
-                del nodes_buf_global
-            wtime_buf_local = array.array("d", [self._wall_time])
-            wtime_buf_global = array.array("d", [0])
+                explored_nodes_count = self._explored_nodes_count
+                termination_condition_int = 0
+            else:
+                assert self.is_dispatcher
+                explored_nodes_count = 0
+                termination_condition_int = \
+                    _termination_condition_to_int[self._disp.get_termination_condition()]
+            assert termination_condition_int >= 0
+            buf_local = array.array("d", [explored_nodes_count,
+                                          self._wall_time,
+                                          termination_condition_int])
+            buf_global = array.array("d", [0,0,0])
             self.comm.Allreduce(
-                [wtime_buf_local,mpi4py.MPI.DOUBLE],
-                [wtime_buf_global,mpi4py.MPI.DOUBLE],
-                op=mpi4py.MPI.MAX)
-            results.wall_time = float(wtime_buf_global[0])
-            del wtime_buf_global
-            del wtime_buf_local
-            if self.is_worker and (self.worker_comm.rank == 0):
-                assert not self.is_dispatcher
-                self.comm.send(results,
-                               self._disp.dispatcher_rank,
-                               tag=5555578)
-            elif self.is_dispatcher:
-                results = self.comm.recv(source=self._disp.root_worker_rank,
-                                         tag=5555578)
-                results.termination_condition = self._disp.get_termination_condition()
-            results.termination_condition = self.comm.bcast(results.termination_condition,
-                                                            root=self._disp.dispatcher_rank)
+                    [buf_local,mpi4py.MPI.DOUBLE],
+                    [buf_global,mpi4py.MPI.DOUBLE],
+                    op=mpi4py.MPI.SUM)
+            results.nodes = int(buf_global[0])
+            results.wall_time = float(buf_global[1])/self.comm.size
+            results.termination_condition = \
+                _int_to_termination_condition[int(buf_global[2])]
+            del buf_local
+            del buf_global
         else:
             results.nodes = self._explored_nodes_count
             results.wall_time = self._wall_time

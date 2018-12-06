@@ -499,6 +499,7 @@ class Dispatcher(object):
 
         update_requests = None
         data = None
+        global_bound = None
         msg = Message(self.comm)
         while (1):
             msg.probe()
@@ -565,6 +566,7 @@ class Dispatcher(object):
                 raise RuntimeError("Dispatcher received invalid "
                                    "message tag '%s' from rank '%s'"
                                    % (tag, source))
+        return self.best_objective, global_bound
 
     #
     # Local Interface
@@ -854,4 +856,4 @@ class Dispatcher(object):
         if self.comm is None:
             raise ValueError("The dispatcher was not instantiated "
                              "with an MPI communicator.")
-        self._listen()
+        return self._listen()
