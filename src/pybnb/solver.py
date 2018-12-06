@@ -416,11 +416,6 @@ class Solver(object):
                                 "(child=%r, parent=%r)"
                                 % (bound, child_bound))
 
-            if problem.explored_nodes_count is not None:
-                self._explored_nodes_count = problem.explored_nodes_count
-            else:
-                self._explored_nodes_count += 1
-
         global_bound = self._disp.finalize()
         return self._best_objective, global_bound
 
