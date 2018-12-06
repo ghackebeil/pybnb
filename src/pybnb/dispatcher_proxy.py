@@ -195,7 +195,11 @@ class DispatcherProxy(object):
         tag = self._status.Get_tag()
         if tag == DispatcherResponse.nowork:
             data = recv_data(self.comm, self._status)
-            return float(data[0]), None
+            return (True,
+                    float(data[0]),
+                    (float(data[1]),
+                     int(data[2]),
+                     _int_to_termination_condition[int(data[3])]))
         else:
             assert tag == DispatcherResponse.work
             recv_size = self._status.Get_count(mpi4py.MPI.DOUBLE)
@@ -211,23 +215,7 @@ class DispatcherProxy(object):
                       datatype=mpi4py.MPI.DOUBLE,
                       out=data)
             best_objective = Node._extract_best_objective(data)
-            return best_objective, data
-
-    def finalize(self, *args, **kwds):
-        """A proxy to :func:`pybnb.dispatcher.Dispatcher.finalize`."""
-        with self.CommActionTimer:
-            return self._finalize(*args, **kwds)
-    def _finalize(self):
-        if self.worker_comm.rank == 0:
-            send_nothing(self.comm,
-                         self.dispatcher_rank,
-                         DispatcherAction.finalize)
-        data = array.array("d",[0,0,0])
-        self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
-                        root=self.dispatcher_rank)
-        return (float(data[0]),
-                int(data[1]),
-                _int_to_termination_condition[int(data[2])])
+            return False, best_objective, data
 
     def log_info(self, *args, **kwds):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""

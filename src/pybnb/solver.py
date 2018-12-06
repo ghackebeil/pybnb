@@ -296,7 +296,7 @@ class Solver(object):
         # start the work loop
         while (1):
             update_start = self._time()
-            new_objective, data = \
+            stop, new_objective, data = \
                 self._disp.update(self._best_objective,
                                   bound,
                                   self._explored_nodes_count,
@@ -315,7 +315,7 @@ class Solver(object):
 
             children_data = ()
 
-            if data is None:
+            if stop:
                 # make sure all processes have the exact same best
                 # objective value (not just subject to tolerances)
                 self._best_objective = new_objective
@@ -398,13 +398,11 @@ class Solver(object):
                                 "(child=%r, parent=%r)"
                                 % (bound, child_bound))
 
-        (global_bound,
-         global_explored_nodes_count,
-         termination_condition) = self._disp.finalize()
+        assert len(data) == 3
         return (self._best_objective,
-                global_bound,
-                global_explored_nodes_count,
-                termination_condition)
+                data[0],
+                data[1],
+                data[2])
 
     #
     # Interface

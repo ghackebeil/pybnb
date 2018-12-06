@@ -328,7 +328,21 @@ class Dispatcher(object):
                 Node._extract_bound(data))
             return False
 
+    def _get_termination_condition(self):
+        """Get the solve termination description"""
+        if self.stop_optimality:
+            return "optimality"
+        elif self.stop_node_limit:
+            return "node_limit"
+        elif self.stop_time_limit:
+            return "time_limit"
+        elif self.stop_cutoff:
+            return "cutoff"
+        else:
+            return "no_nodes"
+
     def _get_current_bound(self):
+        """Get the current global bound"""
         bound = self.queue.bound()
         if self.converger.sense == maximize:
             if len(self.external_bounds) and \
@@ -364,6 +378,8 @@ class Dispatcher(object):
         return data
 
     def _send_work(self):
+        stop = False
+        data = None
         if len(self.needs_work_queue) > 0:
             if self.comm is None:
                 assert len(self.needs_work_queue) == 1
@@ -377,16 +393,27 @@ class Dispatcher(object):
                         data = self._get_work_to_send(_source)
                         assert Node._extract_best_objective(data) == \
                             self.best_objective
-                        return (self.best_objective, data)
+                    else:
+                        stop = True
+                        data = (self._get_current_bound(),
+                                self.explored_nodes_count,
+                                self._get_termination_condition())
+                else:
+                    stop = True
+                    data = (self._get_current_bound(),
+                            self.explored_nodes_count,
+                            self._get_termination_condition())
             else:
                 if self._send_requests is None:
-                    self._send_requests = {i: None for i in self.worker_ranks}
+                    self._send_requests = \
+                        {i: None for i in self.worker_ranks}
                 if not (self.stop_optimality or \
                         self.stop_node_limit or \
                         self.stop_time_limit or \
                         self.stop_cutoff):
                     while (self.queue.size() > 0) and \
                           (len(self.needs_work_queue) > 0):
+                        stop = False
                         dest = self.needs_work_queue.popleft()
                         data = self._get_work_to_send(dest)
                         if self._send_requests[dest] is not None:
@@ -400,18 +427,26 @@ class Dispatcher(object):
                         list(r_ for r_ in self._send_requests.values()
                              if r_ is not None))
                     self._send_requests = None
-                    send_data = array.array('d',[self.best_objective])
+                    stop = True
+                    data = (self._get_current_bound(),
+                            self.explored_nodes_count,
+                            self._get_termination_condition())
+                    send_ = array.array('d',[0,0,0,0])
+                    send_[0] = self.best_objective
+                    send_[1] = data[0]
+                    send_[2] = data[1]
+                    send_[3] = _termination_condition_to_int[data[2]]
                     # everyone needs work, so we must be done
                     requests = []
                     while len(self.needs_work_queue) > 0:
                         dest = self.needs_work_queue.popleft()
                         requests.append(
-                            self.comm.Isend([send_data,mpi4py.MPI.DOUBLE],
+                            self.comm.Isend([send_,mpi4py.MPI.DOUBLE],
                                             dest,
                                             DispatcherResponse.nowork))
                     mpi4py.MPI.Request.Waitall(requests)
 
-        return (self.best_objective, None)
+        return (stop, self.best_objective, data)
 
     def _check_update_worst_terminal_bound(self, bound):
         if (self.worst_terminal_bound is None) or \
@@ -531,11 +566,17 @@ class Dispatcher(object):
                         pos += data_size
                 else:
                     node_list = ()
-                self.update(best_objective,
-                            previous_bound,
-                            source_explored_nodes_count,
-                            node_list,
-                            _source=source)
+                ret = self.update(best_objective,
+                                  previous_bound,
+                                  source_explored_nodes_count,
+                                  node_list,
+                                  _source=source)
+                stop = ret[0]
+                if stop:
+                    return (ret[1],
+                            ret[2][0],
+                            ret[2][1],
+                            ret[2][2])
             elif tag == DispatcherAction.log_info:
                 msg.recv(mpi4py.MPI.CHAR)
                 self.log_info(msg.data)
@@ -548,29 +589,10 @@ class Dispatcher(object):
             elif tag == DispatcherAction.log_error:
                 msg.recv(mpi4py.MPI.CHAR)
                 self.log_error(msg.data)
-            elif tag == DispatcherAction.finalize:
-                msg.recv()
-                assert msg.data is None
-                (global_bound,
-                 global_explored_nodes_count,
-                 termination_condition) = self.finalize()
-                assert global_bound is not None
-                buf_ = array.array("d",[0,0,0])
-                buf_[0] = global_bound
-                buf_[1] = global_explored_nodes_count
-                buf_[2] = _termination_condition_to_int[
-                    termination_condition]
-                self.comm.Bcast([buf_, mpi4py.MPI.DOUBLE],
-                                root=self.comm.rank)
-                del buf_
-                return (self.best_objective,
-                        global_bound,
-                        global_explored_nodes_count,
-                        termination_condition)
             elif tag == DispatcherAction.stop_listen:
                 msg.recv()
                 assert msg.data is None
-                return (None,None,None,None)
+                return (None, None, None, None)
             else:                                 #pragma:nocover
                 raise RuntimeError("Dispatcher received invalid "
                                    "message tag '%s' from rank '%s'"
@@ -740,12 +762,16 @@ class Dispatcher(object):
 
         Returns
         -------
+        solve_finished : bool
+            Indicates if the dispatcher has terminated the solve.
         new_objective : float
             The best objective value known to the dispatcher.
         data : ``array.array`` or None
-            A data array representing a new node for the
-            worker to process. If None, this indicates that
-            the worker should begin to finalize the solve.
+            If solve_finished is false, a data array
+            representing a new node for the worker to
+            process. Otherwise, a tuple containing the
+            global bound, the number of explored nodes and
+            the termination condition string.
         """
         assert self.initialized
         self._update_explored_nodes_count(
@@ -777,27 +803,17 @@ class Dispatcher(object):
         self.first_update[_source] = False
         self._check_convergence()
         ret = self._send_work()
-        if self.journalist is not None:
-            self.journalist.tic()
+        stop = ret[0]
+        if not stop:
+            if self.journalist is not None:
+                self.journalist.tic()
+        else:
+            if self.journalist is not None:
+                self.journalist.tic(force=True)
+                self.journalist.log_info(self.journalist._lines)
+            assert self.initialized
+            self.initialized = False
         return ret
-
-    def finalize(self):
-        """Start the solve finalization.
-
-        Returns
-        -------
-        global_bound : float
-            The global bound known to the dispatcher.
-        """
-        if self.journalist is not None:
-            self.journalist.tic(force=True)
-            self.journalist.log_info(self.journalist._lines)
-        global_bound = self._get_current_bound()
-        assert self.initialized
-        self.initialized = False
-        return (global_bound,
-                self.explored_nodes_count,
-                self.get_termination_condition())
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
@@ -835,25 +851,6 @@ class Dispatcher(object):
             nodes=[Node(data_=data)
                    for data in self.queue.items()],
             next_tree_id=self.next_tree_id)
-
-    def get_termination_condition(self):
-        """Get the solve termination description.
-
-        Returns
-        -------
-        termination_condition : string
-            A string describing the reason for solve termination.
-        """
-        if self.stop_optimality:
-            return "optimality"
-        elif self.stop_node_limit:
-            return "node_limit"
-        elif self.stop_time_limit:
-            return "time_limit"
-        elif self.stop_cutoff:
-            return "cutoff"
-        else:
-            return "no_nodes"
 
     #
     # Distributed Interface
