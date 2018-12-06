@@ -14,7 +14,8 @@ from pybnb.misc import (metric_fmt,
                         get_simple_logger)
 from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
-from pybnb.dispatcher_proxy import DispatcherProxy
+from pybnb.dispatcher_proxy import (DispatcherProxy,
+                                    _termination_condition_to_int)
 from pybnb.dispatcher import (Dispatcher,
                               DispatcherQueueData)
 
@@ -65,25 +66,6 @@ _int_to_solution_status[1] = "feasible"
 _int_to_solution_status[2] = "infeasible"
 _int_to_solution_status[3] = "unbounded"
 _int_to_solution_status[4] = "unknown"
-
-#
-# used to transmit termination_condition
-#
-_termination_condition_to_int = {}
-_termination_condition_to_int["optimality"] = 0
-_termination_condition_to_int["feasibility"] = 1
-_termination_condition_to_int["cutoff"] = 2
-_termination_condition_to_int["node_limit"] = 3
-_termination_condition_to_int["time_limit"] = 4
-_termination_condition_to_int["no_nodes"] = 5
-
-_int_to_termination_condition = [None]*6
-_int_to_termination_condition[0] = "optimality"
-_int_to_termination_condition[1] = "feasibility"
-_int_to_termination_condition[2] = "cutoff"
-_int_to_termination_condition[3] = "node_limit"
-_int_to_termination_condition[4] = "time_limit"
-_int_to_termination_condition[5] = "no_nodes"
 
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve."""
@@ -416,8 +398,13 @@ class Solver(object):
                                 "(child=%r, parent=%r)"
                                 % (bound, child_bound))
 
-        global_bound = self._disp.finalize()
-        return self._best_objective, global_bound
+        (global_bound,
+         global_explored_nodes_count,
+         termination_condition) = self._disp.finalize()
+        return (self._best_objective,
+                global_bound,
+                global_explored_nodes_count,
+                termination_condition)
 
     #
     # Interface
@@ -733,14 +720,16 @@ class Solver(object):
                     log,
                     log_interval_seconds)
             if not self.is_worker:
-                results.objective, results.bound = \
-                    self._disp.serve()
+                tmp = self._disp.serve()
             else:
-                results.objective, results.bound = \
-                    self._solve(problem,
-                                best_objective,
-                                converger,
-                                results)
+                tmp = self._solve(problem,
+                                  best_objective,
+                                  converger,
+                                  results)
+            (results.objective,
+             results.bound,
+             results.nodes,
+             results.termination_condition) = tmp
             self._fill_results(results, converger)
         except:                                        #pragma:nocover
             sys.stderr.write("Exception caught: "+str(sys.exc_info()[1])+"\n")
@@ -751,35 +740,7 @@ class Solver(object):
             problem.load_state(root)
         stop = self._time()
         self._wall_time = stop-start
-        if (self.comm is not None) and \
-           (self.comm.size > 1):
-            if self.is_worker:
-                explored_nodes_count = self._explored_nodes_count
-                termination_condition_int = 0
-            else:
-                assert self.is_dispatcher
-                explored_nodes_count = 0
-                termination_condition_int = \
-                    _termination_condition_to_int[self._disp.get_termination_condition()]
-            assert termination_condition_int >= 0
-            buf_local = array.array("d", [explored_nodes_count,
-                                          self._wall_time,
-                                          termination_condition_int])
-            buf_global = array.array("d", [0,0,0])
-            self.comm.Allreduce(
-                    [buf_local,mpi4py.MPI.DOUBLE],
-                    [buf_global,mpi4py.MPI.DOUBLE],
-                    op=mpi4py.MPI.SUM)
-            results.nodes = int(buf_global[0])
-            results.wall_time = float(buf_global[1])/self.comm.size
-            results.termination_condition = \
-                _int_to_termination_condition[int(buf_global[2])]
-            del buf_local
-            del buf_global
-        else:
-            results.nodes = self._explored_nodes_count
-            results.wall_time = self._wall_time
-            results.termination_condition = self._disp.get_termination_condition()
+        results.wall_time = self._wall_time
 
         assert results.solution_status in \
             _solution_status_to_int, str(results)

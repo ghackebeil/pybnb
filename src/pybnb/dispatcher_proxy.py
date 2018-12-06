@@ -60,6 +60,25 @@ DispatcherResponse = _DispatcherResponse(
 """A namespace of typecodes that are used to categorize
 responses received by workers from the dispatcher."""
 
+#
+# used to transmit termination_condition
+#
+_termination_condition_to_int = {}
+_termination_condition_to_int["optimality"] = 0
+_termination_condition_to_int["feasibility"] = 1
+_termination_condition_to_int["cutoff"] = 2
+_termination_condition_to_int["node_limit"] = 3
+_termination_condition_to_int["time_limit"] = 4
+_termination_condition_to_int["no_nodes"] = 5
+
+_int_to_termination_condition = [None]*6
+_int_to_termination_condition[0] = "optimality"
+_int_to_termination_condition[1] = "feasibility"
+_int_to_termination_condition[2] = "cutoff"
+_int_to_termination_condition[3] = "node_limit"
+_int_to_termination_condition[4] = "time_limit"
+_int_to_termination_condition[5] = "no_nodes"
+
 class DispatcherProxy(object):
     """A proxy class for interacting with the central
     dispatcher via message passing."""
@@ -203,10 +222,12 @@ class DispatcherProxy(object):
             send_nothing(self.comm,
                          self.dispatcher_rank,
                          DispatcherAction.finalize)
-        data = array.array("d",[0])
+        data = array.array("d",[0,0,0])
         self.comm.Bcast([data,mpi4py.MPI.DOUBLE],
                         root=self.dispatcher_rank)
-        return float(data[0])
+        return (float(data[0]),
+                int(data[1]),
+                _int_to_termination_condition[int(data[2])])
 
     def log_info(self, *args, **kwds):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""

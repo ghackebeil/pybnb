@@ -14,7 +14,8 @@ from pybnb.misc import get_gap_labels
 from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     DispatcherResponse,
-                                    DispatcherProxy)
+                                    DispatcherProxy,
+                                    _termination_condition_to_int)
 from pybnb.node import Node
 from pybnb.mpi_utils import Message
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
@@ -499,7 +500,6 @@ class Dispatcher(object):
 
         update_requests = None
         data = None
-        global_bound = None
         msg = Message(self.comm)
         while (1):
             msg.probe()
@@ -551,22 +551,30 @@ class Dispatcher(object):
             elif tag == DispatcherAction.finalize:
                 msg.recv()
                 assert msg.data is None
-                global_bound = self.finalize()
+                (global_bound,
+                 global_explored_nodes_count,
+                 termination_condition) = self.finalize()
                 assert global_bound is not None
-                self.comm.Bcast(
-                    [array.array("d",[global_bound]),
-                     mpi4py.MPI.DOUBLE],
-                    root=self.comm.rank)
-                break
+                buf_ = array.array("d",[0,0,0])
+                buf_[0] = global_bound
+                buf_[1] = global_explored_nodes_count
+                buf_[2] = _termination_condition_to_int[
+                    termination_condition]
+                self.comm.Bcast([buf_, mpi4py.MPI.DOUBLE],
+                                root=self.comm.rank)
+                del buf_
+                return (self.best_objective,
+                        global_bound,
+                        global_explored_nodes_count,
+                        termination_condition)
             elif tag == DispatcherAction.stop_listen:
                 msg.recv()
                 assert msg.data is None
-                break
+                return (None,None,None,None)
             else:                                 #pragma:nocover
                 raise RuntimeError("Dispatcher received invalid "
                                    "message tag '%s' from rank '%s'"
                                    % (tag, source))
-        return self.best_objective, global_bound
 
     #
     # Local Interface
@@ -787,7 +795,9 @@ class Dispatcher(object):
         global_bound = self._get_current_bound()
         assert self.initialized
         self.initialized = False
-        return global_bound
+        return (global_bound,
+                self.explored_nodes_count,
+                self.get_termination_condition())
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
