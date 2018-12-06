@@ -68,7 +68,30 @@ _int_to_solution_status[3] = "unbounded"
 _int_to_solution_status[4] = "unknown"
 
 class SolverResults(object):
-    """Stores the results of a branch-and-bound solve."""
+    """Stores the results of a branch-and-bound solve.
+
+    Attributes
+    ----------
+    solution_status : {"optimal", "feasible", "infeasible", "unbounded", "unknown"}
+        The solution status string.
+    termination_condition : {"optimality", "feasibility", "cutoff", "node_limit", "time_limit", "node_nodes"}
+        The solve termination condition string, as
+        determined by the dispatcher.
+    objective : float
+        The best objective found.
+    bound : float
+        The global optimality bound.
+    absolute_gap : float
+        The absolute gap between the objective and bound.
+    relative_gap : float
+        The relative gap between the objective and bound.
+    nodes : float
+        The total number of nodes processes by all workers.
+    wall_time : float
+        The process-local wall time (seconds). This is the
+        only value on the results object that varies between
+        processes.
+    """
 
     def __init__(self):
         self.solution_status = None
