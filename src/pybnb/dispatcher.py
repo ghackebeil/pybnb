@@ -22,7 +22,8 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   BestObjectiveFirstPriorityQueue,
                                   BreadthFirstPriorityQueue,
                                   DepthFirstPriorityQueue,
-                                  FIFOQueue)
+                                  FIFOQueue,
+                                  RandomPriorityQueue)
 
 try:
     import mpi4py
@@ -586,7 +587,7 @@ class Dispatcher(object):
             The assumed best objective to start with.
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`
             The initial queue.
-        node_priority_strategy : {"bound", "objective", "breadth", "depth", "fifo", "custom"}, optional
+        node_priority_strategy : {"bound", "objective", "breadth", "depth", "fifo", "random", "custom"}, optional
             Indicates the strategy for ordering nodes in the
             work queue. The "bound" strategy always selects
             the node with the worst bound first. The
@@ -597,11 +598,12 @@ class Dispatcher(object):
             search). The "depth" strategy always selects the
             node with the largest tree depth first (i.e.,
             depth-first search). The "fifo" strategy selects
-            nodes in first-in, first-out order. The "custom"
-            strategy assumes the :attr:`queue_priority
-            <pybnb.node.Node.queue_priority>` node attribute
-            has been set by the user. For all other
-            strategies, the :attr:`queue_priority
+            nodes in first-in, first-out order. The "random"
+            strategy assigns a random priority to each
+            node. The "custom" strategy assumes the
+            :attr:`queue_priority <pybnb.node.Node.queue_priority>`
+            node attribute has been set by the user. For all
+            other strategies, the :attr:`queue_priority
             <pybnb.node.Node.queue_priority>` node attribute
             will be set automatically (any existing value
             will be overwritten). In all cases, the node
@@ -652,9 +654,12 @@ class Dispatcher(object):
         elif node_priority_strategy == "breadth":
             self.queue = BreadthFirstPriorityQueue(
                 self.converger.sense)
-        else:
-            assert node_priority_strategy == "depth"
+        elif node_priority_strategy == "depth":
             self.queue = DepthFirstPriorityQueue(
+                self.converger.sense)
+        else:
+            assert node_priority_strategy == "random"
+            self.queue = RandomPriorityQueue(
                 self.converger.sense)
         self.node_limit = None
         if node_limit is not None:

@@ -30,21 +30,62 @@ import six
 class _notset(object):
     pass
 
+#
+# used to transmit node_priority_strategy
+#
 _priority_to_int = {}
 _priority_to_int["bound"] = 0
 _priority_to_int["objective"] = 1
 _priority_to_int["breadth"] = 2
 _priority_to_int["depth"] = 3
 _priority_to_int["fifo"] = 4
-_priority_to_int["custom"] = 5
+_priority_to_int["random"] = 5
+_priority_to_int["custom"] = 6
 
-_int_to_priority = [None]*6
+_int_to_priority = [None]*7
 _int_to_priority[0] = "bound"
 _int_to_priority[1] = "objective"
 _int_to_priority[2] = "breadth"
 _int_to_priority[3] = "depth"
 _int_to_priority[4] = "fifo"
-_int_to_priority[5] = "custom"
+_int_to_priority[5] = "random"
+_int_to_priority[6] = "custom"
+
+#
+# used to transmit solution_status
+#
+_solution_status_to_int = {}
+_solution_status_to_int["optimal"] = 0
+_solution_status_to_int["feasible"] = 1
+_solution_status_to_int["infeasible"] = 2
+_solution_status_to_int["unbounded"] = 3
+_solution_status_to_int["unknown"] = 4
+
+_int_to_solution_status = [None]*5
+_int_to_solution_status[0] = "optimal"
+_int_to_solution_status[1] = "feasible"
+_int_to_solution_status[2] = "infeasible"
+_int_to_solution_status[3] = "unbounded"
+_int_to_solution_status[4] = "unknown"
+
+#
+# used to transmit termination_condition
+#
+_termination_condition_to_int = {}
+_termination_condition_to_int["optimality"] = 0
+_termination_condition_to_int["feasibility"] = 1
+_termination_condition_to_int["cutoff"] = 2
+_termination_condition_to_int["node_limit"] = 3
+_termination_condition_to_int["time_limit"] = 4
+_termination_condition_to_int["no_nodes"] = 5
+
+_int_to_termination_condition = [None]*6
+_int_to_termination_condition[0] = "optimality"
+_int_to_termination_condition[1] = "feasibility"
+_int_to_termination_condition[2] = "cutoff"
+_int_to_termination_condition[3] = "node_limit"
+_int_to_termination_condition[4] = "time_limit"
+_int_to_termination_condition[5] = "no_nodes"
 
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve."""
@@ -530,7 +571,7 @@ class Solver(object):
             created by calling :func:`problem.save_state
             <pybnb.problem.Problem.save_state`.
             (default: None)
-        node_priority_strategy : {"bound", "objective", "breadth", "depth", "fifo", "custom"}, optional
+        node_priority_strategy : {"bound", "objective", "breadth", "depth", "fifo", "random", "custom"}, optional
             Indicates the strategy for ordering nodes in the
             work queue. The "bound" strategy always selects
             the node with the worst bound first. The
@@ -541,11 +582,12 @@ class Solver(object):
             search). The "depth" strategy always selects the
             node with the largest tree depth first (i.e.,
             depth-first search). The "fifo" strategy selects
-            nodes in first-in, first-out order. The "custom"
-            strategy assumes the :attr:`queue_priority
-            <pybnb.node.Node.queue_priority>` node attribute
-            has been set by the user. For all other
-            strategies, the :attr:`queue_priority
+            nodes in first-in, first-out order. The "random"
+            strategy assigns a random priority to each
+            node. The "custom" strategy assumes the
+            :attr:`queue_priority <pybnb.node.Node.queue_priority>`
+            node attribute has been set by the user. For all
+            other strategies, the :attr:`queue_priority
             <pybnb.node.Node.queue_priority>` node attribute
             will be set automatically (any existing value
             will be overwritten). In all cases, the node
@@ -614,9 +656,7 @@ class Solver(object):
         if best_objective is None:
             best_objective = problem.infeasible_objective()
 
-        node_priority_strategy_int = _priority_to_int.get(
-            node_priority_strategy, None)
-        if node_priority_strategy_int is None:
+        if node_priority_strategy not in _priority_to_int:
             raise ValueError("The 'node_priority_strategy' keyword "
                              "must be one of: %s"
                              % (str(sorted(_priority_to_int.keys()))))
@@ -625,6 +665,8 @@ class Solver(object):
         # to ensure consistency
         if (self.comm is not None) and \
            (self.comm.size > 1):
+            node_priority_strategy_int = \
+                _priority_to_int[node_priority_strategy]
             settings = array.array("d", [best_objective,
                                          node_priority_strategy_int,
                                          absolute_gap,
@@ -743,17 +785,11 @@ class Solver(object):
             results.wall_time = self._wall_time
             results.termination_condition = self._disp.get_termination_condition()
 
-        assert results.solution_status in ("optimal",
-                                           "feasible",
-                                           "infeasible",
-                                           "unbounded",
-                                           "unknown"), str(results)
-        assert results.termination_condition in ("optimality",
-                                                 "feasibilty",
-                                                 "cutoff",
-                                                 "node_limit",
-                                                 "time_limit",
-                                                 "no_nodes"), str(results)
+        assert results.solution_status in \
+            _solution_status_to_int, str(results)
+        assert results.termination_condition in \
+            _termination_condition_to_int, str(results)
+
         problem.notify_solve_finished(self.comm,
                                       self.worker_comm,
                                       results)

@@ -5,6 +5,7 @@ used by the dispatcher.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 
+import random
 import collections
 import heapq
 
@@ -397,3 +398,15 @@ class FIFOQueue(CustomPriorityQueue):
         cnt = super(FIFOQueue, self).put(data)
         Node._insert_queue_priority(data, -cnt)
         return cnt
+
+class RandomPriorityQueue(CustomPriorityQueue):
+    """A priority queue implementation that assigns
+    a random priority to each incoming node.
+
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
+        The objective sense for the problem.
+    """
+
+    def put(self, data):
+        Node._insert_queue_priority(data, random.random())
+        return super(RandomPriorityQueue, self).put(data)
