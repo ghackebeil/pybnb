@@ -52,14 +52,16 @@ class Node(object):
         else:
             assert size >= 0
             assert tree_depth >= 0
-            self._set_data(numpy.empty(size + self._extra_data_slots,
-                                       dtype=float))
+            data = numpy.empty(size + self._extra_data_slots,
+                               dtype=float)
+            data.fill(numpy.nan)
             # set the has_queue_priority marker to false
-            self._data[-6] = _zero
+            data[-6] = _zero
             # set the has_tree_id marker to false
-            self._data[-4] = _zero
+            data[-4] = _zero
             # set the has_parent_tree_id marker to false
-            self._data[-2] = _zero
+            data[-2] = _zero
+            self._set_data(data)
             # set the tree depth
             self._insert_tree_depth(self._data, tree_depth)
 
@@ -93,9 +95,8 @@ class Node(object):
         child = Node(size=size)
         if tree_id is not None:
             self._insert_parent_tree_id(child._data, tree_id)
-        else:
-            # set the has_parent_tree_id flag to False on the child
-            child._data[-2] = _zero
+            # set the has_parent_tree_id marker to true
+            child._data[-2] = _one
         child.objective = objective
         child.bound = bound
         child._insert_tree_depth(child._data, tree_depth + 1)
@@ -292,6 +293,10 @@ class Node(object):
     @classmethod
     def _has_tree_id(cls, data):
         return bool(data[-4] == _one)
+
+    @classmethod
+    def _clear_tree_id(cls, data):
+        data[-4] = _zero
 
     @classmethod
     def _insert_parent_tree_id(cls, data, tree_id):
