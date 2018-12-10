@@ -8,6 +8,7 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 import random
 import collections
 import heapq
+import math
 
 from pybnb.common import (minimize,
                           maximize)
@@ -38,6 +39,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         None. This method returns a unique counter associated
         with each put."""
         assert item is not None
+        assert not math.isnan(priority)
         cnt = self._count
         self._count += 1
         _push_(self._heap, (-priority, cnt, item))
@@ -52,6 +54,20 @@ class _NoThreadingMaxPriorityFirstQueue(object):
             return _pop_(self._heap)[2]
         else:
             return None
+
+    def put_get(self, item, priority, _push_pop_=heapq.heappushpop):
+        """Combines a put and get call, which can be more
+        efficient than two separate put and get
+        calls. Returns a tuple containing the put and get
+        return values."""
+        assert item is not None
+        assert not math.isnan(priority)
+        cnt = self._count
+        self._count += 1
+        if len(self._heap) > 0:
+            return cnt, _push_pop_(self._heap, (-priority, cnt, item))[2]
+        else:
+            return cnt, item
 
     def next(self):
         """Returns, without modifying the queue, a tuple of
@@ -132,6 +148,22 @@ class _NoThreadingFIFOQueue(object):
         else:
             return None
 
+    def put_get(self, item):
+        """Combines a put and get call, which can be more
+        efficient than two separate put and get
+        calls. Returns a tuple containing the put and get
+        return values."""
+        assert item is not None
+        cnt = self._count
+        self._count += 1
+        if len(self._deque) > 0:
+            self._deque.rotate(-1)
+            return_item = self._deque[-1][1]
+            self._deque[-1] = (cnt, item)
+            return cnt, return_item
+        else:
+            return cnt, item
+
     def next(self):
         """Returns, without modifying the queue, a tuple of
         the form (cnt, item), where item is highest priority
@@ -182,17 +214,24 @@ class IPriorityQueue(object):
         """Returns the size of the queue."""
         raise NotImplementedError
 
-    def put(self, data):                          #pragma:nocover
-        """Puts a node data item in the queue, possibly
-        updating the value of :attr:`queue_priority
-        <pybnb.node.Node.queue_priority>`, depending on the
-        queue implementation. This method returns a unique
-        counter associated with each put."""
+    def put(self, item):                          #pragma:nocover
+        """Puts an item in the queue, possibly updating the
+        value of :attr:`queue_priority <pybnb.node.Node.queue_priority>`,
+        depending on the queue implementation. This method
+        returns a unique counter associated with each
+        put."""
         raise NotImplementedError()
 
     def get(self):                                #pragma:nocover
         """Returns the next data item in the queue. If the
         queue is empty, returns None."""
+        raise NotImplementedError()
+
+    def put_get(self, item):                          #pragma:nocover
+        """Combines a put and get call, which can be more
+        efficient than two separate put and get
+        calls. Returns a tuple containing the put and get
+        return values."""
         raise NotImplementedError()
 
     def bound(self):                              #pragma:nocover
@@ -231,23 +270,32 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
     def size(self):
         return self._queue.size()
 
-    def put(self, data):
-        bound = Node._extract_bound(data)
+    def put(self, item):
+        bound = Node._extract_bound(item)
         if self._sense == minimize:
             priority = -bound
         else:
             priority = bound
-        Node._insert_queue_priority(data, priority)
-        return self._queue.put(data, priority)
+        Node._insert_queue_priority(item, priority)
+        return self._queue.put(item, priority)
 
     def get(self):
         return self._queue.get()
 
+    def put_get(self, item):
+        bound = Node._extract_bound(item)
+        if self._sense == minimize:
+            priority = -bound
+        else:
+            priority = bound
+        Node._insert_queue_priority(item, priority)
+        return self._queue.put_get(item, priority)
+
     def bound(self):
         try:
-            _,data = self._queue.next()
-            bound = Node._extract_bound(data)
-            priority = Node._extract_queue_priority(data)
+            _,item = self._queue.next()
+            bound = Node._extract_bound(item)
+            priority = Node._extract_queue_priority(item)
             if self._sense == minimize:
                 assert bound == -priority
             else:
@@ -285,35 +333,70 @@ class CustomPriorityQueue(IPriorityQueue):
     def size(self):
         return self._queue.size()
 
-    def put(self, data):
-        bound = Node._extract_bound(data)
+    def put(self, item):
+        bound = Node._extract_bound(item)
+        assert not math.isnan(bound)
         if self._queue.requires_priority:
-            if not Node._has_queue_priority(data):
+            if not Node._has_queue_priority(item):
                 raise ValueError("A node queue priority is required")
-            priority = Node._extract_queue_priority(data)
-            cnt = self._queue.put(data, priority)
+            priority = Node._extract_queue_priority(item)
+            cnt = self._queue.put(item, priority)
         else:
-            cnt = self._queue.put(data)
+            cnt = self._queue.put(item)
         if self._sense == maximize:
-            self._sorted_by_bound.add((-bound, cnt, data))
+            self._sorted_by_bound.add((-bound, cnt, item))
         else:
-            self._sorted_by_bound.add((bound, cnt, data))
+            self._sorted_by_bound.add((bound, cnt, item))
         return cnt
 
     def get(self):
         if self._queue.size() > 0:
-            cnt,data_ = self._queue.next()
+            cnt, tmp_ = self._queue.next()
             assert type(cnt) is int
-            data = self._queue.get()
-            assert data_ is data
-            bound = Node._extract_bound(data)
+            item = self._queue.get()
+            assert tmp_ is item
+            bound = Node._extract_bound(item)
             if self._sense == maximize:
-                self._sorted_by_bound.remove((-bound, cnt, data))
+                self._sorted_by_bound.remove((-bound, cnt, item))
             else:
-                self._sorted_by_bound.remove((bound, cnt, data))
-            return data
+                self._sorted_by_bound.remove((bound, cnt, item))
+            return item
         else:
             return None
+
+    def put_get(self, item):
+        if self._queue.size() > 0:
+            cnt_next, tmp_ = self._queue.next()
+            assert type(cnt_next) is int
+            if self._queue.requires_priority:
+                if not Node._has_queue_priority(item):
+                    raise ValueError("A node queue priority is required")
+                priority = Node._extract_queue_priority(item)
+                cnt, item_ = self._queue.put_get(item, priority)
+            else:
+                cnt, item_ = self._queue.put_get(item)
+            if item_ is not item:
+                assert item_ is tmp_
+                bound = Node._extract_bound(item)
+                assert not math.isnan(bound)
+                bound_ = Node._extract_bound(item_)
+                assert not math.isnan(bound_)
+                if self._sense == maximize:
+                    self._sorted_by_bound.add((-bound, cnt, item))
+                    self._sorted_by_bound.remove((-bound_, cnt_next, item_))
+                else:
+                    self._sorted_by_bound.add((bound, cnt, item))
+                    self._sorted_by_bound.remove((bound_, cnt_next, item_))
+        else:
+            if self._queue.requires_priority:
+                if not Node._has_queue_priority(item):
+                    raise ValueError("A node queue priority is required")
+                priority = Node._extract_queue_priority(item)
+                cnt, item_ = self._queue.put_get(item, priority)
+            else:
+                cnt, item_ = self._queue.put_get(item)
+
+        return cnt, item_
 
     def bound(self):
         try:
@@ -323,14 +406,14 @@ class CustomPriorityQueue(IPriorityQueue):
 
     def filter(self, func):
         removed = []
-        for cnt, data in self._queue.filter(func,
+        for cnt, item in self._queue.filter(func,
                                             include_counters=True):
-            removed.append(data)
-            bound = Node._extract_bound(data)
+            removed.append(item)
+            bound = Node._extract_bound(item)
             if self._sense == maximize:
-                self._sorted_by_bound.remove((-bound, cnt, data))
+                self._sorted_by_bound.remove((-bound, cnt, item))
             else:
-                self._sorted_by_bound.remove((bound, cnt, data))
+                self._sorted_by_bound.remove((bound, cnt, item))
         return removed
 
     def items(self):
@@ -344,14 +427,23 @@ class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def put(self, data):
-        objective = Node._extract_objective(data)
+    def put(self, item):
+        objective = Node._extract_objective(item)
         if self._sense == minimize:
             priority = -objective
         else:
             priority = objective
-        Node._insert_queue_priority(data, priority)
-        return super(BestObjectiveFirstPriorityQueue, self).put(data)
+        Node._insert_queue_priority(item, priority)
+        return super(BestObjectiveFirstPriorityQueue, self).put(item)
+
+    def put_get(self, item):
+        objective = Node._extract_objective(item)
+        if self._sense == minimize:
+            priority = -objective
+        else:
+            priority = objective
+        Node._insert_queue_priority(item, priority)
+        return super(BestObjectiveFirstPriorityQueue, self).put_get(item)
 
 class BreadthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -361,11 +453,17 @@ class BreadthFirstPriorityQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def put(self, data):
-        depth = Node._extract_tree_depth(data)
+    def put(self, item):
+        depth = Node._extract_tree_depth(item)
         assert depth >= 0
-        Node._insert_queue_priority(data, -depth)
-        return super(BreadthFirstPriorityQueue, self).put(data)
+        Node._insert_queue_priority(item, -depth)
+        return super(BreadthFirstPriorityQueue, self).put(item)
+
+    def put_get(self, item):
+        depth = Node._extract_tree_depth(item)
+        assert depth >= 0
+        Node._insert_queue_priority(item, -depth)
+        return super(BreadthFirstPriorityQueue, self).put_get(item)
 
 class DepthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -375,11 +473,17 @@ class DepthFirstPriorityQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def put(self, data):
-        depth = Node._extract_tree_depth(data)
+    def put(self, item):
+        depth = Node._extract_tree_depth(item)
         assert depth >= 0
-        Node._insert_queue_priority(data, depth)
-        return super(DepthFirstPriorityQueue, self).put(data)
+        Node._insert_queue_priority(item, depth)
+        return super(DepthFirstPriorityQueue, self).put(item)
+
+    def put_get(self, item):
+        depth = Node._extract_tree_depth(item)
+        assert depth >= 0
+        Node._insert_queue_priority(item, depth)
+        return super(DepthFirstPriorityQueue, self).put_get(item)
 
 class FIFOQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -394,10 +498,15 @@ class FIFOQueue(CustomPriorityQueue):
             sense,
             _queue_type_=_NoThreadingFIFOQueue)
 
-    def put(self, data):
-        cnt = super(FIFOQueue, self).put(data)
-        Node._insert_queue_priority(data, -cnt)
+    def put(self, item):
+        cnt = super(FIFOQueue, self).put(item)
+        Node._insert_queue_priority(item, -cnt)
         return cnt
+
+    def put_get(self, item):
+        cnt, item_ = super(FIFOQueue, self).put_get(item)
+        Node._insert_queue_priority(item, -cnt)
+        return cnt, item_
 
 class RandomPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that assigns
@@ -407,6 +516,10 @@ class RandomPriorityQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def put(self, data):
-        Node._insert_queue_priority(data, random.random())
-        return super(RandomPriorityQueue, self).put(data)
+    def put(self, item):
+        Node._insert_queue_priority(item, random.random())
+        return super(RandomPriorityQueue, self).put(item)
+
+    def put_get(self, item):
+        Node._insert_queue_priority(item, random.random())
+        return super(RandomPriorityQueue, self).put_get(item)
