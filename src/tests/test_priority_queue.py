@@ -14,7 +14,8 @@ from pybnb.priority_queue import \
      BestObjectiveFirstPriorityQueue,
      BreadthFirstPriorityQueue,
      DepthFirstPriorityQueue,
-     FIFOQueue)
+     FIFOQueue,
+     RandomPriorityQueue)
 
 def assert_isheap(x):
     for k in range(len(x)):
@@ -372,11 +373,20 @@ class TestCustomPriorityQueue(object):
     def test_missing_queue_priority(self):
         q = CustomPriorityQueue(minimize)
         node = Node(size=0)
+        node.bound = 0
         assert node.queue_priority is None
         with pytest.raises(ValueError):
             q.put(node._data)
+        with pytest.raises(ValueError):
+            q.put_get(node._data)
         node.queue_priority = 1
         q.put(node._data)
+        child = node.new_child()
+        assert child.queue_priority is None
+        with pytest.raises(ValueError):
+            q.put(child._data)
+        with pytest.raises(ValueError):
+            q.put_get(child._data)
 
     def test_usage_minimize(self):
         q = CustomPriorityQueue(minimize)
@@ -560,6 +570,7 @@ class TestBreadthFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         q = BreadthFirstPriorityQueue(minimize)
         node = Node(size=0)
+        node.bound = 0
         assert node.queue_priority is None
         assert q.put(node._data) == 0
         assert node.tree_depth == 0
@@ -589,6 +600,7 @@ class TestDepthFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         q = DepthFirstPriorityQueue(minimize)
         node = Node(size=0)
+        node.bound = 0
         assert node.queue_priority is None
         assert q.put(node._data) == 0
         assert node.tree_depth == 0
@@ -618,6 +630,7 @@ class TestFIFOQueue(object):
     def test_overwrites_queue_priority(self):
         q = FIFOQueue(minimize)
         node = Node(size=0)
+        node.bound = 0
         assert node.queue_priority is None
         assert q.put(node._data) == 0
         assert node.queue_priority == 0
@@ -643,3 +656,40 @@ class TestFIFOQueue(object):
         assert cnt == 3
         assert data_ is l3._data
         assert q.bound() == 1
+
+class TestRandomPriorityQueue(object):
+
+    def test_overwrites_queue_priority(self):
+        q = RandomPriorityQueue(minimize)
+        node = Node(size=0)
+        node.bound = 0
+        assert node.queue_priority is None
+        assert q.put(node._data) == 0
+        assert node.queue_priority is not None
+        assert 0 <= node.queue_priority <= 1
+        child = node.new_child()
+        assert child.queue_priority is None
+        assert q.put(child._data) == 1
+        assert child.queue_priority is not None
+        assert 0 <= child.queue_priority <= 1
+
+        l1 = Node(size=0)
+        l1.bound = 1
+        l2 = l1.new_child()
+        l3 = l2.new_child()
+        q = RandomPriorityQueue(minimize)
+        assert l2.queue_priority is None
+        cnt, data = q.put_get(l2._data)
+        assert data is l2._data
+        assert l2.queue_priority is not None
+        assert 0 <= l2.queue_priority <= 1
+        assert cnt == 0
+        cnt = q.put(l2._data)
+        assert cnt == 1
+        assert l3.queue_priority is None
+        cnt, data_ = q.put_get(l3._data)
+        assert cnt == 2
+        assert l3.queue_priority is not None
+        assert 0 <= l3.queue_priority <= 1
+        assert data_ is max([l2, l3],
+                            key=lambda x_: x_.queue_priority)._data
