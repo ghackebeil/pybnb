@@ -8,6 +8,8 @@ import time
 import array
 import collections
 
+import numpy
+
 from pybnb.common import (maximize,
                           inf)
 from pybnb.misc import get_gap_labels
@@ -17,6 +19,7 @@ from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherProxy,
                                     _termination_condition_to_int)
 from pybnb.node import Node
+from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import Message
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   CustomPriorityQueue,
@@ -95,10 +98,6 @@ class StatusPrinter(object):
         extra_space = (rgap_str_length-10) + (agap_str_length-10)
         extra_space_left = extra_space // 2
         extra_space_right = (extra_space // 2) + (extra_space % 2)
-        if dispatcher.comm is None:
-            self._time = time.time
-        else:
-            self._time = mpi4py.MPI.Wtime
         self._lines = ("--------------------"
                        "--------------------"
                        "--------------------"
@@ -114,8 +113,8 @@ class StatusPrinter(object):
              "|              Work              ")
         self._header_line = \
             (" {explored:>9} {unexplored:>9}  |{objective:>15} "
-             "{bound:>15} "+rgap_label_str+"  "+agap_label_str+" |{runtime:>10} {rate:>10} "
-             "{starved:>8}").\
+             "{bound:>15} "+rgap_label_str+"  "+agap_label_str+" |{runtime:>9} {rate:>10} "
+             "{imbalance:>9}").\
              format(explored="Expl",
                     unexplored="Unexpl",
                     objective="Incumbent",
@@ -123,20 +122,22 @@ class StatusPrinter(object):
                     runtime="Time (s)",
                     rgap="Rel. Gap",
                     agap="Abs. Gap",
-                    starved="Starved",
-                    rate="Nodes/Sec")
+                    rate="Nodes/Sec",
+                    imbalance="Imbalance")
         self._line_template = \
             ("{tag:>1}{explored:>9d} {unexplored:>9d}  |{objective:>15.7g} "
-             "{bound:>15.7g} "+rgap_number_str+"% "+agap_number_str+" |{runtime:>10.2f} {rate:>10.2f} "
-             "{starved:>8d}")
+             "{bound:>15.7g} "+rgap_number_str+"% "+agap_number_str+" |{runtime:>9.1f} {rate:>10.2f} "
+             "{imbalance:>8.2f}%")
         self._line_template_big_gap = \
             ("{tag:>1}{explored:>9d} {unexplored:>9d}  |{objective:>15.7g} "
-             "{bound:>15.7g} "+rgap_label_str+"% "+agap_number_str+" |{runtime:>10.2f} {rate:>10.2f} "
-             "{starved:>8d}")
+             "{bound:>15.7g} "+rgap_label_str+"% "+agap_number_str+" |{runtime:>9.1f} {rate:>10.2f} "
+             "{imbalance:>8.2f}%")
 
-        self._start_time = self._time()
         self._last_print_time = float('-inf')
-        assert self._dispatcher.sent_nodes_count == 0
+        served, explored, unexplored = self._dispatcher._get_node_counts()
+        assert served == 0
+        assert explored == 0
+        assert unexplored == 0
         self._last_explored_nodes_count = 0
         self._last_rgap = None
         self._smoothing = 0.7
@@ -184,7 +185,7 @@ class StatusPrinter(object):
             output, even if logging criteria are not
             met. (default: False)
         """
-        current_time = self._time()
+        current_time = self._dispatcher.clock()
         new_objective = self._new_objective
         report_new_objective = self._report_new_objective
         delta_t = current_time - self._last_print_time
@@ -194,11 +195,9 @@ class StatusPrinter(object):
                 if delta_t < self._log_interval_seconds:
                     return
         self._new_objective = False
-        unexplored_nodes_count = \
-            self._dispatcher.queue.size() + \
-            len(self._dispatcher.has_work)
-        explored_nodes_count = \
-            self._dispatcher.explored_nodes_count
+        (served_nodes_count,
+         explored_nodes_count,
+         unexplored_nodes_count) = self._dispatcher._get_node_counts()
         delta_n = explored_nodes_count - \
                   self._last_explored_nodes_count
         if delta_t and delta_n:
@@ -212,6 +211,8 @@ class StatusPrinter(object):
             rate = 1.0/self._avg_time_per_node
         else:
             rate = 0.0
+
+        imbalance = self._dispatcher._compute_load_imbalance()
 
         tag = '' if (not new_objective) else '*'
         bound = self._dispatcher._get_current_bound()
@@ -236,9 +237,9 @@ class StatusPrinter(object):
                 bound=bound,
                 rgap="9999+",
                 agap=agap,
-                runtime=current_time-self._start_time,
-                starved=len(self._dispatcher.needs_work_queue),
-                rate=rate))
+                runtime=current_time-self._dispatcher.start_time,
+                rate=rate,
+                imbalance=imbalance))
             self._last_rgap = None
         else:
             self._log.info(self._line_template.format(
@@ -249,204 +250,56 @@ class StatusPrinter(object):
                 bound=bound,
                 rgap=rgap,
                 agap=agap,
-                runtime=current_time-self._start_time,
-                starved=len(self._dispatcher.needs_work_queue),
-                rate=rate))
+                runtime=current_time-self._dispatcher.start_time,
+                rate=rate,
+                imbalance=imbalance))
             self._last_rgap = rgap
         self._last_explored_nodes_count = explored_nodes_count
         self._print_count += 1
         self._last_print_time = current_time
 
-class Dispatcher(object):
-    """The central dispatcher for a distributed
-    branch-and-bound algorithm.
+class DispatcherBase(object):
+    """The base dispatcher implementation with some core
+    functionality shared by the distributed and local
+    implementations."""
 
-    Parameters
-    ----------
-    comm : ``mpi4py.MPI.Comm``, optional
-        The MPI communicator to use. If set to None, this
-        will disable the use of MPI and avoid an attempted
-        import of `mpi4py.MPI` (which avoids triggering a
-        call to `MPI_Init()`).
-    """
-
-    def __init__(self, comm):
-        if comm is not None:
-            import mpi4py.MPI
-            assert mpi4py.MPI.Is_initialized()
-        self.comm = comm
-        self.worker_ranks = []
-        # the following attributes will be reset each
-        # time initialize is called
-        self.queue = None
-        self.needs_work_queue = None
-        self.converger = None
-        self.journalist = None
+    def __init__(self):
+        self.initialized = False
+        self.start_time = None
         self.best_objective = None
+        self.converger = None
+        self.queue = None
+        self.journalist = None
         self.node_limit = None
         self.time_limit = None
-        self.sent_nodes_count = None
-        self._explored_nodes_count_by_source = None
-        self.explored_nodes_count = 0
-        self.last_known_bound = None
-        self.external_bounds = None
+        self.served_nodes_count = None
         self.worst_terminal_bound = None
-        self.first_update = None
-        self.has_work = None
+        self.stop = None
+        self.stop_optimality = None
+        self.stop_node_limit = None
+        self.stop_time_limit = None
+        self.stop_cutoff = None
         self.next_tree_id = None
-        self.stop_optimality = False
-        self.stop_node_limit = False
-        self.stop_time_limit = False
-        self.stop_cutoff = False
-        self.initialized = False
-        self._start_time = None
-        self._send_requests = None
+        self.clock = None
 
-        if self.comm is not None:
-            assert comm.size > 1
-            # send rank of dispatcher to all workers
-            self.dispatcher_rank, self.root_worker_rank = \
-                DispatcherProxy._init(
-                    self.comm,
-                    ProcessType.dispatcher)
-            assert self.dispatcher_rank == self.comm.rank
-            self.worker_ranks = [i for i in range(self.comm.size)
-                                 if i != self.comm.rank]
+    def _add_work_to_queue(self, node_data, set_tree_id=True):
+        if set_tree_id:
+            assert not Node._has_tree_id(node_data)
+            Node._insert_tree_id(node_data,
+                                 self.next_tree_id)
+            self.next_tree_id += 1
         else:
-            self.dispatcher_rank = 0
-            self.worker_ranks = [0]
-
-    def _add_work_to_queue(self, data):
-        bound = Node._extract_bound(data)
+            assert Node._has_tree_id(node_data)
+            assert Node._extract_tree_id(node_data) < self.next_tree_id
+        bound = Node._extract_bound(node_data)
         if self.converger.objective_can_improve(
                 self.best_objective,
                 bound):
-            self.queue.put(data)
+            self.queue.put(node_data)
             return True
         else:
-            self._check_update_worst_terminal_bound(
-                Node._extract_bound(data))
+            self._check_update_worst_terminal_bound(bound)
             return False
-
-    def _get_termination_condition(self):
-        """Get the solve termination description"""
-        if self.stop_optimality:
-            return "optimality"
-        elif self.stop_node_limit:
-            return "node_limit"
-        elif self.stop_time_limit:
-            return "time_limit"
-        elif self.stop_cutoff:
-            return "cutoff"
-        else:
-            return "no_nodes"
-
-    def _get_current_bound(self):
-        """Get the current global bound"""
-        bound = self.queue.bound()
-        if self.converger.sense == maximize:
-            if len(self.external_bounds) and \
-               ((bound is None) or \
-                (self.external_bounds[-1] > bound)):
-                bound = self.external_bounds[-1]
-            if (self.worst_terminal_bound is not None) and \
-               ((bound is None) or \
-                (self.worst_terminal_bound > bound)):
-                bound = self.worst_terminal_bound
-        else:
-            if len(self.external_bounds) and \
-               ((bound is None) or \
-                (self.external_bounds[0] < bound)):
-                bound = self.external_bounds[0]
-            if (self.worst_terminal_bound is not None) and \
-               ((bound is None) or \
-                (self.worst_terminal_bound < bound)):
-                bound = self.worst_terminal_bound
-        return bound
-
-    def _get_work_to_send(self, dest):
-        data = self.queue.get()
-        assert data is not None
-        bound = Node._extract_bound(data)
-        self.last_known_bound[dest] = bound
-        self.external_bounds.add(bound)
-        Node._insert_best_objective(
-            data,
-            self.best_objective)
-        self.has_work.add(dest)
-        self.sent_nodes_count += 1
-        return data
-
-    def _send_work(self):
-        stop = False
-        data = None
-        if len(self.needs_work_queue) > 0:
-            if self.comm is None:
-                assert len(self.needs_work_queue) == 1
-                _source = self.needs_work_queue.popleft()
-                assert _source == 0
-                if not (self.stop_optimality or \
-                        self.stop_node_limit or \
-                        self.stop_time_limit or \
-                        self.stop_cutoff):
-                    if self.queue.size() > 0:
-                        data = self._get_work_to_send(_source)
-                        assert Node._extract_best_objective(data) == \
-                            self.best_objective
-                    else:
-                        stop = True
-                        data = (self._get_current_bound(),
-                                self.explored_nodes_count,
-                                self._get_termination_condition())
-                else:
-                    stop = True
-                    data = (self._get_current_bound(),
-                            self.explored_nodes_count,
-                            self._get_termination_condition())
-            else:
-                if self._send_requests is None:
-                    self._send_requests = \
-                        {i: None for i in self.worker_ranks}
-                if not (self.stop_optimality or \
-                        self.stop_node_limit or \
-                        self.stop_time_limit or \
-                        self.stop_cutoff):
-                    while (self.queue.size() > 0) and \
-                          (len(self.needs_work_queue) > 0):
-                        stop = False
-                        dest = self.needs_work_queue.popleft()
-                        data = self._get_work_to_send(dest)
-                        if self._send_requests[dest] is not None:
-                            self._send_requests[dest].Wait()
-                        self._send_requests[dest] = \
-                            self.comm.Isend([data,mpi4py.MPI.DOUBLE],
-                                            dest,
-                                            tag=DispatcherResponse.work)
-                if len(self.needs_work_queue) == (self.comm.size-1):
-                    mpi4py.MPI.Request.Waitall(
-                        list(r_ for r_ in self._send_requests.values()
-                             if r_ is not None))
-                    self._send_requests = None
-                    stop = True
-                    data = (self._get_current_bound(),
-                            self.explored_nodes_count,
-                            self._get_termination_condition())
-                    send_ = array.array('d',[0,0,0,0])
-                    send_[0] = self.best_objective
-                    send_[1] = data[0]
-                    send_[2] = data[1]
-                    send_[3] = _termination_condition_to_int[data[2]]
-                    # everyone needs work, so we must be done
-                    requests = []
-                    while len(self.needs_work_queue) > 0:
-                        dest = self.needs_work_queue.popleft()
-                        requests.append(
-                            self.comm.Isend([send_,mpi4py.MPI.DOUBLE],
-                                            dest,
-                                            DispatcherResponse.nowork))
-                    mpi4py.MPI.Request.Waitall(requests)
-
-        return (stop, self.best_objective, data)
 
     def _check_update_worst_terminal_bound(self, bound):
         if (self.worst_terminal_bound is None) or \
@@ -454,152 +307,71 @@ class Dispatcher(object):
                                          self.worst_terminal_bound):
             self.worst_terminal_bound = bound
 
+    def _get_termination_condition(self):
+        """Get the solve termination description"""
+        if self.stop:
+            if self.stop_optimality:
+                return "optimality"
+            elif self.stop_node_limit:
+                return "node_limit"
+            elif self.stop_time_limit:
+                return "time_limit"
+            elif self.stop_cutoff:
+                return "cutoff"
+            else:
+                return "no_nodes"
+        else:
+            return None
+
     def _check_update_best_objective(self, objective):
+        updated = False
         if self.converger.objective_improved(objective,
                                              self.best_objective):
+            updated = True
             if self.journalist is not None:
                 self.journalist.new_objective(report=True)
             self.best_objective = objective
+            objective_can_improve_ = self.converger.objective_can_improve
+            extract_bound_ = Node._extract_bound
             removed = self.queue.filter(
-                lambda data_: self.converger.objective_can_improve(
+                lambda node_data_: objective_can_improve_(
                     objective,
-                    Node._extract_bound(data_)))
-            for data in removed:
+                    extract_bound_(node_data_)))
+            for node_data in removed:
                 self._check_update_worst_terminal_bound(
-                    Node._extract_bound(data))
-            # trim the sorted external_bounds list
-            N = len(self.external_bounds)
-            if self.converger.sense == maximize:
-                i = 0
-                for i in range(N):
-                    if self.converger.objective_can_improve(
-                            objective,
-                            self.external_bounds[i]):
-                        break
-                if i != 0:
-                    self.external_bounds = SortedList(
-                        self.external_bounds.islice(i, N))
-            else:
-                i = N-1
-                for i in range(N-1,-1,-1):
-                    if self.converger.objective_can_improve(
-                            objective,
-                            self.external_bounds[i]):
-                        break
-                if i != N-1:
-                    self.external_bounds = SortedList(
-                        self.external_bounds.islice(0, i+1))
-
+                    Node._extract_bound(node_data))
+        return updated
 
     def _check_convergence(self):
         # check if we are done
-        if not (self.stop_optimality or \
-                self.stop_node_limit or \
-                self.stop_time_limit or \
-                self.stop_cutoff):
+        if not self.stop:
             global_bound = self._get_current_bound()
             if (global_bound == self.converger.infeasible_objective) or \
                self.converger.objective_is_optimal(self.best_objective,
                                                    global_bound):
-                self.stop_optimality = True
+                self.stop_optimality = self.stop = True
             elif self.converger.cutoff_is_met(global_bound):
-                self.stop_cutoff = True
-            if not (self.stop_optimality or \
-                    self.stop_cutoff):
+                self.stop_cutoff = self.stop = True
+            if not self.stop:
                 if (self.node_limit is not None) and \
-                   (self.explored_nodes_count >= self.node_limit):
-                    self.stop_node_limit = True
-                if not self.stop_node_limit:
+                   (self.served_nodes_count >= self.node_limit):
+                    self.stop_node_limit = self.stop = True
+                if not self.stop:
                     if (self.time_limit is not None) and \
-                       ((time.time() - self._start_time) >= self.time_limit):
-                        self.stop_time_limit = True
+                       ((self.clock() - self.start_time) >= self.time_limit):
+                        self.stop_time_limit = self.stop = True
 
-    def _update_explored_nodes_count(self, explored_count, source):
-        self.explored_nodes_count -= \
-            self._explored_nodes_count_by_source[source]
-        self.explored_nodes_count += explored_count
-        self._explored_nodes_count_by_source[source] = \
-            explored_count
-
-    def _listen(self):
-
-        def rebuild_update_requests(size):
-            update_requests = {}
-            update_data = array.array("d",[0])*size
-            for i in self.worker_ranks:
-                update_requests[i] = self.comm.Recv_init(
-                    update_data,
-                    source=i,
-                    tag=DispatcherAction.update)
-            return update_requests, update_data
-
-        update_requests = None
-        data = None
-        msg = Message(self.comm)
-        while (1):
-            msg.probe()
-            tag = msg.tag
-            source = msg.source
-            if tag == DispatcherAction.update:
-                size = msg.status.Get_count(datatype=mpi4py.MPI.DOUBLE)
-                if (data is None) or \
-                   (len(data) < size):
-                    update_requests, data = \
-                        rebuild_update_requests(size)
-                req = update_requests[msg.status.Get_source()]
-                req.Start()
-                req.Wait()
-                best_objective = float(data[0])
-                previous_bound = float(data[1])
-                assert int(data[2]) == data[2]
-                source_explored_nodes_count = int(data[2])
-                assert int(data[3]) == data[3]
-                nodes_receiving_count = int(data[3])
-                if nodes_receiving_count > 0:
-                    node_list = [None]*nodes_receiving_count
-                    pos = 4
-                    for i in range(nodes_receiving_count):
-                        assert int(data[pos]) == data[pos]
-                        data_size = int(data[pos])
-                        pos += 1
-                        node_list[i] = data[pos:pos+data_size]
-                        pos += data_size
-                else:
-                    node_list = ()
-                ret = self.update(best_objective,
-                                  previous_bound,
-                                  source_explored_nodes_count,
-                                  node_list,
-                                  _source=source)
-                stop = ret[0]
-                if stop:
-                    return (ret[1],
-                            ret[2][0],
-                            ret[2][1],
-                            ret[2][2])
-            elif tag == DispatcherAction.log_info:
-                msg.recv(mpi4py.MPI.CHAR)
-                self.log_info(msg.data)
-            elif tag == DispatcherAction.log_warning:
-                msg.recv(mpi4py.MPI.CHAR)
-                self.log_warning(msg.data)
-            elif tag == DispatcherAction.log_debug:
-                msg.recv(mpi4py.MPI.CHAR)
-                self.log_debug(msg.data)
-            elif tag == DispatcherAction.log_error:
-                msg.recv(mpi4py.MPI.CHAR)
-                self.log_error(msg.data)
-            elif tag == DispatcherAction.stop_listen:
-                msg.recv()
-                assert msg.data is None
-                return (None, None, None, None)
-            else:                                 #pragma:nocover
-                raise RuntimeError("Dispatcher received invalid "
-                                   "message tag '%s' from rank '%s'"
-                                   % (tag, source))
+    def _get_work_item(self):
+        node_data = self.queue.get()
+        assert node_data is not None
+        Node._insert_best_objective(
+            node_data,
+            self.best_objective)
+        self.served_nodes_count += 1
+        return node_data
 
     #
-    # Local Interface
+    # Interface
     #
 
     def initialize(self,
@@ -667,8 +439,8 @@ class Dispatcher(object):
              (node_limit == int(node_limit)))
         assert (time_limit is None) or \
             (time_limit >= 0)
-        self.needs_work_queue = collections.deque([],
-                                                  len(self.worker_ranks))
+        self.start_time = self.clock()
+        self.initialized = True
         self.converger = converger
         self.best_objective = converger.infeasible_objective
         if node_priority_strategy == "bound":
@@ -699,121 +471,27 @@ class Dispatcher(object):
         self.time_limit = None
         if time_limit is not None:
             self.time_limit = float(time_limit)
-
-        self.sent_nodes_count = 0
-        self._explored_nodes_count_by_source = \
-            {i: 0 for i in self.worker_ranks}
-        self.last_known_bound = dict()
-        self.external_bounds = SortedList()
+        self.served_nodes_count = 0
         self.worst_terminal_bound = None
-        self.explored_nodes_count = 0
-        self.first_update = \
-            {_r: True for _r in self.worker_ranks}
-        self.has_work = set()
-        self._start_time = time.time()
+        self.stop = False
+        self.stop_optimality = False
+        self.stop_node_limit = False
+        self.stop_time_limit = False
+        self.stop_cutoff = False
+        self.next_tree_id = initialize_queue.next_tree_id
+        self.journalist = None
         if (log is not None) and (not log.disabled):
             self.journalist = StatusPrinter(
                 self,
                 log,
                 log_interval_seconds=log_interval_seconds)
-            self.log_info("Starting branch & bound solve:\n"
-                          " - worker processes: %d\n"
-                          " - node priority strategy: %s"
-                          % (len(self.worker_ranks),
-                             node_priority_strategy))
-        else:
-            self.journalist = None
-        self.next_tree_id = initialize_queue.next_tree_id
-        self.stop_optimality = False
-        self.stop_node_limit = False
-        self.stop_time_limit = False
-        self.stop_cutoff = False
-        self.initialized = True
+        self._check_update_best_objective(best_objective)
         for node in initialize_queue.nodes:
-            assert node.tree_id is not None
-            assert self.next_tree_id > node.tree_id
-            added = self._add_work_to_queue(node._data)
-            assert added
-        self._check_update_best_objective(best_objective)
-        if self.journalist is not None:
-            self.journalist.tic()
+            self._add_work_to_queue(node._data,
+                                    set_tree_id=False)
 
-    def update(self,
-               best_objective,
-               previous_bound,
-               source_explored_nodes_count,
-               node_data,
-               _source=0):
-        """Update local worker information.
-
-        Parameters
-        ----------
-        best_objective : float
-            The current best objective value known to the
-            worker.
-        previous_bound : float
-            The updated bound computed for the last node
-            that was processed by the worker.
-        source_explored_nodes_count : int
-            The total number of nodes explored by the
-            worker.
-        node_data : list
-            A list of new node data arrays to add to the queue.
-
-        Returns
-        -------
-        solve_finished : bool
-            Indicates if the dispatcher has terminated the solve.
-        new_objective : float
-            The best objective value known to the dispatcher.
-        data : ``array.array`` or None
-            If solve_finished is false, a data array
-            representing a new node for the worker to
-            process. Otherwise, a tuple containing the
-            global bound, the number of explored nodes and
-            the termination condition string.
-        """
-        assert self.initialized
-        self._update_explored_nodes_count(
-            source_explored_nodes_count,
-            _source)
-        self.needs_work_queue.append(_source)
-        self.has_work.discard(_source)
-        if _source in self.last_known_bound:
-            val_ = self.last_known_bound[_source]
-            try:
-                self.external_bounds.remove(val_)
-            except ValueError:
-                # rare, but can happen when
-                # _check_update_best_objective modifies
-                # the external_bounds list
-                pass
-        self._check_update_best_objective(best_objective)
-        if len(node_data):
-            for data in node_data:
-                assert not Node._has_tree_id(data)
-                Node._insert_tree_id(data,
-                                     self.next_tree_id)
-                self.next_tree_id += 1
-                self._add_work_to_queue(data)
-        else:
-            if not self.first_update[_source]:
-                self._check_update_worst_terminal_bound(
-                    previous_bound)
-        self.first_update[_source] = False
-        self._check_convergence()
-        ret = self._send_work()
-        stop = ret[0]
-        if not stop:
-            if self.journalist is not None:
-                self.journalist.tic()
-        else:
-            if self.journalist is not None:
-                self.journalist.tic(force=True)
-                self.journalist.log_info(self.journalist._lines)
-            assert self.initialized
-            self.initialized = False
-        return ret
+    def update(self, *args, **kwds):
+        raise NotImplementedError
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
@@ -853,6 +531,502 @@ class Dispatcher(object):
             next_tree_id=self.next_tree_id)
 
     #
+    # Abstract Methods
+    #
+
+    def _compute_load_imbalance(self):            #pragma:nocover
+        """Get the worker load imbalance."""
+        raise NotImplementedError()
+
+    def _get_current_bound(self):                 #pragma:nocover
+        """Get the current global bound"""
+        raise NotImplementedError()
+
+    def _get_final_solve_info(self):              #pragma:nocover
+        """Get the final solve information"""
+        raise NotImplementedError()
+
+    def _get_node_counts(self):                   #pragma:nocover
+        """Get the served and explored node counts"""
+        raise NotImplementedError()
+
+class DispatcherLocal(DispatcherBase):
+    """The central dispatcher for a serial branch-and-bound
+    algorithm."""
+
+    def __init__(self):
+        super(DispatcherLocal, self).__init__()
+        self.external_bound = None
+        self.solve_info = _SolveInfo()
+        self.first_update = None
+        self.active_nodes = 0
+        self.clock = time.time
+
+    def _compute_load_imbalance(self):
+        """Get the worker load imbalance."""
+        return 0.0
+
+    def _get_current_bound(self):
+        """Get the current global bound"""
+        bound = self.queue.bound()
+        if self.converger.sense == maximize:
+            if (self.external_bound is not None) and \
+               ((bound is None) or \
+                (self.external_bound > bound)):
+                bound = self.external_bound
+            if (self.worst_terminal_bound is not None) and \
+               ((bound is None) or \
+                (self.worst_terminal_bound > bound)):
+                bound = self.worst_terminal_bound
+        else:
+            if (self.external_bound is not None) and \
+               ((bound is None) or \
+                (self.external_bound < bound)):
+                bound = self.external_bound
+            if (self.worst_terminal_bound is not None) and \
+               ((bound is None) or \
+                (self.worst_terminal_bound < bound)):
+                bound = self.worst_terminal_bound
+        return bound
+
+    def _get_final_solve_info(self):
+        """Get the final solve information"""
+        solve_info = _SolveInfo()
+        solve_info.data[:] = self.solve_info.data
+        return solve_info
+
+    def _get_node_counts(self):
+        return (self.served_nodes_count,
+                self.solve_info.explored_nodes_count,
+                self.queue.size() + self.active_nodes)
+
+    #
+    # Overloaded base class methods
+    #
+
+    def _check_update_best_objective(self, objective):
+        updated = super(DispatcherLocal, self).\
+            _check_update_best_objective(objective)
+        if updated and \
+           (self.external_bound is not None):
+            if not self.converger.objective_can_improve(
+                    objective,
+                    self.external_bound):
+                self.external_bound = None
+
+    #
+    # Interface
+    #
+
+    def initialize(self,
+                   best_objective,
+                   initialize_queue,
+                   node_priority_strategy,
+                   converger,
+                   node_limit,
+                   time_limit,
+                   log,
+                   log_interval_seconds):
+        """Initialize the dispatcher. See the
+        :func:`pybnb.dispatcher.DispatcherBase.initialize`
+        method for argument descriptions."""
+        self.solve_info.reset()
+        self.first_update = True
+        self.active_nodes = 0
+        super(DispatcherLocal, self).initialize(
+            best_objective,
+            initialize_queue,
+            node_priority_strategy,
+            converger,
+            node_limit,
+            time_limit,
+            log,
+            log_interval_seconds)
+        if self.journalist is not None:
+            self.log_info("Starting branch & bound solve:\n"
+                          " - worker processes: 1\n"
+                          " - node priority strategy: %s"
+                          % (node_priority_strategy))
+            self.journalist.tic()
+
+    def update(self,
+               best_objective,
+               previous_bound,
+               solve_info,
+               node_data_list):
+        """Update local worker information.
+
+        Parameters
+        ----------
+        best_objective : float
+            The current best objective value known to the
+            worker.
+        previous_bound : float
+            The updated bound computed for the last node
+            that was processed by the worker.
+        solve_info : :class:`_SolveInfo`
+            The most up-to-date worker solve information.
+        node_data_list : list
+            A list of node data arrays to add to the queue.
+
+        Returns
+        -------
+        solve_finished : bool
+            Indicates if the dispatcher has terminated the solve.
+        new_objective : float
+            The best objective value known to the dispatcher.
+        data : ``array.array`` or None
+            If solve_finished is false, a data array
+            representing a new node for the worker to
+            process. Otherwise, a tuple containing the
+            global bound, the termination condition string,
+            and the number of explored nodes.
+        """
+        assert self.initialized
+        self._check_update_best_objective(best_objective)
+        self.solve_info.data[:] = solve_info.data
+        self.external_bound = None
+        self.active_nodes = 0
+        if len(node_data_list):
+            for node_data in node_data_list:
+                self._add_work_to_queue(node_data,
+                                        set_tree_id=True)
+        else:
+            if not self.first_update:
+                self._check_update_worst_terminal_bound(
+                    previous_bound)
+        self.first_update = False
+        self._check_convergence()
+        if self.queue.size() == 0:
+            self.stop = True
+        if not self.stop:
+            node_data = self._get_work_item()
+            self.active_nodes = 1
+            self.external_bound = Node._extract_bound(node_data)
+            if self.journalist is not None:
+                self.journalist.tic()
+            return (False, self.best_objective, node_data)
+        else:
+            if self.journalist is not None:
+                self.journalist.tic(force=True)
+                self.journalist.log_info(self.journalist._lines)
+            self.initialized = False
+            return (True,
+                    self.best_objective,
+                    (self._get_current_bound(),
+                     self._get_termination_condition(),
+                     self._get_final_solve_info()))
+
+class DispatcherDistributed(DispatcherBase):
+    """The central dispatcher for a distributed
+    branch-and-bound algorithm.
+
+    Parameters
+    ----------
+    comm : ``mpi4py.MPI.Comm``, optional
+        The MPI communicator to use. If set to None, this
+        will disable the use of MPI and avoid an attempted
+        import of `mpi4py.MPI` (which avoids triggering a
+        call to `MPI_Init()`).
+    """
+
+    def __init__(self, comm):
+        assert comm.size > 1
+        import mpi4py.MPI
+        assert mpi4py.MPI.Is_initialized()
+        super(DispatcherDistributed, self).__init__()
+        self.clock = mpi4py.MPI.Wtime
+        self.comm = comm
+        # send rank of dispatcher to all workers
+        self.dispatcher_rank, self.root_worker_rank = \
+            DispatcherProxy._init(
+                self.comm,
+                ProcessType.dispatcher)
+        assert self.dispatcher_rank == self.comm.rank
+        self.worker_ranks = [i for i in range(self.comm.size)
+                             if i != self.comm.rank]
+        self.needs_work_queue = collections.deque([],
+                                                  len(self.worker_ranks))
+        self._solve_info_by_source = \
+            {i: _SolveInfo() for i in self.worker_ranks}
+        self.last_known_bound = dict()
+        self.external_bounds = SortedList()
+        self.first_update = \
+            {_r: True for _r in self.worker_ranks}
+        self.has_work = set()
+        self._send_requests = None
+        self.explored_nodes_count = 0
+
+    def _compute_load_imbalance(self):
+        node_counts = numpy.array(
+            [info.explored_nodes_count for info in
+             self._solve_info_by_source.values()],
+            dtype=int)
+        imbalance = 0.0
+        if sum(node_counts) > 0:
+            pmax = float(node_counts.max())
+            pmin = float(node_counts.min())
+            pavg = float(numpy.mean(node_counts))
+            imbalance = (pmax-pmin)/pavg*100.0
+        return imbalance
+
+    def _get_current_bound(self):
+        """Get the current global bound"""
+        bound = self.queue.bound()
+        if self.converger.sense == maximize:
+            if len(self.external_bounds) and \
+               ((bound is None) or \
+                (self.external_bounds[-1] > bound)):
+                bound = self.external_bounds[-1]
+            if (self.worst_terminal_bound is not None) and \
+               ((bound is None) or \
+                (self.worst_terminal_bound > bound)):
+                bound = self.worst_terminal_bound
+        else:
+            if len(self.external_bounds) and \
+               ((bound is None) or \
+                (self.external_bounds[0] < bound)):
+                bound = self.external_bounds[0]
+            if (self.worst_terminal_bound is not None) and \
+               ((bound is None) or \
+                (self.worst_terminal_bound < bound)):
+                bound = self.worst_terminal_bound
+        return bound
+
+    def _get_final_solve_info(self):
+        solve_info = _SolveInfo()
+        for worker_solve_info in self._solve_info_by_source.values():
+            solve_info.data += worker_solve_info.data
+        return solve_info
+
+    def _get_node_counts(self):
+        return (self.served_nodes_count,
+                self.explored_nodes_count,
+                self.queue.size() + len(self.has_work))
+
+    #
+    # Overloaded base class methods
+    #
+
+    def _check_update_best_objective(self, objective):
+        updated = super(DispatcherDistributed, self).\
+            _check_update_best_objective(objective)
+        if updated:
+            self_external_bounds = self.external_bounds
+            objective_can_improve = self.converger.objective_can_improve
+            # trim the sorted external_bounds list
+            N = len(self_external_bounds)
+            if self.converger.sense == maximize:
+                i = 0
+                for i in range(N):
+                    if objective_can_improve(
+                            objective,
+                            self_external_bounds[i]):
+                        break
+                if i != 0:
+                    self.external_bounds = SortedList(
+                        self_external_bounds.islice(i, N))
+            else:
+                i = N-1
+                for i in range(N-1,-1,-1):
+                    if objective_can_improve(
+                            objective,
+                            self_external_bounds[i]):
+                        break
+                if i != N-1:
+                    self.external_bounds = SortedList(
+                        self_external_bounds.islice(0, i+1))
+
+    def _get_work_to_send(self, dest):
+        node_data = self._get_work_item()
+        bound = Node._extract_bound(node_data)
+        self.last_known_bound[dest] = bound
+        self.external_bounds.add(bound)
+        self.has_work.add(dest)
+        return node_data
+
+    def _send_work(self):
+        stop = False
+        data = None
+        if len(self.needs_work_queue) > 0:
+            if self._send_requests is None:
+                self._send_requests = \
+                    {i: None for i in self.worker_ranks}
+            if not self.stop:
+                while (self.queue.size() > 0) and \
+                      (len(self.needs_work_queue) > 0):
+                    stop = False
+                    dest = self.needs_work_queue.popleft()
+                    node_data = self._get_work_to_send(dest)
+                    if self._send_requests[dest] is not None:
+                        self._send_requests[dest].Wait()
+                    self._send_requests[dest] = \
+                        self.comm.Isend([node_data,mpi4py.MPI.DOUBLE],
+                                        dest,
+                                        tag=DispatcherResponse.work)
+                    # a shortcut to check if we should keep sending nodes
+                    if (self.node_limit is not None) and \
+                       (self.served_nodes_count >= self.node_limit):
+                        break
+            if len(self.needs_work_queue) == (self.comm.size-1):
+                self.stop = True
+                requests = []
+                for r_ in self._send_requests.values():
+                    if r_ is not None:
+                        requests.append(r_)
+                mpi4py.MPI.Request.Waitall(requests)
+                self._send_requests = None
+                stop = True
+                data = (self._get_current_bound(),
+                        self._get_termination_condition(),
+                        self._get_final_solve_info())
+                send_ = numpy.empty(3+_SolveInfo._data_size,
+                                    dtype=float)
+                send_[0] = self.best_objective
+                send_[1] = data[0]
+                send_[2] = _termination_condition_to_int[data[1]]
+                send_[3:] = data[2].data
+                # everyone needs work, so we must be done
+                requests = []
+                while len(self.needs_work_queue) > 0:
+                    dest = self.needs_work_queue.popleft()
+                    requests.append(
+                        self.comm.Isend([send_,mpi4py.MPI.DOUBLE],
+                                        dest,
+                                        DispatcherResponse.nowork))
+                mpi4py.MPI.Request.Waitall(requests)
+
+        return (stop, self.best_objective, data)
+
+    def _update_solve_info(self, solve_info_data, source):
+        self.explored_nodes_count -= \
+            self._solve_info_by_source[source].explored_nodes_count
+        self._solve_info_by_source[source].data[:] = solve_info_data
+        self.explored_nodes_count += \
+            self._solve_info_by_source[source].explored_nodes_count
+
+    #
+    # Interface
+    #
+
+    def initialize(self,
+                   best_objective,
+                   initialize_queue,
+                   node_priority_strategy,
+                   converger,
+                   node_limit,
+                   time_limit,
+                   log,
+                   log_interval_seconds):
+
+        """Initialize the dispatcher. See the
+        :func:`pybnb.dispatcher.DispatcherBase.initialize`
+        method for argument descriptions."""
+        self.needs_work_queue.clear()
+        for solve_info in self._solve_info_by_source.values():
+            solve_info.reset()
+        self._solve_info_by_source = \
+            {i: _SolveInfo() for i in self.worker_ranks}
+        self.last_known_bound.clear()
+        self.external_bounds.clear()
+        for _r in self.first_update:
+            self.first_update[_r] = True
+        self.has_work.clear()
+        self._send_requests = None
+        self.explored_nodes_count = 0
+        super(DispatcherDistributed, self).initialize(
+            best_objective,
+            initialize_queue,
+            node_priority_strategy,
+            converger,
+            node_limit,
+            time_limit,
+            log,
+            log_interval_seconds)
+        if self.journalist is not None:
+            self.log_info("Starting branch & bound solve:\n"
+                          " - worker processes: %d\n"
+                          " - node priority strategy: %s"
+                          % (len(self.worker_ranks),
+                             node_priority_strategy))
+            self.journalist.tic()
+
+    def update(self,
+               best_objective,
+               previous_bound,
+               solve_info,
+               node_data_list,
+               source):
+        """Update local worker information.
+
+        Parameters
+        ----------
+        best_objective : float
+            The current best objective value known to the
+            worker.
+        previous_bound : float
+            The updated bound computed for the last node
+            that was processed by the worker.
+        solve_info : :class:`_SolveInfo`
+            The most up-to-date worker solve information.
+        node_data_list : list
+            A list of node data arrays to add to the queue.
+        source : int
+            The worker process rank that the update came from.
+
+        Returns
+        -------
+        solve_finished : bool
+            Indicates if the dispatcher has terminated the solve.
+        new_objective : float
+            The best objective value known to the dispatcher.
+        data : ``array.array`` or None
+            If solve_finished is false, a data array
+            representing a new node for the worker to
+            process. Otherwise, a tuple containing the
+            global bound, the termination condition string,
+            and the number of explored nodes.
+        """
+        assert self.initialized
+        self._update_solve_info(
+            solve_info.data,
+            source)
+        self.needs_work_queue.append(source)
+        self.has_work.discard(source)
+        if source in self.last_known_bound:
+            val_ = self.last_known_bound[source]
+            try:
+                self.external_bounds.remove(val_)
+            except ValueError:
+                # rare, but can happen when
+                # _check_update_best_objective modifies
+                # the external_bounds list
+                pass
+        self._check_update_best_objective(best_objective)
+        if len(node_data_list):
+            for node_data in node_data_list:
+                self._add_work_to_queue(node_data,
+                                        set_tree_id=True)
+        else:
+            if not self.first_update[source]:
+                self._check_update_worst_terminal_bound(
+                    previous_bound)
+        self.first_update[source] = False
+        self._check_convergence()
+        ret = self._send_work()
+        stop = ret[0]
+        if not stop:
+            if self.journalist is not None:
+                self.journalist.tic()
+        else:
+            if self.journalist is not None:
+                self.journalist.tic(force=True)
+                self.journalist.log_info(self.journalist._lines)
+            assert self.initialized
+            self.initialized = False
+        return ret
+
+    #
     # Distributed Interface
     #
 
@@ -860,7 +1034,83 @@ class Dispatcher(object):
         """Start listening for distributed branch-and-bound
         commands and map them to commands in the local
         dispatcher interface."""
-        if self.comm is None:
-            raise ValueError("The dispatcher was not instantiated "
-                             "with an MPI communicator.")
-        return self._listen()
+
+        def rebuild_update_requests(size):
+            update_requests = {}
+            # Note: The code below relies on the fact that
+            #       this is an array.array type and _not_ a
+            #       numpy.array type. It issumes a copy of
+            #       the data is made when a slice is
+            #       created.
+            update_data = array.array('d',[0])*size
+            for i in self.worker_ranks:
+                update_requests[i] = self.comm.Recv_init(
+                    update_data,
+                    source=i,
+                    tag=DispatcherAction.update)
+            return update_requests, update_data
+
+        update_requests = None
+        data = None
+        solve_info_ = _SolveInfo()
+        msg = Message(self.comm)
+        while (1):
+            msg.probe()
+            tag = msg.tag
+            source = msg.source
+            if tag == DispatcherAction.update:
+                size = msg.status.Get_count(datatype=mpi4py.MPI.DOUBLE)
+                if (data is None) or \
+                   (len(data) < size):
+                    update_requests, data = \
+                        rebuild_update_requests(size)
+                req = update_requests[msg.status.Get_source()]
+                req.Start()
+                req.Wait()
+                best_objective = float(data[0])
+                previous_bound = float(data[1])
+                assert int(data[2]) == data[2]
+                nodes_receiving_count = int(data[2])
+                solve_info_.data[:] = data[3:(_SolveInfo._data_size+3)]
+                if nodes_receiving_count > 0:
+                    pos = 3+_SolveInfo._data_size
+                    node_data_list = []
+                    for i in range(nodes_receiving_count):
+                        assert int(data[pos]) == data[pos]
+                        data_size = int(data[pos])
+                        pos += 1
+                        node_data_list.append(data[pos:pos+data_size])
+                        pos += data_size
+                else:
+                    node_data_list = ()
+                ret = self.update(best_objective,
+                                  previous_bound,
+                                  solve_info_,
+                                  node_data_list,
+                                  source)
+                stop = ret[0]
+                if stop:
+                    return (ret[1],     # best_objective
+                            ret[2][0],  # global_bound
+                            ret[2][1],  # termination_condition
+                            ret[2][2])  # global_solve_info
+            elif tag == DispatcherAction.log_info:
+                msg.recv(mpi4py.MPI.CHAR)
+                self.log_info(msg.data)
+            elif tag == DispatcherAction.log_warning:
+                msg.recv(mpi4py.MPI.CHAR)
+                self.log_warning(msg.data)
+            elif tag == DispatcherAction.log_debug:
+                msg.recv(mpi4py.MPI.CHAR)
+                self.log_debug(msg.data)
+            elif tag == DispatcherAction.log_error:
+                msg.recv(mpi4py.MPI.CHAR)
+                self.log_error(msg.data)
+            elif tag == DispatcherAction.stop_listen:
+                msg.recv()
+                assert msg.data is None
+                return (None, None, None, None)
+            else:                                 #pragma:nocover
+                raise RuntimeError("Dispatcher received invalid "
+                                   "message tag '%s' from rank '%s'"
+                                   % (tag, source))

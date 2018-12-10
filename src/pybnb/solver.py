@@ -9,6 +9,9 @@ import time
 import math
 
 from pybnb.common import nan
+from pybnb.problem import (_SolveInfo,
+                           _SimpleSolveInfoCollector,
+                           _ProblemWithSolveInfoCollection)
 from pybnb.misc import (metric_fmt,
                         as_stream,
                         get_simple_logger)
@@ -16,7 +19,8 @@ from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.dispatcher_proxy import (DispatcherProxy,
                                     _termination_condition_to_int)
-from pybnb.dispatcher import (Dispatcher,
+from pybnb.dispatcher import (DispatcherLocal,
+                              DispatcherDistributed,
                               DispatcherQueueData)
 
 try:
@@ -213,7 +217,7 @@ class Solver(object):
             if comm.size > 1:
                 dispatcher_rank = int(dispatcher_rank)
                 if comm.rank == dispatcher_rank:
-                    self._disp = Dispatcher(comm)
+                    self._disp = DispatcherDistributed(comm)
                     self._worker_flag = False
                     self._dispatcher_flag = True
                 else:
@@ -221,7 +225,7 @@ class Solver(object):
                     self._worker_flag = True
                     self._dispatcher_flag = False
             else:
-                self._disp = Dispatcher(None)
+                self._disp = DispatcherLocal()
                 self._worker_flag = True
                 self._dispatcher_flag = True
             self._time = mpi4py.MPI.Wtime
@@ -232,7 +236,7 @@ class Solver(object):
                     "the 'dispatcher_rank' keyword is set to "
                     "something other than 0.")
             assert self._comm is None
-            self._disp = Dispatcher(None)
+            self._disp = DispatcherLocal()
             self._worker_flag = True
             self._dispatcher_flag = True
             self._time = time.time
@@ -241,29 +245,15 @@ class Solver(object):
         assert self._disp is not None
         assert self._time is not None
         self._wall_time = None
-        self._update_time = None
-        self._update_count = None
-        self._objective_time = None
-        self._objective_count = None
-        self._bound_time = None
-        self._bound_count = None
-        self._branch_time = None
-        self._branch_count = None
-        self._explored_nodes_count = None
         self._best_objective = None
+        self._local_solve_info = None
+        self._global_solve_info = None
 
     def _reset_local_solve_stats(self):
         self._wall_time = 0.0
-        self._update_time = 0.0
-        self._update_count = 0
-        self._objective_time = 0.0
-        self._objective_count = 0
-        self._bound_time = 0.0
-        self._bound_count = 0
-        self._branch_time = 0.0
-        self._branch_count = 0
-        self._explored_nodes_count = 0
         self._best_objective = None
+        self._local_solve_info = _SolveInfo()
+        self._global_solve_info = None
         if not self.is_dispatcher:
             self._disp.comm_time = 0.0
 
@@ -312,20 +302,29 @@ class Solver(object):
         assert unbounded_objective == converger.unbounded_objective
 
         self._best_objective = best_objective
-        children_data = ()
+        children = ()
         bound = unbounded_objective
+        if not isinstance(problem, _ProblemWithSolveInfoCollection):
+            problem = _SimpleSolveInfoCollector(problem)
+            problem.set_clock(self._time)
+        problem.set_solve_info_object(self._local_solve_info)
+
         working_node = Node()
         assert working_node.tree_id is None
+
         # start the work loop
         while (1):
             update_start = self._time()
             stop, new_objective, data = \
-                self._disp.update(self._best_objective,
-                                  bound,
-                                  self._explored_nodes_count,
-                                  children_data)
-            self._update_time += self._time()-update_start
-            self._update_count += 1
+                self._disp.update(
+                    self._best_objective,
+                    bound,
+                    self._local_solve_info,
+                    children)
+            update_stop = self._time()
+            self._local_solve_info.total_queue_time += \
+                update_stop-update_start
+            self._local_solve_info.queue_call_count += 1
 
             updated = self._check_update_best_objective(
                 converger,
@@ -336,53 +335,49 @@ class Solver(object):
                     self._best_objective)
             del updated
 
-            children_data = ()
+            children = []
 
             if stop:
                 # make sure all processes have the exact same best
                 # objective value (not just subject to tolerances)
                 self._best_objective = new_objective
                 break
-            # load the new data into the node
+            # load the new data into the working_node
             working_node._set_data(data)
             del new_objective
             del data
 
             bound = working_node.bound
-            assert working_node.tree_id is not None
-            self._explored_nodes_count += 1
+            current_tree_id = working_node.tree_id
+            current_tree_depth = working_node.tree_depth
+            assert current_tree_id is not None
+            assert current_tree_depth >= 0
 
-            # check the weak bound before loading the problem
-            # state, to avoid doing that work if possible
-            if (bound != infeasible_objective) and \
-               converger.objective_can_improve(
-                   self._best_objective,
-                   bound) and \
-                (not converger.cutoff_is_met(bound)):
+            # we should not be receiving a node that
+            # does not satisfy these assertions
+            assert (bound != infeasible_objective) and \
+                converger.objective_can_improve(
+                    self._best_objective,
+                    bound) and \
+                    (not converger.cutoff_is_met(bound))
 
-                problem.load_state(working_node)
+            problem.load_state(working_node)
 
-                bound_start = self._time()
-                new_bound = problem.bound()
-                self._bound_time += self._time()-bound_start
-                self._bound_count += 1
-                if converger.bound_worsened(new_bound, bound):    #pragma:nocover
-                    self._disp.log_warning(
-                        "WARNING: Bound became worse "
-                        "(old=%r, new=%r)"
-                        % (bound, new_bound))
-                working_node.bound = new_bound
-                bound = new_bound
+            new_bound = problem.bound()
+            if converger.bound_worsened(new_bound, bound):    #pragma:nocover
+                self._disp.log_warning(
+                    "WARNING: Bound became worse "
+                    "(old=%r, new=%r)"
+                    % (bound, new_bound))
+            working_node.bound = new_bound
+            bound = new_bound
 
             if (bound != infeasible_objective) and \
                 converger.objective_can_improve(
                     self._best_objective,
                     bound) and \
                 (not converger.cutoff_is_met(bound)):
-                objective_start = self._time()
                 obj = problem.objective()
-                self._objective_time += self._time()-objective_start
-                self._objective_count += 1
                 working_node.objective = obj
                 if obj is not None:
                     if converger.bound_is_suboptimal(bound, obj): #pragma:nocover
@@ -402,30 +397,28 @@ class Solver(object):
                    converger.objective_can_improve(
                        self._best_objective,
                        bound):
-                    branch_start = self._time()
                     clist = problem.branch(working_node)
-                    self._branch_time += self._time()-branch_start
-                    self._branch_count += 1
-                    children_data = []
                     for child in clist:
-                        assert child.parent_tree_id == working_node.tree_id
+                        assert child.parent_tree_id == current_tree_id
                         assert child.tree_id is None
-                        assert child.tree_depth == working_node.tree_depth + 1
-                        children_data.append(child._data)
-                        child_bound = Node._extract_bound(child._data)
-                        if converger.bound_worsened(child_bound, bound):    #pragma:nocover
+                        assert child.tree_depth >= current_tree_depth + 1
+                        children.append(child._data)
+                        if converger.bound_worsened(child.bound, bound):    #pragma:nocover
                             self._disp.log_warning(
                                 "WARNING: Bound on child node "
                                 "returned from branch method "
                                 "is worse than parent node "
                                 "(child=%r, parent=%r)"
-                                % (bound, child_bound))
+                                % (bound, child.bound))
 
         assert len(data) == 3
+        global_bound = data[0]
+        termination_condition = data[1]
+        global_solve_info = data[2]
         return (self._best_objective,
-                data[0],
-                data[1],
-                data[2])
+                global_bound,
+                termination_condition,
+                global_solve_info)
 
     #
     # Interface
@@ -462,6 +455,17 @@ class Solver(object):
             return self._disp.worker_comm
         return None
 
+    @property
+    def worker_count(self):
+        """The number of worker processes associated with this solver."""
+        if (self._comm is None) or \
+           (self._comm.size == 1):
+            return 1
+        elif not self.is_dispatcher:
+            return self._disp.worker_comm.size
+        else:
+            return len(self._disp.worker_ranks)
+
     def collect_worker_statistics(self):
         """Collect individual worker statistics about the
         most recent solve.
@@ -473,57 +477,77 @@ class Solver(object):
             statistics collected, where each entry is a list
             storing a value for each worker.
         """
+        import numpy
         stats = {}
         if (self.comm is not None) and \
            (self.comm.size > 1):
+            gathered = numpy.empty((self.worker_count, 11),
+                                   dtype=float)
             if self.is_worker:
                 assert self.worker_comm is not None
                 assert not self.is_dispatcher
-                stats['wall_time'] = self.worker_comm.allgather(
-                    self._wall_time)
-                stats['update_time'] = self.worker_comm.allgather(
-                    self._update_time)
-                stats['update_count'] = self.worker_comm.allgather(
-                    self._update_count)
-                stats['objective_time'] = self.worker_comm.allgather(
-                    self._objective_time)
-                stats['objective_count'] = self.worker_comm.allgather(
-                    self._objective_count)
-                stats['bound_time'] = self.worker_comm.allgather(
-                    self._bound_time)
-                stats['bound_count'] = self.worker_comm.allgather(
-                    self._bound_count)
-                stats['branch_time'] = self.worker_comm.allgather(
-                    self._branch_time)
-                stats['branch_count'] = self.worker_comm.allgather(
-                    self._branch_count)
-                stats['explored_nodes_count'] = self.worker_comm.allgather(
-                    self._explored_nodes_count)
-                stats['comm_time'] = self.worker_comm.allgather(
-                    self._disp.comm_time)
+                solve_info = self._local_solve_info
+                mine = numpy.array(
+                    [self._wall_time,
+                     solve_info.total_queue_time,
+                     solve_info.queue_call_count,
+                     solve_info.total_objective_time,
+                     solve_info.objective_call_count,
+                     solve_info.total_bound_time,
+                     solve_info.bound_call_count,
+                     solve_info.total_branch_time,
+                     solve_info.branch_call_count,
+                     solve_info.explored_nodes_count,
+                     self._disp.comm_time],
+                    dtype=float)
+                assert len(mine) == gathered.shape[1]
+                self.worker_comm.Allgather([mine, mpi4py.MPI.DOUBLE],
+                                           [gathered, mpi4py.MPI.DOUBLE])
                 if self.worker_comm.rank == 0:
-                    self.comm.send(stats,
+                    self.comm.Send([gathered, mpi4py.MPI.DOUBLE],
                                    self._disp.dispatcher_rank,
                                    tag=11112111)
             else:
                 assert self.worker_comm is None
                 assert self.is_dispatcher
-                stats = self.comm.recv(source=self._disp.root_worker_rank,
-                                       tag=11112111)
+                self.comm.Recv([gathered, mpi4py.MPI.DOUBLE],
+                               source=self._disp.root_worker_rank,
+                               tag=11112111)
+            gathered = gathered.T.tolist()
+            stats['wall_time'] = gathered[0]
+            stats['queue_time'] = gathered[1]
+            stats['queue_call_count'] = gathered[2]
+            stats['objective_time'] = gathered[3]
+            stats['objective_count'] = gathered[4]
+            stats['bound_time'] = gathered[5]
+            stats['bound_count'] = gathered[6]
+            stats['branch_time'] = gathered[7]
+            stats['branch_count'] = gathered[8]
+            stats['explored_nodes_count'] = gathered[9]
+            stats['comm_time'] = gathered[10]
+
         else:
             assert self.is_worker
             assert self.is_dispatcher
+            solve_info = self._local_solve_info
             stats['wall_time'] = [self._wall_time]
-            stats['update_time'] = [self._update_time]
-            stats['update_count'] = [self._update_count]
-            stats['objective_time'] = [self._objective_time]
-            stats['objective_count'] = [self._objective_count]
-            stats['bound_time'] = [self._bound_time]
-            stats['bound_count'] = [self._bound_count]
-            stats['branch_time'] = [self._branch_time]
-            stats['branch_count'] = [self._branch_count]
-            stats['explored_nodes_count'] = [self._explored_nodes_count]
-            stats['comm_time'] = [self._update_time]
+            stats['queue_time'] = [solve_info.total_queue_time]
+            stats['queue_call_count'] = [solve_info.queue_call_count]
+            stats['objective_time'] = \
+                [solve_info.total_objective_time]
+            stats['objective_count'] = \
+                [solve_info.objective_call_count]
+            stats['bound_time'] = \
+                [solve_info.total_bound_time]
+            stats['bound_count'] = \
+                [solve_info.bound_call_count]
+            stats['branch_time'] = \
+                [solve_info.total_branch_time]
+            stats['branch_count'] = \
+                [solve_info.branch_call_count]
+            stats['explored_nodes_count'] = \
+                [solve_info.explored_nodes_count]
+            stats['comm_time'] = [solve_info.total_queue_time]
 
         return stats
 
@@ -749,8 +773,9 @@ class Solver(object):
                                   results)
             (results.objective,
              results.bound,
-             results.nodes,
-             results.termination_condition) = tmp
+             results.termination_condition,
+             self._global_solve_info) = tmp
+            results.nodes = self._global_solve_info.explored_nodes_count
             self._fill_results(results, converger)
         except:                                        #pragma:nocover
             sys.stderr.write("Exception caught: "+str(sys.exc_info()[1])+"\n")
@@ -825,9 +850,9 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                                        dtype=int)
     wall_time = numpy.array(stats['wall_time'],
                             dtype=float)
-    update_time = numpy.array(stats['update_time'],
+    queue_time = numpy.array(stats['queue_time'],
                               dtype=float)
-    update_count = numpy.array(stats['update_count'],
+    queue_call_count = numpy.array(stats['queue_call_count'],
                                dtype=int)
     objective_time = numpy.array(stats['objective_time'],
                                  dtype=float)
@@ -861,12 +886,12 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         stream.write("Average Worker Timing:\n")
         div1 = numpy.copy(wall_time)
         div1[div1 == 0] = 1
-        div2 = numpy.copy(update_count)
+        div2 = numpy.copy(queue_call_count)
         div2[div2 == 0] = 1
         stream.write(" - queue: %6.2f%%       (avg time=%s, count=%d)\n"
                      % (numpy.mean(comm_time/div1)*100.0,
-                        metric_fmt(numpy.mean(update_time/div2), unit='s'),
-                        update_count.sum()))
+                        metric_fmt(numpy.mean(queue_time/div2), unit='s'),
+                        queue_call_count.sum()))
         stream.write(" - work:  %6.2f%%\n"
                      % (numpy.mean(work_time/div1)*100.0))
         div1 = numpy.copy(work_time)

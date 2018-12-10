@@ -54,8 +54,8 @@ class TestSolverSimple(object):
         stats = b.collect_worker_statistics()
         assert len(stats) == 11
         assert stats['wall_time'] == [0]
-        assert stats['update_time'] == [0]
-        assert stats['update_count'] == [0]
+        assert stats['queue_time'] == [0]
+        assert stats['queue_call_count'] == [0]
         assert stats['objective_time'] == [0]
         assert stats['objective_count'] == [0]
         assert stats['bound_time'] == [0]

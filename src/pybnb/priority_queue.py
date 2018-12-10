@@ -293,14 +293,8 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
 
     def bound(self):
         try:
-            _,item = self._queue.next()
-            bound = Node._extract_bound(item)
-            priority = Node._extract_queue_priority(item)
-            if self._sense == minimize:
-                assert bound == -priority
-            else:
-                assert bound == priority
-            return bound
+            return Node._extract_bound(
+                self._queue.next()[1])
         except IndexError:
             return None
 

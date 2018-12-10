@@ -5,7 +5,7 @@ from pybnb.common import (minimize,
 from pybnb.misc import get_simple_logger
 from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
-from pybnb.dispatcher import (Dispatcher,
+from pybnb.dispatcher import (DispatcherLocal,
                               DispatcherQueueData)
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   CustomPriorityQueue,
@@ -14,10 +14,6 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   FIFOQueue)
 
 class TestDispatcherSimple(object):
-
-    def test_no_comm(self):
-        with pytest.raises(ValueError):
-            Dispatcher(None).serve()
 
     def test_node_priority_strategy(self):
         converger = ConvergenceChecker(minimize)
@@ -34,7 +30,7 @@ class TestDispatcherSimple(object):
         log = get_simple_logger()
         log_interval_seconds = inf
 
-        disp = Dispatcher(None)
+        disp = DispatcherLocal()
 
         disp.initialize(
             inf,

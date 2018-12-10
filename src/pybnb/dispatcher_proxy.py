@@ -8,6 +8,7 @@ import array
 import collections
 
 from pybnb.node import Node
+from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import (send_nothing,
                              recv_nothing,
                              recv_data)
@@ -159,33 +160,30 @@ class DispatcherProxy(object):
     def _update(self,
                 best_objective,
                 previous_bound,
-                explored_nodes_count,
-                node_data):
-        size = 4
-        node_data_size = len(node_data)
-        if node_data_size > 0:
-            for udata in node_data:
+                solve_info,
+                node_data_list):
+        size = 3 + _SolveInfo._data_size
+        node_count = len(node_data_list)
+        if node_count > 0:
+            for node_data_ in node_data_list:
                 size += 1
-                size += len(udata)
+                size += len(node_data_)
         data = numpy.empty(size, dtype=float)
         data[0] = best_objective
         assert float(data[0]) == best_objective
         data[1] = previous_bound
         assert float(data[1]) == previous_bound
-        data[2] = explored_nodes_count
-        assert data[2] == explored_nodes_count
-        assert int(data[2]) == explored_nodes_count
-        data[3] = node_data_size
-        assert data[3] == node_data_size
-        assert int(data[3]) == int(node_data_size)
-        if node_data_size > 0:
-            pos = 4
-            for i in range(node_data_size):
-                udata = node_data[i]
-                data[pos] = len(udata)
+        data[2] = node_count
+        assert data[2] == node_count
+        assert int(data[2]) == int(node_count)
+        data[3:(_SolveInfo._data_size)+3] = solve_info.data
+        if node_count > 0:
+            pos = _SolveInfo._data_size+3
+            for node_data in node_data_list:
+                data[pos] = len(node_data)
                 pos += 1
-                data[pos:pos+len(udata)] = udata[:]
-                pos += len(udata)
+                data[pos:pos+len(node_data)] = node_data
+                pos += len(node_data)
 
         self.comm.Send([data,mpi4py.MPI.DOUBLE],
                        self.dispatcher_rank,
@@ -195,11 +193,17 @@ class DispatcherProxy(object):
         tag = self._status.Get_tag()
         if tag == DispatcherResponse.nowork:
             data = recv_data(self.comm, self._status)
+            best_objective = float(data[0])
+            global_bound = float(data[1])
+            termination_condition = \
+                _int_to_termination_condition[int(data[2])]
+            solve_info = _SolveInfo()
+            solve_info.data[:] = data[3:]
             return (True,
-                    float(data[0]),
-                    (float(data[1]),
-                     int(data[2]),
-                     _int_to_termination_condition[int(data[3])]))
+                    best_objective,
+                    (global_bound,
+                     termination_condition,
+                     solve_info))
         else:
             assert tag == DispatcherResponse.work
             recv_size = self._status.Get_count(mpi4py.MPI.DOUBLE)
