@@ -4,7 +4,6 @@ branch-and-bound workers.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-import array
 import collections
 
 from pybnb.node import Node
