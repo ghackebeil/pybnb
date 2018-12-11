@@ -316,6 +316,8 @@ def create_command_line_solver(problem, parser=None):
         set(solve_docs.keys())
     solve_defaults.pop("best_objective")
     solve_docs.pop("best_objective")
+    solve_defaults.pop("disable_objective_call")
+    solve_docs.pop("disable_objective_call")
     solve_defaults.pop("initialize_queue")
     solve_docs.pop("initialize_queue")
     solve_defaults.pop("log")
