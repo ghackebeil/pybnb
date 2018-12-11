@@ -796,7 +796,8 @@ class DispatcherDistributed(DispatcherBase):
     def _get_final_solve_info(self):
         solve_info = _SolveInfo()
         for worker_solve_info in self._solve_info_by_source.values():
-            solve_info.data += worker_solve_info.data
+            for i in range(len(solve_info.data)):
+                solve_info.data[i] += worker_solve_info.data[i]
         return solve_info
 
     def _get_node_counts(self):

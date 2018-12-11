@@ -684,6 +684,8 @@ class Solver(object):
         results : :class:`SolverResults`
             An object storing information about the solve.
         """
+        self._reset_local_solve_stats()
+        start = self._time()
 
         if best_objective is None:
             best_objective = problem.infeasible_objective()
@@ -741,8 +743,6 @@ class Solver(object):
             cutoff=cutoff)
         root = Node()
         problem.save_state(root)
-        self._reset_local_solve_stats()
-        start = self._time()
         try:
             if self.is_dispatcher:
                 if initialize_queue is None:
@@ -877,12 +877,14 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         stream.write("Average Work Load:   %6.2f%%\n"
                      % (numpy.mean(explored_nodes_count/div)*100.0))
         div = max(1.0,numpy.mean(explored_nodes_count))
+        numerator = numpy.max(explored_nodes_count) - \
+            numpy.min(explored_nodes_count)
         if explored_nodes_count.sum() == 0:
             stream.write("Work Load Imbalance: %6.2f%%\n"
                          % (0.0))
         else:
             stream.write("Work Load Imbalance: %6.2f%%\n"
-                         % ((numpy.max(explored_nodes_count)/div - 1.0)*100.0))
+                         % (numerator/div*100.0))
         stream.write("Average Worker Timing:\n")
         div1 = numpy.copy(wall_time)
         div1[div1 == 0] = 1

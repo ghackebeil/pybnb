@@ -3,8 +3,7 @@ Branch-and-bound problem definition.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
-import numpy
+import array
 
 from pybnb.common import (minimize,
                           maximize,
@@ -195,12 +194,13 @@ class _SolveInfo(object):
     __slots__ = ("data")
     _data_size = 9
     def __init__(self):
-        self.data = numpy.zeros(_SolveInfo._data_size,
-                                dtype=float)
+        self.data = array.array('d',[0]) * \
+                    _SolveInfo._data_size
 
     def reset(self):
         """Resets all statistics to zero."""
-        self.data.fill(0)
+        for i in range(len(self.data)):
+            self.data[i] = 0.0
 
     @property
     def explored_nodes_count(self):
@@ -208,6 +208,9 @@ class _SolveInfo(object):
     @explored_nodes_count.setter
     def explored_nodes_count(self, val):
         self.data[0] = val
+
+    def _increment_explored_nodes_count(self, val):
+        self.data[0] += val
 
     @property
     def total_queue_time(self):
@@ -223,6 +226,10 @@ class _SolveInfo(object):
     def queue_call_count(self, val):
         self.data[2] = val
 
+    def _increment_queue_stat(self, time_, count):
+        self.data[1] += time_
+        self.data[2] += count
+
     @property
     def total_objective_time(self):
         return float(self.data[3])
@@ -236,6 +243,10 @@ class _SolveInfo(object):
     @objective_call_count.setter
     def objective_call_count(self, val):
         self.data[4] = val
+
+    def _increment_objective_stat(self, time_, count):
+        self.data[3] += time_
+        self.data[4] += count
 
     @property
     def total_bound_time(self):
@@ -251,6 +262,10 @@ class _SolveInfo(object):
     def bound_call_count(self, val):
         self.data[6] = val
 
+    def _increment_bound_stat(self, time_, count):
+        self.data[5] += time_
+        self.data[6] += count
+
     @property
     def total_branch_time(self):
         return float(self.data[7])
@@ -264,6 +279,10 @@ class _SolveInfo(object):
     @branch_call_count.setter
     def branch_call_count(self, val):
         self.data[8] = val
+
+    def _increment_branch_stat(self, time_, count):
+        self.data[7] += time_
+        self.data[8] += count
 
 class _ProblemWithSolveInfoCollection(Problem):
     """A Problem objects that keeps track of statistics used
@@ -302,24 +321,21 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         start = self._clock()
         tmp = self._problem.objective()
         stop = self._clock()
-        self._solve_info.total_objective_time += stop-start
-        self._solve_info.objective_call_count += 1
+        self._solve_info._increment_objective_stat(stop-start, 1)
         return tmp
 
     def bound(self):
         start = self._clock()
         tmp = self._problem.bound()
         stop = self._clock()
-        self._solve_info.total_bound_time += stop-start
-        self._solve_info.bound_call_count += 1
+        self._solve_info._increment_bound_stat(stop-start, 1)
         return tmp
 
     def branch(self, parent_node):
         start = self._clock()
         tmp = self._problem.branch(parent_node)
         stop = self._clock()
-        self._solve_info.total_branch_time += stop-start
-        self._solve_info.branch_call_count += 1
+        self._solve_info._increment_branch_stat(stop-start, 1)
         return tmp
 
     def save_state(self, node):
@@ -327,7 +343,7 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
 
     def load_state(self, node):
         self._problem.load_state(node)
-        self._solve_info.explored_nodes_count += 1
+        self._solve_info._increment_explored_nodes_count(1)
 
     def notify_new_best_objective_received(self,
                                            worker_comm,
