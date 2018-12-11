@@ -6,7 +6,7 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
 import logging
 
-def metric_fmt(num, unit="s", digits=1):
+def metric_fmt(num, unit="s", digits=1, align_unit=False):
     """Format and scale output with metric prefixes.
 
     Example
@@ -14,6 +14,8 @@ def metric_fmt(num, unit="s", digits=1):
 
     >>> metric_fmt(0)
     '0.0 s'
+    >>> metric_fmt(0, align_unit=True)
+    '0.0 s '
     >>> metric_fmt(0.002, unit='B')
     '2.0 mB'
     >>> metric_fmt(2001, unit='B')
@@ -40,7 +42,10 @@ def metric_fmt(num, unit="s", digits=1):
             if abs(num) > 1:
                 break
             num *= 1000.0
-    return ("%."+str(digits)+"f %s%s") % (num, prefix, unit)
+    if (prefix == "") and align_unit:
+        return ("%."+str(digits)+"f %s ") % (num, unit)
+    else:
+        return ("%."+str(digits)+"f %s%s") % (num, prefix, unit)
 
 def get_gap_labels(gap,
                    key="gap",

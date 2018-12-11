@@ -116,51 +116,26 @@ class DispatcherProxy(object):
                              dispatcher_rank)
             return dispatcher_rank, worker_comm
 
-    class _ActionTimer(object):
-        __slots__ = ("_start","_obj")
-        def __init__(self, obj):
-            self._obj = obj
-            self._start = None
-        def start(self):
-            assert self._start is None
-            self._start = mpi4py.MPI.Wtime()
-        def stop(self):
-            assert self._start is not None
-            stop = mpi4py.MPI.Wtime()
-            self._obj.comm_time += stop-self._start
-            self._start = None
-        def __enter__(self):
-            self.start()
-        def __exit__(self, *args):
-            self.stop()
-
     def __init__(self, comm):
         import mpi4py.MPI
         assert mpi4py.MPI.Is_initialized()
         self.comm = comm
         self.worker_comm = None
-        self.CommActionTimer = self._ActionTimer(self)
         self._status = mpi4py.MPI.Status()
-        self.comm_time = 0.0
-        with self.CommActionTimer:
-            (self.dispatcher_rank,
-             self.worker_comm) = \
-                self._init(comm, ProcessType.worker)
+        (self.dispatcher_rank,
+         self.worker_comm) = self._init(comm, ProcessType.worker)
 
     def __del__(self):
         if self.worker_comm is not None:
             self.worker_comm.Free()
             self.worker_comm = None
 
-    def update(self, *args, **kwds):
+    def update(self,
+               best_objective,
+               previous_bound,
+               solve_info,
+               node_data_list):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.update`."""
-        with self.CommActionTimer:
-            return self._update(*args, **kwds)
-    def _update(self,
-                best_objective,
-                previous_bound,
-                solve_info,
-                node_data_list):
         size = 3 + _SolveInfo._data_size
         node_count = len(node_data_list)
         if node_count > 0:
@@ -220,47 +195,32 @@ class DispatcherProxy(object):
             best_objective = Node._extract_best_objective(data)
             return False, best_objective, data
 
-    def log_info(self, *args, **kwds):
+    def log_info(self, msg):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""
-        with self.CommActionTimer:
-            return self._log_info(*args, **kwds)
-    def _log_info(self, msg):
         self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
                         self.dispatcher_rank,
                         tag=DispatcherAction.log_info)
 
-    def log_warning(self, *args, **kwds):
+    def log_warning(self, msg):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_warning`."""
-        with self.CommActionTimer:
-            return self._log_warning(*args, **kwds)
-    def _log_warning(self, msg):
         self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
                         self.dispatcher_rank,
                         tag=DispatcherAction.log_warning)
 
-    def log_debug(self, *args, **kwds):
+    def log_debug(self, msg):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_debug`."""
-        with self.CommActionTimer:
-            return self._log_debug(*args, **kwds)
-    def _log_debug(self, msg):
         self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
                         self.dispatcher_rank,
                         tag=DispatcherAction.log_debug)
 
-    def log_error(self, *args, **kwds):
+    def log_error(self, msg):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_error`."""
-        with self.CommActionTimer:
-            return self._log_error(*args, **kwds)
-    def _log_error(self, msg):
         self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
                         self.dispatcher_rank,
                         tag=DispatcherAction.log_error)
 
-    def stop_listen(self, *args, **kwds):
+    def stop_listen(self):
         """Tell the dispatcher to abruptly stop the listen loop."""
-        with self.CommActionTimer:
-            return self._stop_listen(*args, **kwds)
-    def _stop_listen(self):
         assert self.worker_comm.rank == 0
         send_nothing(self.comm,
                      self.dispatcher_rank,

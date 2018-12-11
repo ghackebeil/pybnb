@@ -50,31 +50,29 @@ class TestSolverSimple(object):
         assert b.worker_comm == None
         assert b.is_worker == True
         assert b.is_dispatcher == True
+        assert b.worker_count == 1
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()
-        assert len(stats) == 11
+        assert len(stats) == 10
         assert stats['wall_time'] == [0]
         assert stats['queue_time'] == [0]
         assert stats['queue_call_count'] == [0]
         assert stats['objective_time'] == [0]
-        assert stats['objective_count'] == [0]
+        assert stats['objective_call_count'] == [0]
         assert stats['bound_time'] == [0]
-        assert stats['bound_count'] == [0]
+        assert stats['bound_call_count'] == [0]
         assert stats['branch_time'] == [0]
-        assert stats['branch_count'] == [0]
+        assert stats['branch_call_count'] == [0]
         assert stats['explored_nodes_count'] == [0]
-        assert stats['comm_time'] == [0]
         out = \
 """Number of Workers:        1
-Average Work Load:     0.00%
-Work Load Imbalance:   0.00%
+Load Imbalance:       0.00%
 Average Worker Timing:
- - queue:   0.00%       (avg time=0.0 s, count=0)
- - work:    0.00%
-   - objective:   0.00% (avg time=0.0 s, count=0)
-   - bound:       0.00% (avg time=0.0 s, count=0)
-   - branch:      0.00% (avg time=0.0 s, count=0)
-   - other:       0.00%
+ - queue:       0.00% [avg time:   0.0 s , count: 0]
+ - bound:       0.00% [avg time:   0.0 s , count: 0]
+ - objective:   0.00% [avg time:   0.0 s , count: 0]
+ - branch:      0.00% [avg time:   0.0 s , count: 0]
+ - other:       0.00% [avg time:   0.0 s , count: 0]
 """
         tmp = StringIO()
         summarize_worker_statistics(stats, stream=tmp)

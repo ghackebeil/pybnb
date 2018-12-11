@@ -254,8 +254,6 @@ class Solver(object):
         self._best_objective = None
         self._local_solve_info = _SolveInfo()
         self._global_solve_info = None
-        if not self.is_dispatcher:
-            self._disp.comm_time = 0.0
 
     def _check_update_best_objective(self,
                                      converger,
@@ -481,7 +479,7 @@ class Solver(object):
         stats = {}
         if (self.comm is not None) and \
            (self.comm.size > 1):
-            gathered = numpy.empty((self.worker_count, 11),
+            gathered = numpy.empty((self.worker_count, 10),
                                    dtype=float)
             if self.is_worker:
                 assert self.worker_comm is not None
@@ -497,8 +495,7 @@ class Solver(object):
                      solve_info.bound_call_count,
                      solve_info.total_branch_time,
                      solve_info.branch_call_count,
-                     solve_info.explored_nodes_count,
-                     self._disp.comm_time],
+                     solve_info.explored_nodes_count],
                     dtype=float)
                 assert len(mine) == gathered.shape[1]
                 self.worker_comm.Allgather([mine, mpi4py.MPI.DOUBLE],
@@ -518,14 +515,12 @@ class Solver(object):
             stats['queue_time'] = gathered[1]
             stats['queue_call_count'] = gathered[2]
             stats['objective_time'] = gathered[3]
-            stats['objective_count'] = gathered[4]
+            stats['objective_call_count'] = gathered[4]
             stats['bound_time'] = gathered[5]
-            stats['bound_count'] = gathered[6]
+            stats['bound_call_count'] = gathered[6]
             stats['branch_time'] = gathered[7]
-            stats['branch_count'] = gathered[8]
+            stats['branch_call_count'] = gathered[8]
             stats['explored_nodes_count'] = gathered[9]
-            stats['comm_time'] = gathered[10]
-
         else:
             assert self.is_worker
             assert self.is_dispatcher
@@ -535,19 +530,18 @@ class Solver(object):
             stats['queue_call_count'] = [solve_info.queue_call_count]
             stats['objective_time'] = \
                 [solve_info.total_objective_time]
-            stats['objective_count'] = \
+            stats['objective_call_count'] = \
                 [solve_info.objective_call_count]
             stats['bound_time'] = \
                 [solve_info.total_bound_time]
-            stats['bound_count'] = \
+            stats['bound_call_count'] = \
                 [solve_info.bound_call_count]
             stats['branch_time'] = \
                 [solve_info.total_branch_time]
-            stats['branch_count'] = \
+            stats['branch_call_count'] = \
                 [solve_info.branch_call_count]
             stats['explored_nodes_count'] = \
                 [solve_info.explored_nodes_count]
-            stats['comm_time'] = [solve_info.total_queue_time]
 
         return stats
 
@@ -856,69 +850,80 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                                dtype=int)
     objective_time = numpy.array(stats['objective_time'],
                                  dtype=float)
-    objective_count = numpy.array(stats['objective_count'],
+    objective_call_count = numpy.array(stats['objective_call_count'],
                                   dtype=int)
     bound_time = numpy.array(stats['bound_time'],
                              dtype=float)
-    bound_count = numpy.array(stats['bound_count'],
+    bound_call_count = numpy.array(stats['bound_call_count'],
                               dtype=int)
     branch_time = numpy.array(stats['branch_time'],
                               dtype=float)
-    branch_count = numpy.array(stats['branch_count'],
+    branch_call_count = numpy.array(stats['branch_call_count'],
                                dtype=int)
-    comm_time = numpy.array(stats['comm_time'],
-                            dtype=float)
-    work_time = wall_time - comm_time
+    work_time = wall_time - queue_time
 
     with as_stream(stream) as stream:
         stream.write("Number of Workers:   %6d\n"
                      % (len(wall_time)))
-        div = float(max(1,float(explored_nodes_count.sum())))
-        stream.write("Average Work Load:   %6.2f%%\n"
-                     % (numpy.mean(explored_nodes_count/div)*100.0))
         div = max(1.0,numpy.mean(explored_nodes_count))
         numerator = numpy.max(explored_nodes_count) - \
             numpy.min(explored_nodes_count)
         if explored_nodes_count.sum() == 0:
-            stream.write("Work Load Imbalance: %6.2f%%\n"
+            stream.write("Load Imbalance:     %6.2f%%\n"
                          % (0.0))
         else:
-            stream.write("Work Load Imbalance: %6.2f%%\n"
+            stream.write("Load Imbalance:     %6.2f%%\n"
                          % (numerator/div*100.0))
         stream.write("Average Worker Timing:\n")
+        queue_call_count_str = "%d" % queue_call_count.sum()
+        tmp = "%"+str(len(queue_call_count_str))+"d"
+        bound_call_count_str = tmp % bound_call_count.sum()
+        objective_call_count_str = tmp % objective_call_count.sum()
+        branch_call_count_str = tmp % branch_call_count.sum()
         div1 = numpy.copy(wall_time)
         div1[div1 == 0] = 1
         div2 = numpy.copy(queue_call_count)
         div2[div2 == 0] = 1
-        stream.write(" - queue: %6.2f%%       (avg time=%s, count=%d)\n"
-                     % (numpy.mean(comm_time/div1)*100.0,
-                        metric_fmt(numpy.mean(queue_time/div2), unit='s'),
-                        queue_call_count.sum()))
-        stream.write(" - work:  %6.2f%%\n"
-                     % (numpy.mean(work_time/div1)*100.0))
-        div1 = numpy.copy(work_time)
-        div1[div1==0] = 1
-        div2 = numpy.copy(objective_count)
+        stream.write(" - queue:     %6.2f%% [avg time: %8s, count: %s]\n"
+                     % (numpy.mean(queue_time/div1)*100.0,
+                        metric_fmt(numpy.mean(queue_time/div2),
+                                   unit='s',
+                                   align_unit=True),
+                        queue_call_count_str))
+        div2 = numpy.copy(bound_call_count)
         div2[div2==0] = 1
-        stream.write("   - objective: %6.2f%% (avg time=%s, count=%d)\n"
-                     % (numpy.mean((objective_time/div1))*100.0,
-                        metric_fmt(numpy.mean(objective_time/div2), unit='s'),
-                        objective_count.sum()))
-        div2 = numpy.copy(bound_count)
-        div2[div2==0] = 1
-        stream.write("   - bound:     %6.2f%% (avg time=%s, count=%d)\n"
+        stream.write(" - bound:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((bound_time/div1))*100.0,
-                        metric_fmt(numpy.mean(bound_time/div2), unit='s'),
-                        bound_count.sum()))
-        div3 = numpy.copy(branch_count)
-        div3[div3==0] = 1
-        stream.write("   - branch:    %6.2f%% (avg time=%s, count=%d)\n"
+                        metric_fmt(numpy.mean(bound_time/div2),
+                                   unit='s',
+                                   align_unit=True),
+                        bound_call_count_str))
+        div2 = numpy.copy(objective_call_count)
+        div2[div2==0] = 1
+        stream.write(" - objective: %6.2f%% [avg time: %8s, count: %s]\n"
+                     % (numpy.mean((objective_time/div1))*100.0,
+                        metric_fmt(numpy.mean(objective_time/div2),
+                                   unit='s',
+                                   align_unit=True),
+                        objective_call_count_str))
+        div2 = numpy.copy(branch_call_count)
+        div2[div2==0] = 1
+        stream.write(" - branch:    %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((branch_time/div1))*100.0,
-                        metric_fmt(numpy.mean(branch_time/div3), unit='s'),
-                        branch_count.sum()))
-        stream.write("   - other:     %6.2f%%\n"
-                     % (numpy.mean((work_time - objective_time - bound_time - branch_time) / \
-                                   div1)*100.0))
+                        metric_fmt(numpy.mean(branch_time/div2),
+                                   unit='s',
+                                   align_unit=True),
+                        branch_call_count_str))
+        other_time = work_time - objective_time - bound_time - branch_time
+        div2 = numpy.copy(queue_call_count)
+        div2[div2 == 0] = 1
+        stream.write(" - other:     %6.2f%% [avg time: %8s, count: %s]\n"
+                     % (numpy.mean(other_time/div1)*100.0,
+                        metric_fmt(numpy.mean(other_time/div2),
+                                   unit='s',
+                                   align_unit=True),
+                        queue_call_count_str))
+
 
 def solve(problem,
           comm=_notset,

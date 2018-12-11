@@ -18,7 +18,8 @@ class Test(object):
     def test_metric_fmt(self):
         assert metric_fmt(None) == "<unknown>"
         assert metric_fmt(0.0) == "0.0 s"
-        assert metric_fmt(0.0,unit='B') == "0.0 B"
+        assert metric_fmt(0.0, align_unit=True) == "0.0 s "
+        assert metric_fmt(0.0, unit='B') == "0.0 B"
         assert metric_fmt(0.0, digits=2) == "0.00 s"
         assert metric_fmt(1000.23, digits=3) == "1.000 Ks"
         assert metric_fmt(1000.23, digits=4) == "1.0002 Ks"
