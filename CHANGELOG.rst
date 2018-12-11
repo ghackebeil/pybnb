@@ -4,6 +4,7 @@ Changelog
 0.3.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
+* adding a solver option that disables calls to the problem objective
 * allow nested solver implementations to propagate online solve statistics
 * removing a number of collective MPI communicator calls from the solve finalization process
 * adding a queue implementation that uses random priority assignments

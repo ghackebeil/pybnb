@@ -292,6 +292,7 @@ class Solver(object):
     def _solve(self,
                problem,
                best_objective,
+               disable_objective_call,
                converger,
                results):
         infeasible_objective = problem.infeasible_objective()
@@ -375,23 +376,24 @@ class Solver(object):
                     self._best_objective,
                     bound) and \
                 (not converger.cutoff_is_met(bound)):
-                obj = problem.objective()
-                working_node.objective = obj
-                if obj is not None:
-                    if converger.bound_is_suboptimal(bound, obj): #pragma:nocover
-                        self._disp.log_warning(
-                            "WARNING: Local node bound is worse "
-                            "than local node objective (bound=%r, "
-                            "objective=%r)" % (bound, obj))
-                    updated = self._check_update_best_objective(
-                        converger,
-                        obj)
-                    if updated:
-                        problem.notify_new_best_objective(
-                            self.worker_comm,
-                            self._best_objective)
-                    del updated
-                if (obj != converger.unbounded_objective) and \
+                if not disable_objective_call:
+                    obj = problem.objective()
+                    working_node.objective = obj
+                    if obj is not None:
+                        if converger.bound_is_suboptimal(bound, obj): #pragma:nocover
+                            self._disp.log_warning(
+                                "WARNING: Local node bound is worse "
+                                "than local node objective (bound=%r, "
+                                "objective=%r)" % (bound, obj))
+                        updated = self._check_update_best_objective(
+                            converger,
+                            obj)
+                        if updated:
+                            problem.notify_new_best_objective(
+                                self.worker_comm,
+                                self._best_objective)
+                        del updated
+                if (disable_objective_call or (obj != converger.unbounded_objective)) and \
                    converger.objective_can_improve(
                        self._best_objective,
                        bound):
@@ -569,6 +571,7 @@ class Solver(object):
     def solve(self,
               problem,
               best_objective=None,
+              disable_objective_call=False,
               initialize_queue=None,
               node_priority_strategy="bound",
               absolute_gap=1e-8,
@@ -588,6 +591,9 @@ class Solver(object):
         best_objective : float, optional
             Initializes the solve with an assumed best
             objective. (default: None)
+        disable_objective_call : bool, optional
+            Disables requests for an objective value from
+            subproblems. (default: False)
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
             Initializes the dispatcher queue with that
             remaining from a previous solve (obtained by
@@ -763,6 +769,7 @@ class Solver(object):
             else:
                 tmp = self._solve(problem,
                                   best_objective,
+                                  disable_objective_call,
                                   converger,
                                   results)
             (results.objective,
