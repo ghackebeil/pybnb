@@ -2,7 +2,8 @@ import os
 import tempfile
 import logging
 
-from pybnb.misc import (metric_fmt,
+from pybnb.misc import (metric_format,
+                        time_format,
                         get_gap_labels,
                         as_stream,
                         get_default_args,
@@ -15,17 +16,37 @@ import numpy
 
 class Test(object):
 
-    def test_metric_fmt(self):
-        assert metric_fmt(None) == "<unknown>"
-        assert metric_fmt(0.0) == "0.0 s"
-        assert metric_fmt(0.0, align_unit=True) == "0.0 s "
-        assert metric_fmt(0.0, unit='B') == "0.0 B"
-        assert metric_fmt(0.0, digits=2) == "0.00 s"
-        assert metric_fmt(1000.23, digits=3) == "1.000 Ks"
-        assert metric_fmt(1000.23, digits=4) == "1.0002 Ks"
-        assert metric_fmt(1000000.23, digits=4) == "1.0000 Ms"
-        assert metric_fmt(0.23334, digits=1) == "233.3 ms"
-        assert metric_fmt(0.23334, digits=2) == "233.34 ms"
+    def test_metric_format(self):
+        assert metric_format(None) == "<unknown>"
+        assert metric_format(0.0) == "0.0 s"
+        assert metric_format(0.0, align_unit=True) == "0.0 s "
+        assert metric_format(0.0, unit='B') == "0.0 B"
+        assert metric_format(0.0, digits=2) == "0.00 s"
+        assert metric_format(1000.23, digits=3) == "1.000 Ks"
+        assert metric_format(1000.23, digits=4) == "1.0002 Ks"
+        assert metric_format(1000000.23, digits=4) == "1.0000 Ms"
+        assert metric_format(0.23334, digits=1) == "233.3 ms"
+        assert metric_format(0.23334, digits=2) == "233.34 ms"
+
+    def test_time_format(self):
+        assert time_format(None) == "<unknown>"
+        assert time_format(0.0) == "0.0 s"
+        assert time_format(0.0, align_unit=True) == "0.0 s "
+        assert time_format(0.0, digits=2) == "0.00 s"
+        assert time_format(93.462, digits=3) == "1.558 m"
+        assert time_format(93.462, digits=4) == "1.5577 m"
+        assert time_format(93.462, digits=4,
+                           align_unit=True) == "1.5577 m "
+        assert time_format(5607.72, digits=3) == "1.558 h"
+        assert time_format(5607.72, digits=4) == "1.5577 h"
+        assert time_format(5607.72, digits=4,
+                           align_unit=True) == "1.5577 h "
+        assert time_format(134585.28, digits=3) == "1.558 d"
+        assert time_format(134585.28, digits=4) == "1.5577 d"
+        assert time_format(134585.28, digits=4,
+                           align_unit=True) == "1.5577 d "
+        assert time_format(0.23334, digits=1) == "233.3 ms"
+        assert time_format(0.23334, digits=2) == "233.34 ms"
 
     def test_get_gap_labels(self):
         l0, l1, l2 = get_gap_labels(1)

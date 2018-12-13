@@ -6,21 +6,21 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
 import logging
 
-def metric_fmt(num, unit="s", digits=1, align_unit=False):
+def metric_format(num, unit="s", digits=1, align_unit=False):
     """Format and scale output with metric prefixes.
 
     Example
     -------
 
-    >>> metric_fmt(0)
+    >>> metric_format(0)
     '0.0 s'
-    >>> metric_fmt(0, align_unit=True)
+    >>> metric_format(0, align_unit=True)
     '0.0 s '
-    >>> metric_fmt(0.002, unit='B')
+    >>> metric_format(0.002, unit='B')
     '2.0 mB'
-    >>> metric_fmt(2001, unit='B')
+    >>> metric_format(2001, unit='B')
     '2.0 KB'
-    >>> metric_fmt(2001, unit='B', digits=3)
+    >>> metric_format(2001, unit='B', digits=3)
     '2.001 KB'
 
     """
@@ -46,6 +46,50 @@ def metric_fmt(num, unit="s", digits=1, align_unit=False):
         return ("%."+str(digits)+"f %s ") % (num, unit)
     else:
         return ("%."+str(digits)+"f %s%s") % (num, prefix, unit)
+
+def time_format(num, digits=1, align_unit=False):
+    """Format and scale output according to standard time
+    units.
+
+    Example
+    -------
+
+    >>> time_format(0)
+    '0.0 s'
+    >>> time_format(0, align_unit=True)
+    '0.0 s '
+    >>> time_format(0.002)
+    '2.0 ms'
+    >>> time_format(2001)
+    '55.6 m'
+    >>> time_format(2001, digits=3)
+    '2.583 m'
+
+    """
+    if num is None:
+        return "<unknown>"
+    unit = "s"
+    if (num >= 1.0) or (num == 0.0):
+        if num >= 60.0:
+            num /= 60.0
+            unit = "m"
+        if num >= 60.0:
+            num /= 60.0
+            unit = "h"
+        if num >= 24.0:
+            num /= 24.0
+            unit = "d"
+    else:
+        num *= 1000.0
+        for p in ['ms','us','ns','ps','fs']:
+            unit = p
+            if abs(num) > 1:
+                break
+            num *= 1000.0
+    if (len(unit) == 1) and align_unit:
+        return ("%."+str(digits)+"f %s ") % (num, unit)
+    else:
+        return ("%."+str(digits)+"f %s") % (num, unit)
 
 def get_gap_labels(gap,
                    key="gap",

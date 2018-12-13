@@ -12,7 +12,7 @@ from pybnb.common import nan
 from pybnb.problem import (_SolveInfo,
                            _SimpleSolveInfoCollector,
                            _ProblemWithSolveInfoCollection)
-from pybnb.misc import (metric_fmt,
+from pybnb.misc import (time_format,
                         as_stream,
                         get_simple_logger)
 from pybnb.node import Node
@@ -153,7 +153,7 @@ class SolverResults(object):
                 if val is not None:
                     if pretty:
                         if name == 'wall_time':
-                            val = metric_fmt(val, unit='s')
+                            val = time_format(val, digits=2)
                         elif name in ('objective','bound',
                                       'absolute_gap','relative_gap'):
                             val = "%.7g" % (val)
