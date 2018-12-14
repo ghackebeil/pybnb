@@ -33,6 +33,7 @@ class Test(object):
         assert time_format(0.0) == "0.0 s"
         assert time_format(0.0, align_unit=True) == "0.0 s "
         assert time_format(0.0, digits=2) == "0.00 s"
+        assert time_format(24.9) == "24.9 s"
         assert time_format(93.462, digits=3) == "1.558 m"
         assert time_format(93.462, digits=4) == "1.5577 m"
         assert time_format(93.462, digits=4,

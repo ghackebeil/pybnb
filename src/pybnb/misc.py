@@ -73,12 +73,12 @@ def time_format(num, digits=1, align_unit=False):
         if num >= 60.0:
             num /= 60.0
             unit = "m"
-        if num >= 60.0:
-            num /= 60.0
-            unit = "h"
-        if num >= 24.0:
-            num /= 24.0
-            unit = "d"
+            if num >= 60.0:
+                num /= 60.0
+                unit = "h"
+                if num >= 24.0:
+                    num /= 24.0
+                    unit = "d"
     else:
         num *= 1000.0
         for p in ['ms','us','ns','ps','fs']:
