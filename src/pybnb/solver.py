@@ -154,8 +154,8 @@ class SolverResults(object):
                         elif name in ('objective','bound',
                                       'absolute_gap','relative_gap'):
                             val = "%.7g" % (val)
-                if name in ("solution_status", "termination_condition"):
-                    val = val.value
+                    if name in ("solution_status", "termination_condition"):
+                        val = val.value
                 stream.write(prefix+'%s: %s\n'
                              % (name, val))
             for name in names:
