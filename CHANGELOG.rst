@@ -4,10 +4,19 @@ Changelog
 0.3.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
-* adding a solver option that disables calls to the problem objective
-* allow nested solver implementations to propagate online solve statistics
-* removing a number of collective MPI communicator calls from the solve finalization process
-* adding a queue implementation that uses random priority assignments
+* adding documented Enum types for solution status,
+  termination condition, and node priority strategy
+* adding handling for SIGINT and SIGUSER1 events to
+  initiate a graceful shutdown that tags the results
+  with an 'interrupted' termination condition.
+* adding a solver option that disables calls to the problem
+  objective
+* allow nested solver implementations to propagate online
+  solve statistics
+* removing a number of collective MPI communicator calls
+  from the solve finalization process
+* adding a queue implementation that uses random priority
+  assignments
 
 0.2.9 - 2018-12-03
 ~~~~~~~~~~~~~~~~~~
