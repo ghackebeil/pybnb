@@ -132,17 +132,11 @@ class Test(object):
         import pybnb.solver
         data = get_keyword_docs(pybnb.solver.Solver.solve.__doc__)
         kwds = get_default_args(pybnb.solver.Solver.solve)
-        found = False
         assert len(data) > 1
         for key in data:
             if 'default' in data[key]:
                 assert data[key]['default'] == kwds[key]
-            if key == "node_priority_strategy":
-                found = True
-                assert "choices" in data[key]
-            else:
-                assert "choices" not in data[key]
-        assert found
+            assert "choices" not in data[key]
 
     def test_get_simple_logger(self):
         log = get_simple_logger(console=False)
