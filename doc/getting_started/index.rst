@@ -175,6 +175,6 @@ approach of directly using a :class:`pybnb.Solver
 <pybnb.solver.Solver>` object can be used to avoid this
 overhead. There is also some overhead associated with
 creating a :class:`pybnb.Solver <pybnb.solver.Solver>`
-object, but once created the :func:`Solver.solve
+object , but once created the :func:`Solver.solve
 <pybnb.solver.Solver.solve>` method can be called any number
-of time.
+of times.
