@@ -61,9 +61,9 @@ def time_format(num, digits=1, align_unit=False):
     >>> time_format(0.002)
     '2.0 ms'
     >>> time_format(2001)
-    '55.6 m'
+    '33.4 m'
     >>> time_format(2001, digits=3)
-    '2.583 m'
+    '33.350 m'
 
     """
     if num is None:
