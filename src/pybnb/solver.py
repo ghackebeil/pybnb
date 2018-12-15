@@ -901,42 +901,37 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         div2[div2 == 0] = 1
         stream.write(" - queue:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean(queue_time/div1)*100.0,
-                        metric_fmt(numpy.mean(queue_time/div2),
-                                   unit='s',
-                                   align_unit=True),
+                        time_format(numpy.mean(queue_time/div2),
+                                    align_unit=True),
                         queue_call_count_str))
         div2 = numpy.copy(bound_call_count)
         div2[div2==0] = 1
         stream.write(" - bound:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((bound_time/div1))*100.0,
-                        metric_fmt(numpy.mean(bound_time/div2),
-                                   unit='s',
-                                   align_unit=True),
+                        time_format(numpy.mean(bound_time/div2),
+                                    align_unit=True),
                         bound_call_count_str))
         div2 = numpy.copy(objective_call_count)
         div2[div2==0] = 1
         stream.write(" - objective: %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((objective_time/div1))*100.0,
-                        metric_fmt(numpy.mean(objective_time/div2),
-                                   unit='s',
-                                   align_unit=True),
+                        time_format(numpy.mean(objective_time/div2),
+                                    align_unit=True),
                         objective_call_count_str))
         div2 = numpy.copy(branch_call_count)
         div2[div2==0] = 1
         stream.write(" - branch:    %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((branch_time/div1))*100.0,
-                        metric_fmt(numpy.mean(branch_time/div2),
-                                   unit='s',
-                                   align_unit=True),
+                        time_format(numpy.mean(branch_time/div2),
+                                    align_unit=True),
                         branch_call_count_str))
         other_time = work_time - objective_time - bound_time - branch_time
         div2 = numpy.copy(queue_call_count)
         div2[div2 == 0] = 1
         stream.write(" - other:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean(other_time/div1)*100.0,
-                        metric_fmt(numpy.mean(other_time/div2),
-                                   unit='s',
-                                   align_unit=True),
+                        time_format(numpy.mean(other_time/div2),
+                                    align_unit=True),
                         queue_call_count_str))
 
 
