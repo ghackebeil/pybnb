@@ -19,7 +19,8 @@ from pybnb.common import (nan,
 from pybnb.problem import (_SolveInfo,
                            _SimpleSolveInfoCollector,
                            _ProblemWithSolveInfoCollection)
-from pybnb.misc import (time_format,
+from pybnb.misc import (MPI_InterruptHandler,
+                        time_format,
                         as_stream,
                         get_simple_logger)
 from pybnb.node import Node
@@ -242,12 +243,14 @@ class Solver(object):
         assert self._dispatcher_flag in (True, False)
         assert self._disp is not None
         assert self._time is not None
+        self._solve_start = None
         self._wall_time = None
         self._best_objective = None
         self._local_solve_info = None
         self._global_solve_info = None
 
     def _reset_local_solve_stats(self):
+        self._solve_start = None
         self._wall_time = 0.0
         self._best_objective = None
         self._local_solve_info = _SolveInfo()
@@ -752,13 +755,32 @@ class Solver(object):
                     log,
                     log_interval_seconds)
             if not self.is_worker:
-                tmp = self._disp.serve()
+                def handler(signum, frame):
+                    self._disp.log_warning(
+                        "Solve interrupted by user "
+                        "Waiting for current worker "
+                        "jobs to complete before "
+                        "terminating the solve.")
+                    self._disp.stop = True
+                    self._disp.stop_interrupted = True
+                with MPI_InterruptHandler(handler):
+                    tmp = self._disp.serve()
             else:
-                tmp = self._solve(problem,
-                                  best_objective,
-                                  disable_objective_call,
-                                  converger,
-                                  results)
+                def handler(signum, frame):
+                    if self.is_dispatcher:
+                        self._disp.log_warning(
+                            "Solve interrupted by user "
+                            "Waiting for current worker "
+                            "jobs to complete before "
+                            "terminating the solve.")
+                        self._disp.stop = True
+                        self._disp.stop_interrupted = True
+                with MPI_InterruptHandler(handler):
+                    tmp = self._solve(problem,
+                                      best_objective,
+                                      disable_objective_call,
+                                      converger,
+                                      results)
             (results.objective,
              results.bound,
              results.termination_condition,
@@ -772,8 +794,7 @@ class Solver(object):
             raise
         finally:
             problem.load_state(root)
-        stop = self._time()
-        self._wall_time = stop-start
+        self._wall_time = self._time() - self._solve_start
         results.wall_time = self._wall_time
 
         assert results.solution_status in SolutionStatus,\

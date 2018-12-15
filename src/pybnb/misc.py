@@ -3,8 +3,41 @@ Miscellaneous utilities used for development.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
 import logging
+import signal
+
+class MPI_InterruptHandler(object):
+    """A context manager for temporarily assigning
+    a handler to SIGINT and SIGUSR1."""
+    _sigs = (signal.SIGINT, signal.SIGUSR1)
+    __slots__ = ("_released",
+                 "_original_handlers",
+                 "_handler")
+    def __init__(self, handler):
+        self._released = None
+        self._original_handlers = None
+        self._handler = handler
+
+    def __enter__(self):
+        self._released = False
+        self._original_handlers = \
+            [(signum, signal.getsignal(signum))
+             for signum in self._sigs]
+        def handler(signum, frame):
+            self._handler(signum, frame)
+            self.release()
+        for signum in self._sigs:
+            signal.signal(signum, handler)
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.release()
+
+    def release(self):
+        if not self._released:
+            for signum, handler in self._original_handlers:
+                signal.signal(signum, handler)
+            self._released = True
 
 def metric_format(num, unit="s", digits=1, align_unit=False):
     """Format and scale output with metric prefixes.
