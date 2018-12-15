@@ -358,10 +358,6 @@ def create_command_line_solver(problem, parser=None):
     solve_docs.pop("problem")
     assert set(solve_defaults.keys()) == \
         set(solve_docs.keys())
-    solve_defaults.pop("best_objective")
-    solve_docs.pop("best_objective")
-    solve_defaults.pop("disable_objective_call")
-    solve_docs.pop("disable_objective_call")
     solve_defaults.pop("initialize_queue")
     solve_docs.pop("initialize_queue")
     solve_defaults.pop("log")
@@ -374,6 +370,17 @@ def create_command_line_solver(problem, parser=None):
             assert "choices" in solve_docs[key]
         else:
             assert "choices" not in solve_docs[key]
+    parser.add_argument(
+        "--best-objective",
+        type=float,
+        default=solve_defaults.pop("best_objective"),
+        help=solve_docs["best_objective"]["doc"])
+    assert not solve_defaults.pop("disable_objective_call")
+    parser.add_argument(
+        "--disable-objective-call",
+        default=False,
+        action="store_true",
+        help=solve_docs["disable_objective_call"]["doc"])
     parser.add_argument(
         "--node-priority-strategy",
         type=str,
