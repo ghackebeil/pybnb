@@ -11,13 +11,14 @@ import collections
 import numpy
 
 from pybnb.common import (maximize,
-                          inf)
+                          inf,
+                          TerminationCondition,
+                          _termination_condition_to_int)
 from pybnb.misc import get_gap_labels
 from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     DispatcherResponse,
-                                    DispatcherProxy,
-                                    _termination_condition_to_int)
+                                    DispatcherProxy)
 from pybnb.node import Node
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import Message
@@ -279,6 +280,7 @@ class DispatcherBase(object):
         self.stop_node_limit = None
         self.stop_time_limit = None
         self.stop_cutoff = None
+        self.stop_interrupted = None
         self.next_tree_id = None
         self.clock = None
 
@@ -311,15 +313,17 @@ class DispatcherBase(object):
         """Get the solve termination description"""
         if self.stop:
             if self.stop_optimality:
-                return "optimality"
+                return TerminationCondition.optimality
             elif self.stop_node_limit:
-                return "node_limit"
+                return TerminationCondition.node_limit
             elif self.stop_time_limit:
-                return "time_limit"
+                return TerminationCondition.time_limit
             elif self.stop_cutoff:
-                return "cutoff"
+                return TerminationCondition.cutoff
+            elif self.stop_interrupted:
+                return TerminationCondition.interrupted
             else:
-                return "no_nodes"
+                return TerminationCondition.no_nodes
         else:
             return None
 
@@ -478,6 +482,7 @@ class DispatcherBase(object):
         self.stop_node_limit = False
         self.stop_time_limit = False
         self.stop_cutoff = False
+        self.stop_interrupted = False
         self.next_tree_id = initialize_queue.next_tree_id
         self.journalist = None
         if (log is not None) and (not log.disabled):

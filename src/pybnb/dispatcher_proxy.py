@@ -6,6 +6,7 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import collections
 
+from pybnb.common import _int_to_termination_condition
 from pybnb.node import Node
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import (send_nothing,
@@ -59,25 +60,6 @@ DispatcherResponse = _DispatcherResponse(
     nowork           = 2111)
 """A namespace of typecodes that are used to categorize
 responses received by workers from the dispatcher."""
-
-#
-# used to transmit termination_condition
-#
-_termination_condition_to_int = {}
-_termination_condition_to_int["optimality"] = 0
-_termination_condition_to_int["feasibility"] = 1
-_termination_condition_to_int["cutoff"] = 2
-_termination_condition_to_int["node_limit"] = 3
-_termination_condition_to_int["time_limit"] = 4
-_termination_condition_to_int["no_nodes"] = 5
-
-_int_to_termination_condition = [None]*6
-_int_to_termination_condition[0] = "optimality"
-_int_to_termination_condition[1] = "feasibility"
-_int_to_termination_condition[2] = "cutoff"
-_int_to_termination_condition[3] = "node_limit"
-_int_to_termination_condition[4] = "time_limit"
-_int_to_termination_condition[5] = "no_nodes"
 
 class DispatcherProxy(object):
     """A proxy class for interacting with the central

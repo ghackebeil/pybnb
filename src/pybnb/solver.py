@@ -8,7 +8,14 @@ import sys
 import time
 import math
 
-from pybnb.common import nan
+from pybnb.common import (nan,
+                          NodePriorityStrategy,
+                          _node_priority_strategy_to_int,
+                          _int_to_node_priority_strategy,
+                          TerminationCondition,
+                          SolutionStatus,
+                          _solution_status_to_int,
+                          _int_to_solution_status)
 from pybnb.problem import (_SolveInfo,
                            _SimpleSolveInfoCollector,
                            _ProblemWithSolveInfoCollection)
@@ -17,8 +24,7 @@ from pybnb.misc import (time_format,
                         get_simple_logger)
 from pybnb.node import Node
 from pybnb.convergence_checker import ConvergenceChecker
-from pybnb.dispatcher_proxy import (DispatcherProxy,
-                                    _termination_condition_to_int)
+from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (DispatcherLocal,
                               DispatcherDistributed,
                               DispatcherQueueData)
@@ -33,54 +39,44 @@ import six
 class _notset(object):
     pass
 
-#
-# used to transmit node_priority_strategy
-#
-_priority_to_int = {}
-_priority_to_int["bound"] = 0
-_priority_to_int["objective"] = 1
-_priority_to_int["breadth"] = 2
-_priority_to_int["depth"] = 3
-_priority_to_int["fifo"] = 4
-_priority_to_int["random"] = 5
-_priority_to_int["custom"] = 6
-
-_int_to_priority = [None]*7
-_int_to_priority[0] = "bound"
-_int_to_priority[1] = "objective"
-_int_to_priority[2] = "breadth"
-_int_to_priority[3] = "depth"
-_int_to_priority[4] = "fifo"
-_int_to_priority[5] = "random"
-_int_to_priority[6] = "custom"
-
-#
-# used to transmit solution_status
-#
-_solution_status_to_int = {}
-_solution_status_to_int["optimal"] = 0
-_solution_status_to_int["feasible"] = 1
-_solution_status_to_int["infeasible"] = 2
-_solution_status_to_int["unbounded"] = 3
-_solution_status_to_int["unknown"] = 4
-
-_int_to_solution_status = [None]*5
-_int_to_solution_status[0] = "optimal"
-_int_to_solution_status[1] = "feasible"
-_int_to_solution_status[2] = "infeasible"
-_int_to_solution_status[3] = "unbounded"
-_int_to_solution_status[4] = "unknown"
-
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve.
 
     Attributes
     ----------
-    solution_status : {"optimal", "feasible", "infeasible", "unbounded", "unknown"}
-        The solution status string.
-    termination_condition : {"optimality", "feasibility", "cutoff", "node_limit", "time_limit", "node_nodes"}
-        The solve termination condition string, as
-        determined by the dispatcher.
+    solution_status : :class:`SolutionStatus <pybnb.common.SolutionStatus>`
+        The solution status. This attribute is comparable
+        with strings as well as attributes of the
+        :class:`SolutionStatus <pybnb.common.SolutionStatus>`
+        enum.
+
+        Example
+        -------
+
+        >>> import pybnb
+        >>> results = pybnb.SolverResults()
+        >>> results.solution_status = pybnb.SolutionStatus.optimal
+        >>> assert results.solution_status == "optimal"
+        >>> assert results.solution_status == pybnb.SolutionStatus.optimal
+        >>> assert results.solution_status.value == "optimal"
+
+    termination_condition : :class:`TerminationCondition <pybnb.common.TerminationCondition>`
+        The solve termination condition, as
+        determined by the dispatcher. This attribute is comparable
+        with strings as well as attributes of the
+        :class:`TerminationCondition <pybnb.common.TerminationCondition>`
+        enum.
+
+        Example
+        -------
+
+        >>> import pybnb
+        >>> results = pybnb.SolverResults()
+        >>> results.termination_condition = pybnb.TerminationCondition.optimality
+        >>> assert results.termination_condition == "optimality"
+        >>> assert results.termination_condition == pybnb.TerminationCondition.optimality
+        >>> assert results.termination_condition.value == "optimality"
+
     objective : float
         The best objective found.
     bound : float
@@ -157,6 +153,8 @@ class SolverResults(object):
                         elif name in ('objective','bound',
                                       'absolute_gap','relative_gap'):
                             val = "%.7g" % (val)
+                if name in ("solution_status", "termination_condition"):
+                    val = val.value
                 stream.write(prefix+'%s: %s\n'
                              % (name, val))
             for name in names:
@@ -269,13 +267,13 @@ class Solver(object):
         if results.bound == converger.infeasible_objective:
             assert results.objective == converger.infeasible_objective, \
                 str(results.objective)
-            results.solution_status = "infeasible"
+            results.solution_status = SolutionStatus.infeasible
         elif results.objective == converger.infeasible_objective:
-            results.solution_status = "unknown"
+            results.solution_status = SolutionStatus.unknown
         elif results.objective == converger.unbounded_objective:
             assert results.bound == converger.unbounded_objective, \
                 str(results.bound)
-            results.solution_status = "unbounded"
+            results.solution_status = SolutionStatus.unbounded
         else:
             results.absolute_gap = converger.\
                                    compute_absolute_gap(results.bound,
@@ -285,9 +283,9 @@ class Solver(object):
                                                         results.objective)
             if converger.objective_is_optimal(results.objective,
                                               results.bound):
-                results.solution_status = "optimal"
+                results.solution_status = SolutionStatus.optimal
             else:
-                results.solution_status = "feasible"
+                results.solution_status = SolutionStatus.feasible
 
     def _solve(self,
                problem,
@@ -685,22 +683,22 @@ class Solver(object):
             An object storing information about the solve.
         """
         self._reset_local_solve_stats()
-        start = self._time()
+        self._solve_start = self._time()
 
         if best_objective is None:
             best_objective = problem.infeasible_objective()
 
-        if node_priority_strategy not in _priority_to_int:
+        if node_priority_strategy not in _node_priority_strategy_to_int:
             raise ValueError("The 'node_priority_strategy' keyword "
                              "must be one of: %s"
-                             % (str(sorted(_priority_to_int.keys()))))
+                             % (str([v.value for v in NodePriorityStrategy])))
 
         # broadcast options from dispatcher to everyone else
         # to ensure consistency
         if (self.comm is not None) and \
            (self.comm.size > 1):
             node_priority_strategy_int = \
-                _priority_to_int[node_priority_strategy]
+                _node_priority_strategy_to_int[node_priority_strategy]
             settings = array.array("d", [best_objective,
                                          node_priority_strategy_int,
                                          absolute_gap,
@@ -718,7 +716,8 @@ class Solver(object):
             assert node_priority_strategy_int == \
                 int(node_priority_strategy_int)
             node_priority_strategy = \
-                _int_to_priority[int(node_priority_strategy_int)]
+                _int_to_node_priority_strategy[
+                    int(node_priority_strategy_int)]
             if math.isnan(cutoff):
                 cutoff = None
             del settings
@@ -789,10 +788,10 @@ class Solver(object):
         self._wall_time = stop-start
         results.wall_time = self._wall_time
 
-        assert results.solution_status in \
-            _solution_status_to_int, str(results)
-        assert results.termination_condition in \
-            _termination_condition_to_int, str(results)
+        assert results.solution_status in SolutionStatus,\
+            str(results)
+        assert results.termination_condition in TerminationCondition,\
+            str(results)
 
         problem.notify_solve_finished(self.comm,
                                       self.worker_comm,
