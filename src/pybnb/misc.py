@@ -366,10 +366,12 @@ def create_command_line_solver(problem, parser=None):
     for key in solve_defaults:
         assert solve_defaults[key] == \
             solve_docs[key]["default"]
+        assert "choices" not in solve_docs[key]
         if key == "node_priority_strategy":
-            assert "choices" in solve_docs[key]
-        else:
-            assert "choices" not in solve_docs[key]
+            solve_docs[key]["choices"] = \
+                [v_.value for v_ in pybnb.NodePriorityStrategy]
+            solve_docs[key]["doc"] = ("Sets the strategy for prioritizing "
+                                      "nodes in the central dispatcher queue.")
     parser.add_argument(
         "--best-objective",
         type=float,

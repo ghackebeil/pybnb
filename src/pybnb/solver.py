@@ -601,37 +601,25 @@ class Solver(object):
             created by calling :func:`problem.save_state
             <pybnb.problem.Problem.save_state`.
             (default: None)
-        node_priority_strategy : {"bound", "objective", "breadth", "depth", "fifo", "random", "custom"}, optional
-            Indicates the strategy for ordering nodes in the
-            work queue. The "bound" strategy always selects
-            the node with the worst bound first. The
-            "objective" strategy always selects the node
-            with the best objective first. The "breadth"
-            strategy always selects the node with the
-            smallest tree depth first (i.e., breadth-first
-            search). The "depth" strategy always selects the
-            node with the largest tree depth first (i.e.,
-            depth-first search). The "fifo" strategy selects
-            nodes in first-in, first-out order. The "random"
-            strategy assigns a random priority to each
-            node. The "custom" strategy assumes the
-            :attr:`queue_priority <pybnb.node.Node.queue_priority>`
-            node attribute has been set by the user. For all
-            other strategies, the :attr:`queue_priority
-            <pybnb.node.Node.queue_priority>` node attribute
-            will be set automatically (any existing value
-            will be overwritten). In all cases, the node
-            with the largest priority in the queue is always
-            selected next, with ties being broken by
-            insertion order. (default: "bound")
+        node_priority_strategy : :class:`NodePriorityStrategy <pybnb.common.NodePriorityStrategy>`
+            Sets the strategy for prioritizing nodes in the
+            central dispatcher queue. See the
+            :class:`NodePriorityStrategy <pybnb.common.NodePriorityStrategy>`
+            enum for the list of acceptable values. This
+            keyword can be assigned one of the enumeration
+            attributes an equivalent string name.
+            (default: "bound")
         absolute_gap : float, optional
-            The solver will terminate with an optimal status
-            when the absolute gap between the objective and
-            bound is less than this value. (default: 1e-8)
+            The maximum absolute difference between the
+            global bound and best objective for the problem
+            to be considered solved to optimality.
+            (default: 1e-8)
         relative_gap : float, optional
-            The solver will terminate with an optimal status
-            when the relative gap between the objective and
-            bound is less than this value. (default: 1e-4)
+            The maximum relative difference (scaled by
+            `max{1.0,|objective|}`) between the global bound
+            and best objective for the problem to be
+            considered solved to optimality.
+            (default: 1e-4)
         cutoff : float, optional
             If provided, when the best objective is proven
             worse than this value, the solver will begin to
