@@ -7,9 +7,16 @@ import logging
 import signal
 
 class MPI_InterruptHandler(object):
-    """A context manager for temporarily assigning
-    a handler to SIGINT and SIGUSR1."""
-    _sigs = (signal.SIGINT, signal.SIGUSR1)
+    """A context manager for temporarily assigning a handler
+    to SIGINT, SIGUSR1, and CTRL_C_EVENT, depending on the
+    availability of these signals in the current OS."""
+    _sigs = [signal.SIGINT]
+    if hasattr(signal, 'SIGUSR1'):
+        # linux
+        _sigs.append(signal.SIGUSR1)
+    if hasattr(signal, 'CTRL_C_EVENT'):
+        # windows
+        _sigs.append(signal.CTRL_C_EVENT)
     __slots__ = ("_released",
                  "_original_handlers",
                  "_handler")
