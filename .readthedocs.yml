@@ -4,4 +4,4 @@
 python:
    version: 3
    pip_install: true
-requirements_file: .rtd_requirments.txt
+requirements_file: .rtd_requirements.txt
