@@ -39,8 +39,8 @@ class NodePriorityStrategy(str, enum.Enum):
     fifo = "fifo"
     """Nodes are served in first-in, first-out order."""
     random = "random"
-    """Nodes are assigned a random priorities before
-    entering the queue."""
+    """Nodes are assigned a random priority before entering
+    the queue."""
     custom = "custom"
     """The node with the largest value stored in the
     :attr:`queue_priority <pybnb.node.Node.queue_priority>`
