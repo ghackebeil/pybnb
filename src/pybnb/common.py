@@ -23,13 +23,6 @@ class NodePriorityStrategy(str, enum.Enum):
     """Strategies for prioritizing nodes in the central
     dispatcher queue. For all strategies, ties are broken by
     insertion order."""
-    _order_ = ("bound "
-               "objective "
-               "breadth "
-               "depth "
-               "fifo "
-               "random "
-               "custom")
 
     bound = "bound"
     """The node with the worst bound is always selected
@@ -57,7 +50,8 @@ class NodePriorityStrategy(str, enum.Enum):
     method on their problem."""
 _node_priority_strategy_to_int = {}
 _int_to_node_priority_strategy = []
-for _i, _val in enumerate(NodePriorityStrategy):
+for _i, _val in enumerate(sorted(NodePriorityStrategy,
+                                 key=lambda v: v.value)):
     _node_priority_strategy_to_int[_val] = _i
     _int_to_node_priority_strategy.append(_val)
 del _i
@@ -69,12 +63,6 @@ class SolutionStatus(str, enum.Enum):
     :attr:`solution_status` attribute of a
     :class:`SolverResults <pybnb.solver.SolverResults>`
     object returned from a solve."""
-    _order_ = ("optimal "
-               "feasible "
-               "infeasible "
-               "unbounded "
-               "invalid "
-               "unknown")
 
     optimal = "optimal"
     """Indicates that the best objective is finite and close
@@ -101,7 +89,8 @@ class SolutionStatus(str, enum.Enum):
     feasible (finite) objective was found."""
 _solution_status_to_int = {}
 _int_to_solution_status = []
-for _i, _val in enumerate(SolutionStatus):
+for _i, _val in enumerate(sorted(SolutionStatus,
+                                 key=lambda v: v.value)):
     _solution_status_to_int[_val] = _i
     _int_to_solution_status.append(_val)
 del _i
@@ -113,12 +102,6 @@ class TerminationCondition(str, enum.Enum):
     :attr:`termination_condition` attribute of a
     :class:`SolverResults <pybnb.solver.SolverResults>`
     object returned from a solve."""
-    _order_ = ("optimality "
-               "cutoff "
-               "node_limit "
-               "time_limit "
-               "no_nodes "
-               "interrupted")
 
     optimality = "optimality"
     """The dispatcher terminated the solve based on
@@ -140,7 +123,8 @@ class TerminationCondition(str, enum.Enum):
     signal event."""
 _termination_condition_to_int = {}
 _int_to_termination_condition = []
-for _i, _val in enumerate(TerminationCondition):
+for _i, _val in enumerate(sorted(TerminationCondition,
+                                 key=lambda v: v.value)):
     _termination_condition_to_int[_val] = _i
     _int_to_termination_condition.append(_val)
 del _i

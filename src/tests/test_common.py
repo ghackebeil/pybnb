@@ -49,9 +49,9 @@ class Test(object):
         assert len(NodePriorityStrategy) == 7
         assert len(_node_priority_strategy_to_int) == 7
         assert len(_int_to_node_priority_strategy) == 7
-        for i, val in enumerate(NodePriorityStrategy):
-            assert _node_priority_strategy_to_int[val] == i
-            assert _int_to_node_priority_strategy[i] == order[i]
+        for val in NodePriorityStrategy:
+            assert _int_to_node_priority_strategy[
+                _node_priority_strategy_to_int[val]] is val
 
     def test_SolutionStatus(self):
         order = [SolutionStatus.optimal,
@@ -71,8 +71,8 @@ class Test(object):
         assert len(_solution_status_to_int) == 6
         assert len(_int_to_solution_status) == 6
         for i, val in enumerate(SolutionStatus):
-            assert _solution_status_to_int[val] == i
-            assert _int_to_solution_status[i] == order[i]
+            assert _int_to_solution_status[
+                _solution_status_to_int[val]] is val
 
     def test_TerminationCondition(self):
         order = [TerminationCondition.optimality,
@@ -92,5 +92,5 @@ class Test(object):
         assert len(_termination_condition_to_int) == 6
         assert len(_int_to_termination_condition) == 6
         for i, val in enumerate(TerminationCondition):
-            assert _termination_condition_to_int[val] == i
-            assert _int_to_termination_condition[i] == order[i]
+            assert _int_to_termination_condition[
+                _termination_condition_to_int[val]] is val
