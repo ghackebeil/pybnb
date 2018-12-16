@@ -6,5 +6,4 @@ sphinx
 sphinxcontrib-spelling
 sphinxcontrib-napoleon
 sphinxcontrib-trio
-sphinxcontrib-websupport
 sphinx_rtd_theme
