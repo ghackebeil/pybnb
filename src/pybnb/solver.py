@@ -755,7 +755,7 @@ class Solver(object):
                     log,
                     log_interval_seconds)
             if not self.is_worker:
-                def handler(signum, frame):
+                def handler(signum, frame):       #pragma:nocover
                     self._disp.log_warning(
                         "Solve interrupted by user "
                         "Waiting for current worker "
@@ -766,7 +766,7 @@ class Solver(object):
                 with MPI_InterruptHandler(handler):
                     tmp = self._disp.serve()
             else:
-                def handler(signum, frame):
+                def handler(signum, frame):       #pragma:nocover
                     if self.is_dispatcher:
                         self._disp.log_warning(
                             "Solve interrupted by user "
