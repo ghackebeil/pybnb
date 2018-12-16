@@ -12,11 +12,8 @@ class MPI_InterruptHandler(object):
     availability of these signals in the current OS."""
     _sigs = [signal.SIGINT]
     if hasattr(signal, 'SIGUSR1'):
-        # linux
+        # not available on windows
         _sigs.append(signal.SIGUSR1)
-    if hasattr(signal, 'CTRL_C_EVENT'):
-        # windows
-        _sigs.append(signal.CTRL_C_EVENT)
     __slots__ = ("_released",
                  "_original_handlers",
                  "_handler")
