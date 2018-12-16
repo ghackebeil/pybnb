@@ -31,14 +31,6 @@ class Test(object):
         assert math.isnan(-nan)
 
     def test_NodePriorityStrategy(self):
-        order = [NodePriorityStrategy.bound,
-                 NodePriorityStrategy.objective,
-                 NodePriorityStrategy.breadth,
-                 NodePriorityStrategy.depth,
-                 NodePriorityStrategy.fifo,
-                 NodePriorityStrategy.random,
-                 NodePriorityStrategy.custom]
-        assert list(NodePriorityStrategy) == order
         assert NodePriorityStrategy.bound == "bound"
         assert NodePriorityStrategy.objective == "objective"
         assert NodePriorityStrategy.breadth == "breadth"
@@ -54,13 +46,6 @@ class Test(object):
                 _node_priority_strategy_to_int[val]] is val
 
     def test_SolutionStatus(self):
-        order = [SolutionStatus.optimal,
-                 SolutionStatus.feasible,
-                 SolutionStatus.infeasible,
-                 SolutionStatus.unbounded,
-                 SolutionStatus.invalid,
-                 SolutionStatus.unknown]
-        assert list(SolutionStatus) == order
         assert SolutionStatus.optimal == "optimal"
         assert SolutionStatus.feasible == "feasible"
         assert SolutionStatus.infeasible == "infeasible"
@@ -75,13 +60,6 @@ class Test(object):
                 _solution_status_to_int[val]] is val
 
     def test_TerminationCondition(self):
-        order = [TerminationCondition.optimality,
-                 TerminationCondition.cutoff,
-                 TerminationCondition.node_limit,
-                 TerminationCondition.time_limit,
-                 TerminationCondition.no_nodes,
-                 TerminationCondition.interrupted]
-        assert list(TerminationCondition) == order
         assert TerminationCondition.optimality == "optimality"
         assert TerminationCondition.cutoff == "cutoff"
         assert TerminationCondition.node_limit == "node_limit"
