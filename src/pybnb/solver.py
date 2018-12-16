@@ -610,7 +610,7 @@ class Solver(object):
             :class:`NodePriorityStrategy <pybnb.common.NodePriorityStrategy>`
             enum for the list of acceptable values. This
             keyword can be assigned one of the enumeration
-            attributes an equivalent string name.
+            attributes or an equivalent string name.
             (default: "bound")
         absolute_gap : float, optional
             The maximum absolute difference between the
