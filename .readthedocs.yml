@@ -1,0 +1,7 @@
+# See the following Github comment for why we use a pip
+# install (along with a '-e.' in .rtd_requirements.txt):
+#    https://github.com/rtfd/readthedocs.org/issues/855#issuecomment-261337038
+python:
+   version: 3
+   pip_install: true
+requirements_file: .rtd_requirments.txt
