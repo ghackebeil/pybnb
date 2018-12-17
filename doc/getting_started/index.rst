@@ -21,15 +21,17 @@ Complete Example
 The code below shows a complete example script that (1) defines
 a problem, (2) creates a solver, and (3) solves the problem.
 
-.. literalinclude:: complete_example.py
+.. literalinclude:: ../../examples/scripts/simple.py
    :language: python
+   :prepend: # simple.py
+   :lines: 16-
 
 To solve the problem in serial, the example script should be
 launched with the python interpretor:
 
 .. code-block:: console
 
-    $ python complete_example.py
+    $ python simply.py
 
 To solve the problem in parallel, the example script should
 be launched using the same command as above, only wrapped
@@ -37,7 +39,7 @@ with ``mpiexec`` (specifying the number processes):
 
 .. code-block:: console
 
-    $ mpiexec -n 4 python complete_example.py
+    $ mpiexec -n 4 python simple.py
 
 Note that the parallel solve implementation used by
 ``pybnb`` always designates exactly one process as a

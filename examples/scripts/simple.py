@@ -1,5 +1,17 @@
-# complete_example.py
-
+#
+# This example script defines and solves
+# a minimal pybnb example problem.
+#
+# It can be executed in serial as
+#
+# $ python simple.py
+#
+# or in parallel as
+#
+# $ mpiexec -n <n> python simple.py
+#
+# The mpi4py module is required.
+#
 import pybnb
 
 class Simple(pybnb.Problem):
