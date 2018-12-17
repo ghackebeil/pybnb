@@ -8,6 +8,7 @@ import pybnb
 from pybnb.common import inf
 from pybnb.solver import (SolverResults,
                           Solver)
+from pybnb.misc import get_simple_logger
 
 from .common import mpi_available
 
@@ -93,6 +94,8 @@ def _execute_tests(comm, problem, baseline, **kwds):
     _execute_single_test(problem, baseline, comm=comm, **kwds)
     solver = Solver(comm=comm)
     _execute_single_test(problem, baseline, solver=solver, **kwds)
+    _execute_single_test(problem, baseline, solver=solver, **kwds)
+    kwds['log'] = get_simple_logger(level="WARNING")
     _execute_single_test(problem, baseline, solver=solver, **kwds)
 
 def _test_infeasible_max(comm):

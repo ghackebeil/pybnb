@@ -320,7 +320,7 @@ class DispatcherBase(object):
                 return TerminationCondition.time_limit
             elif self.stop_cutoff:
                 return TerminationCondition.cutoff
-            elif self.stop_interrupted:
+            elif self.stop_interrupted:           #pragma:nocover
                 return TerminationCondition.interrupted
             else:
                 return TerminationCondition.no_nodes
