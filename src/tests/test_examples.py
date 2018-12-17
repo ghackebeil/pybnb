@@ -39,7 +39,9 @@ thisdir = os.path.dirname(thisfile)
 topdir = os.path.dirname(
             os.path.dirname(thisdir))
 exdir = os.path.join(topdir, "examples")
-examples = glob.glob(os.path.join(exdir,"*.py"))
+examples = []
+examples.extend(glob.glob(os.path.join(exdir,"command_line_problems","*.py")))
+examples.extend(glob.glob(os.path.join(exdir,"scripts","*.py")))
 baselinedir = os.path.join(thisdir, "example_baselines")
 
 assert os.path.exists(exdir)
@@ -67,18 +69,21 @@ for p in [1,2,4]:
 def test_example(example_name, procs):
     if example_name in ("test_bin_packing",
                         "test_rosenbrock_2d",
-                        "test_range_reduction_script"):
+                        "test_range_reduction_pyomo"):
         if not (pyomo_available and ipopt_available):
             pytest.skip("Pyomo or Ipopt is not available")
-    if (not mpi4py_available) and (procs > 1):
+    if example_name == "test_simple":
+        if not mpi4py_available:
             pytest.skip("MPI is not available")
+    if (not mpi4py_available) and (procs > 1):
+        pytest.skip("MPI is not available")
     filename, baseline_filename = tdict[example_name]
     assert os.path.exists(filename)
     fid, results_filename = tempfile.mkstemp()
     os.close(fid)
     try:
         if procs == 1:
-            if example_name == "test_range_reduction_script":
+            if example_name == "test_range_reduction_pyomo":
                 rc = subprocess.call(['python', filename,
                                       "--results-file", results_filename])
             else:
@@ -102,6 +107,9 @@ def test_example(example_name, procs):
                                       'python', filename,
                                       "--results-file", results_filename])
         assert rc == 0
+        if example_name == "test_simple":
+            assert not os.path.exists(baseline_filename)
+            return
         with open(results_filename) as f:
             results = yaml.load(f)
         with open(baseline_filename) as f:
