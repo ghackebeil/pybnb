@@ -636,13 +636,13 @@ def test_zero_objective_min_nocomm():
 
 if mpi_available:
 
-    @MPITest(commsize=[1, 2, 4])
-    def test_infeasible_max(comm):
-        _test_infeasible_max(comm)
+    #@MPITest(commsize=[1, 2, 4])
+    #def test_infeasible_max(comm):
+    #    _test_infeasible_max(comm)
 
-    @MPITest(commsize=[1, 2, 4])
-    def test_infeasible_min(comm):
-        _test_infeasible_min(comm)
+    #@MPITest(commsize=[1, 2, 4])
+    #def test_infeasible_min(comm):
+    #    _test_infeasible_min(comm)
 
     @MPITest(commsize=[1, 2, 4])
     def test_root_infeasible_max(comm):
