@@ -13,7 +13,6 @@ def test_solver_nocomm():
 
 if mpi_available:
 
-
     @MPITest(commsize=[1, 2, 3])
     def test_solver_comm(comm):
         solver = Solver(comm=comm, dispatcher_rank=0)
