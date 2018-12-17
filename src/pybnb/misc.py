@@ -414,7 +414,9 @@ def create_command_line_solver(problem, parser=None):
         type=float,
         default=solve_defaults.pop("best_objective"),
         help=solve_docs["best_objective"]["doc"])
-    assert not solve_defaults.pop("disable_objective_call")
+    tmp_ = solve_defaults.pop("disable_objective_call")
+    assert not tmp_
+    del tmp_
     parser.add_argument(
         "--disable-objective-call",
         default=False,
