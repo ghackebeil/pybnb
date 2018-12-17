@@ -1,7 +1,34 @@
+#
+# This example defines a script that solves the
+# rosenbrock_2d example, utilizing parallel computation in
+# two different ways. It first executes optimality-based
+# range reduction in parallel for 7 nodes of a serial
+# branch-and-bound solve. After this completes, it continues
+# the solve using parallel branch-and-bound (without range
+# reduction), initializing the dispatcher queue unprocessed
+# nodes from the previous solve.
+#
+# This example can be executed in serial as
+#
+# $ python range_reduction_pyomo.py
+#
+# or in parallel as
+#
+# $ mpiexec -n <n> python range_reduction_pyomo.py
+#
+import os
+import sys
+
+examples_dir = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(examples_dir,
+                                'command_line_problems'))
+from rosenbrock_2d import Rosenbrock2D
+sys.path.remove(os.path.join(examples_dir,
+                             'command_line_problems'))
+
 import pybnb
 from pybnb.pyomo_tools import RangeReductionProblem
-
-from rosenbrock_2d import Rosenbrock2D
 
 class Rosenbrock2D_RangeReduction(RangeReductionProblem):
 
