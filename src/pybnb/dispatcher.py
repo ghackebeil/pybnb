@@ -324,8 +324,6 @@ class DispatcherBase(object):
                 return TerminationCondition.interrupted
             else:
                 return TerminationCondition.no_nodes
-        else:
-            return None
 
     def _check_update_best_objective(self, objective):
         updated = False
@@ -495,9 +493,6 @@ class DispatcherBase(object):
             self._add_work_to_queue(node._data,
                                     set_tree_id=False)
 
-    def update(self, *args, **kwds):
-        raise NotImplementedError
-
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
         if self.journalist is not None:
@@ -538,6 +533,9 @@ class DispatcherBase(object):
     #
     # Abstract Methods
     #
+
+    def update(self, *args, **kwds):              #pragma:nocover
+        raise NotImplementedError
 
     def _compute_load_imbalance(self):            #pragma:nocover
         """Get the worker load imbalance."""
