@@ -13,9 +13,7 @@ from pybnb.common import (nan,
                           _node_priority_strategy_to_int,
                           _int_to_node_priority_strategy,
                           TerminationCondition,
-                          SolutionStatus,
-                          _solution_status_to_int,
-                          _int_to_solution_status)
+                          SolutionStatus)
 from pybnb.problem import (_SolveInfo,
                            _SimpleSolveInfoCollector,
                            _ProblemWithSolveInfoCollection)
