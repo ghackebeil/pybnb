@@ -2,6 +2,6 @@
 # install (along with a '-e.' in .rtd_requirements.txt):
 #    https://github.com/rtfd/readthedocs.org/issues/855#issuecomment-261337038
 python:
-   version: 3.6
+   version: 2.7
    pip_install: true
 requirements_file: .rtd_requirements.txt
