@@ -411,7 +411,7 @@ def _test_root_infeasible_max(comm):
     baseline.nodes = 1
     baseline.wall_time = _ignore_value_
     problem = root_infeasible_max.RootInfeasibleMax()
-    _execute_single_test(comm, problem, baseline)
+    _execute_single_test(problem, baseline, comm=comm)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
@@ -430,7 +430,7 @@ def _test_root_infeasible_min(comm):
     baseline.nodes = 1
     baseline.wall_time = _ignore_value_
     problem = root_infeasible_min.RootInfeasibleMin()
-    _execute_single_test(comm, problem, baseline)
+    _execute_single_test(problem, baseline, comm=comm)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
