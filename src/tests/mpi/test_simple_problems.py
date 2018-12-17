@@ -107,9 +107,14 @@ def _test_infeasible_max(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
-    _execute_tests(comm,
-                   problem,
-                   baseline)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -119,9 +124,14 @@ def _test_infeasible_max(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(branching_abstol=0.1)
-    _execute_tests(comm,
-                   problem,
-                   baseline)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -131,10 +141,16 @@ def _test_infeasible_max(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(branching_abstol=0.1)
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   cutoff=-15)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       cutoff=-15)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             cutoff=-15)
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
@@ -147,10 +163,16 @@ def _test_infeasible_max(comm):
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(branching_abstol=0.1,
                                            fixed_objective=-20)
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   cutoff=-15)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       cutoff=-15)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             cutoff=-15)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -160,10 +182,16 @@ def _test_infeasible_max(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   node_limit=31)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       node_limit=31)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             node_limit=31)
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
@@ -175,10 +203,16 @@ def _test_infeasible_max(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(fixed_objective=-17)
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   node_limit=31)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       node_limit=31)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             node_limit=31)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -188,10 +222,16 @@ def _test_infeasible_max(comm):
     baseline.nodes = 0
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   time_limit=0)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       time_limit=0)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             time_limit=0)
 
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
@@ -219,9 +259,14 @@ def _test_infeasible_min(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
-    _execute_tests(comm,
-                   problem,
-                   baseline)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -231,9 +276,14 @@ def _test_infeasible_min(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(branching_abstol=0.1)
-    _execute_tests(comm,
-                   problem,
-                   baseline)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -243,10 +293,16 @@ def _test_infeasible_min(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(branching_abstol=0.1)
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   cutoff=15)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       cutoff=15)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             cutoff=15)
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
@@ -259,10 +315,16 @@ def _test_infeasible_min(comm):
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(branching_abstol=0.1,
                                            fixed_objective=20)
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   cutoff=15)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       cutoff=15)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             cutoff=15)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -272,10 +334,16 @@ def _test_infeasible_min(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   node_limit=31)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       node_limit=31)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             node_limit=31)
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
@@ -287,10 +355,16 @@ def _test_infeasible_min(comm):
     baseline.nodes = 31
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(fixed_objective=17)
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   node_limit=31)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       node_limit=31)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             node_limit=31)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -300,10 +374,16 @@ def _test_infeasible_min(comm):
     baseline.nodes = 0
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
-    _execute_tests(comm,
-                   problem,
-                   baseline,
-                   time_limit=0)
+    if comm is None:
+        _execute_tests(comm,
+                       problem,
+                       baseline,
+                       time_limit=0)
+    else:
+        _execute_single_test(problem,
+                             baseline,
+                             comm=comm,
+                             time_limit=0)
 
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
@@ -331,7 +411,7 @@ def _test_root_infeasible_max(comm):
     baseline.nodes = 1
     baseline.wall_time = _ignore_value_
     problem = root_infeasible_max.RootInfeasibleMax()
-    _execute_tests(comm, problem, baseline)
+    _execute_single_test(comm, problem, baseline)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
@@ -350,7 +430,7 @@ def _test_root_infeasible_min(comm):
     baseline.nodes = 1
     baseline.wall_time = _ignore_value_
     problem = root_infeasible_min.RootInfeasibleMin()
-    _execute_tests(comm, problem, baseline)
+    _execute_single_test(comm, problem, baseline)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
@@ -369,7 +449,7 @@ def _test_unbounded_max(comm):
     baseline.nodes = 1
     baseline.wall_time = _ignore_value_
     problem = unbounded_max.UnboundedMax()
-    _execute_tests(comm, problem, baseline)
+    _execute_single_test(comm, problem, baseline)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
@@ -388,7 +468,7 @@ def _test_unbounded_min(comm):
     baseline.nodes = 1
     baseline.wall_time = _ignore_value_
     problem = unbounded_min.UnboundedMin()
-    _execute_tests(comm, problem, baseline)
+    _execute_single_test(comm, problem, baseline)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
@@ -636,13 +716,13 @@ def test_zero_objective_min_nocomm():
 
 if mpi_available:
 
-    #@MPITest(commsize=[1, 2, 4])
-    #def test_infeasible_max(comm):
-    #    _test_infeasible_max(comm)
+    @MPITest(commsize=[1, 2, 4])
+    def test_infeasible_max(comm):
+        _test_infeasible_max(comm)
 
-    #@MPITest(commsize=[1, 2, 4])
-    #def test_infeasible_min(comm):
-    #    _test_infeasible_min(comm)
+    @MPITest(commsize=[1, 2, 4])
+    def test_infeasible_min(comm):
+        _test_infeasible_min(comm)
 
     @MPITest(commsize=[1, 2, 4])
     def test_root_infeasible_max(comm):
