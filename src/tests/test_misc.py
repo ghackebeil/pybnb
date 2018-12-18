@@ -5,7 +5,8 @@ import subprocess
 import signal
 import time
 
-from pybnb.misc import (metric_format,
+from pybnb.misc import (MPI_InterruptHandler,
+                        metric_format,
                         time_format,
                         get_gap_labels,
                         as_stream,
@@ -20,6 +21,20 @@ import numpy
 class Test(object):
 
     def test_MPI_InterruptHandler(self):
+        assert len(MPI_InterruptHandler._sigs) > 0
+        original_handlers = \
+            [(signum, signal.getsignal(signum))
+             for signum in MPI_InterruptHandler._sigs]
+        with MPI_InterruptHandler(lambda s,f: None) as h:
+            pass
+        assert h._released
+        for i, signum in enumerate(
+                MPI_InterruptHandler._sigs):
+            orig = signal.getsignal(signum)
+            assert original_handlers[i][0] == signum
+            assert original_handlers[i][1] is orig
+        # now test the use of MPI_InterrupHandler
+        # in a subprocess
         cmd = ' '.join(['python','-c',
                         '"import sys; import time; '
                         'from pybnb.misc import MPI_InterruptHandler; '
@@ -28,11 +43,6 @@ class Test(object):
         # not testing on windows as it is unreasonably difficult
         # to send CTRL_C_EVENT to a subprocess.
         if os.name == 'nt':
-            #proc = subprocess.Popen(cmd, shell=True)
-            #time.sleep(2)
-            #proc.send_signal(signal.SIGINT)
-            #proc.wait()
-            #assert proc.returncode == 27
             if hasattr(signal, 'SIGUSR1'):
                 proc = subprocess.Popen(cmd, shell=True)
                 time.sleep(2)
