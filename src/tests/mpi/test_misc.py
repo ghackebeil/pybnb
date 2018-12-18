@@ -86,7 +86,7 @@ def _logging_check(comm):
     if comm is not None:
         comm.Barrier()
     if opt.is_dispatcher:
-        assert ('\n'.join(out.getvalue().splitlines()[7:])) == \
+        assert ('\n'.join(out.getvalue().splitlines()[8:])) == \
                 _get_logging_baseline(comm.size if comm is not None else 1)
 
 def test_logging_nocomm():
