@@ -31,7 +31,7 @@ launched with the python interpretor:
 
 .. code-block:: console
 
-    $ python simply.py
+    $ python simple.py
 
 To solve the problem in parallel, the example script should
 be launched using the same command as above, only wrapped
@@ -250,3 +250,39 @@ communicator different from ``mpi4py.MPI.COMM_WORLD``. If
 the solver communicator includes more than one process, the
 ``dispatcher_rank`` keyword can be assigned a process rank
 to control which process is designated as the dispatcher.
+
+Terminating a Solve Early
+-------------------------
+
+A solve that is launched without the use `mpiexec` can be
+terminated at any point by entering `Ctrl-C` (sending the
+process a `SIGINT` signal). If the signal is successfully
+received, the solver will attempt to gracefully stop the
+solve after it finishes processing the current node, and it
+will mark the :attr:`termination_condition
+<pybnb.solver.SolverResults.termination_condition>`
+attribute of the solver results object with the
+:attr:`interrupted
+<pybnb.common.TerminationCondition.interrupted>` status.
+
+Solves launched through `mpiexec` typically can not be
+gracefully terminated using the `Ctrl-C` method. This is due
+to the way the MPI process manager handles the `SIGINT`
+signal. However, the solve can be gracefully terminated by
+sending a `SIGUSR1` signal to the dispatcher process (this
+also works for the case when the solve was launched without
+`mpiexec`). The pid and hostname of the dispatcher process
+are always output at the beginning of the solve.
+
+.. code-block:: console
+
+    $ mpiexec -n 4 python simple.py
+  Starting branch & bound solve:
+   - dispatcher pid: <pid> (<hostname>)
+  ...
+
+Assuming one is logged in to the host where the dispatcher process is running, the solve can be terminated using a command such as:
+
+.. code-block:: console
+
+    $ kill -USR1 <pid>
