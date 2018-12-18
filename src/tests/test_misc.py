@@ -24,26 +24,26 @@ class Test(object):
                         '"import sys; import time; '
                         'from pybnb.misc import MPI_InterruptHandler; '
                         'h = MPI_InterruptHandler(lambda signum, frame: '
-                        'sys.exit(27)); h.__enter__(); time.sleep(1000)"'])
+                        'sys.exit(27)); h.__enter__(); time.sleep(25)"'])
         if hasattr(subprocess, 'CREATE_NEW_PROCESS_GROUP'):
             # windows
             proc = subprocess.Popen(
                 cmd,
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
                 shell=True)
-            time.sleep(0.5)
+            time.sleep(2)
             proc.send_signal(signal.CTRL_C_EVENT)
             proc.wait()
             assert proc.returncode == 27
         else:
             proc = subprocess.Popen(cmd, shell=True)
-            time.sleep(0.5)
+            time.sleep(2)
             proc.send_signal(signal.SIGINT)
             proc.wait()
             assert proc.returncode == 27
             if hasattr(signal, 'SIGUSR1'):
                 proc = subprocess.Popen(cmd, shell=True)
-                time.sleep(0.5)
+                time.sleep(2)
                 proc.send_signal(signal.SIGUSR1)
                 proc.wait()
                 assert proc.returncode == 27
