@@ -119,3 +119,20 @@ class TestNode(object):
         node.resize(4)
         with pytest.raises(ValueError):
             state[0] = 1
+
+    def test_tree_id(self):
+        node = Node()
+        assert node.tree_id is None
+        assert node.parent_tree_id is None
+        Node._insert_tree_id(node._data, 1)
+        assert node.tree_id == 1
+        assert node.parent_tree_id is None
+        Node._insert_parent_tree_id(node._data, 2)
+        assert node.tree_id == 1
+        assert node.parent_tree_id == 2
+        Node._clear_tree_id(node._data)
+        assert node.tree_id is None
+        assert node.parent_tree_id == 2
+        Node._clear_parent_tree_id(node._data)
+        assert node.tree_id is None
+        assert node.parent_tree_id is None

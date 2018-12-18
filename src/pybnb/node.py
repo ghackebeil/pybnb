@@ -316,6 +316,10 @@ class Node(object):
         return bool(data[-2] == _one)
 
     @classmethod
+    def _clear_parent_tree_id(cls, data):
+        data[-2] = _zero
+
+    @classmethod
     def _insert_tree_depth(cls, data, tree_depth):
         data[-1] = tree_depth
         # make sure the floating point representation is
