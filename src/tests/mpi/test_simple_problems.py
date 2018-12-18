@@ -231,6 +231,7 @@ def _test_infeasible_max(comm):
                              solver=solver,
                              time_limit=0)
 
+    """
     if solver is None:
         solver = Solver(comm=comm)
     baseline = SolverResults()
@@ -249,6 +250,7 @@ def _test_infeasible_max(comm):
             baseline,
             solver=solver,
             node_priority_strategy=node_priority_strategy)
+    """
 
 def _test_infeasible_min(comm):
     solver = None
@@ -388,6 +390,7 @@ def _test_infeasible_min(comm):
                              solver=solver,
                              time_limit=0)
 
+    """
     if solver is None:
         solver = Solver(comm=comm)
     baseline = SolverResults()
@@ -406,6 +409,7 @@ def _test_infeasible_min(comm):
             baseline,
             solver=solver,
             node_priority_strategy=node_priority_strategy)
+    """
 
 def _test_root_infeasible_max(comm):
     solver = Solver(comm=comm)
