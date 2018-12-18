@@ -743,6 +743,10 @@ class Solver(object):
                         next_tree_id=1)
                 if log is _notset:
                     log = get_simple_logger()
+                if type(node_priority_strategy) is \
+                   NodePriorityStrategy:
+                    node_priority_strategy = \
+                        node_priority_strategy.value
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
