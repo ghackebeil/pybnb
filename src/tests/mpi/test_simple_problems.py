@@ -62,11 +62,6 @@ def _execute_single_test(problem,
            (solver.comm is not None) and \
            (solver.comm.size > 2):
             pass
-            #assert getattr(results, name) >= getattr(baseline, name), \
-            #    ("value for '"+str(name)+"' ("+
-            #     str(getattr(results, name))+") does "
-            #     "not match or exceed baseline ("+
-            #     str(getattr(baseline, name))+")")
         else:
             assert getattr(results, name) == getattr(baseline, name), \
                 ("value for '"+str(name)+"' ("+
@@ -99,6 +94,9 @@ def _execute_tests(comm, problem, baseline, **kwds):
     _execute_single_test(problem, baseline, solver=solver, **kwds)
 
 def _test_infeasible_max(comm):
+    solver = None
+    if comm is not None:
+        solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
     baseline.termination_condition = "optimality"
@@ -114,7 +112,7 @@ def _test_infeasible_max(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm)
+                             solver=solver)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -131,7 +129,7 @@ def _test_infeasible_max(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm)
+                             solver=solver)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -149,7 +147,7 @@ def _test_infeasible_max(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              cutoff=-15)
 
     baseline = SolverResults()
@@ -171,7 +169,7 @@ def _test_infeasible_max(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              cutoff=-15)
 
     baseline = SolverResults()
@@ -190,7 +188,7 @@ def _test_infeasible_max(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              node_limit=31)
 
     baseline = SolverResults()
@@ -211,7 +209,7 @@ def _test_infeasible_max(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              node_limit=31)
 
     baseline = SolverResults()
@@ -230,9 +228,11 @@ def _test_infeasible_max(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              time_limit=0)
 
+    if solver is None:
+        solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
     baseline.termination_condition = "optimality"
@@ -247,10 +247,13 @@ def _test_infeasible_max(comm):
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             node_priority_strategy=node_priority_strategy)
 
 def _test_infeasible_min(comm):
+    solver = None
+    if comm is not None:
+        solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
     baseline.termination_condition = "optimality"
@@ -266,7 +269,7 @@ def _test_infeasible_min(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm)
+                             solver=solver)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -283,7 +286,7 @@ def _test_infeasible_min(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm)
+                             solver=solver)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -301,7 +304,7 @@ def _test_infeasible_min(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              cutoff=15)
 
     baseline = SolverResults()
@@ -323,7 +326,7 @@ def _test_infeasible_min(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              cutoff=15)
 
     baseline = SolverResults()
@@ -342,7 +345,7 @@ def _test_infeasible_min(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              node_limit=31)
 
     baseline = SolverResults()
@@ -363,7 +366,7 @@ def _test_infeasible_min(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              node_limit=31)
 
     baseline = SolverResults()
@@ -382,9 +385,11 @@ def _test_infeasible_min(comm):
     else:
         _execute_single_test(problem,
                              baseline,
-                             comm=comm,
+                             solver=solver,
                              time_limit=0)
 
+    if solver is None:
+        solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
     baseline.termination_condition = "optimality"
@@ -399,10 +404,11 @@ def _test_infeasible_min(comm):
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             node_priority_strategy=node_priority_strategy)
 
 def _test_root_infeasible_max(comm):
+    solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
     baseline.termination_condition = "optimality"
@@ -413,17 +419,18 @@ def _test_root_infeasible_max(comm):
     problem = root_infeasible_max.RootInfeasibleMax()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm)
+                         solver=solver)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             node_priority_strategy=node_priority_strategy)
 
 def _test_root_infeasible_min(comm):
+    solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "infeasible"
     baseline.termination_condition = "optimality"
@@ -434,17 +441,18 @@ def _test_root_infeasible_min(comm):
     problem = root_infeasible_min.RootInfeasibleMin()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm)
+                         solver=solver)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             node_priority_strategy=node_priority_strategy)
 
 def _test_unbounded_max(comm):
+    solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "unbounded"
     baseline.termination_condition = "no_nodes"
@@ -455,17 +463,18 @@ def _test_unbounded_max(comm):
     problem = unbounded_max.UnboundedMax()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm)
+                         solver=solver)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             node_priority_strategy=node_priority_strategy)
 
 def _test_unbounded_min(comm):
+    solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "unbounded"
     baseline.termination_condition = "no_nodes"
@@ -476,17 +485,18 @@ def _test_unbounded_min(comm):
     problem = unbounded_min.UnboundedMin()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm)
+                         solver=solver)
     for node_priority_strategy in pybnb.NodePriorityStrategy:
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             node_priority_strategy=node_priority_strategy)
 
 def _test_zero_objective_max(comm):
+    solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "optimal"
     baseline.termination_condition = "optimality"
@@ -499,17 +509,17 @@ def _test_zero_objective_max(comm):
     problem = zero_objective_max.ZeroObjectiveMax()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.01)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0,
                          absolute_gap=0.01)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.0)
 
@@ -525,17 +535,17 @@ def _test_zero_objective_max(comm):
     problem = zero_objective_max.ZeroObjectiveMax()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.001,
                          absolute_gap=0.001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0,
                          absolute_gap=0.001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.001,
                          absolute_gap=0.0)
 
@@ -551,17 +561,17 @@ def _test_zero_objective_max(comm):
     problem = zero_objective_max.ZeroObjectiveMax()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0001,
                          absolute_gap=0.0001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0,
                          absolute_gap=0.0001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0001,
                          absolute_gap=0.0)
 
@@ -587,12 +597,13 @@ def _test_zero_objective_max(comm):
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             relative_gap=0.01,
             absolute_gap=0.01,
             node_priority_strategy=node_priority_strategy)
 
 def _test_zero_objective_min(comm):
+    solver = Solver(comm=comm)
     baseline = SolverResults()
     baseline.solution_status = "optimal"
     baseline.termination_condition = "optimality"
@@ -605,17 +616,17 @@ def _test_zero_objective_min(comm):
     problem = zero_objective_min.ZeroObjectiveMin()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.01)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0,
                          absolute_gap=0.01)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.0)
 
@@ -631,17 +642,17 @@ def _test_zero_objective_min(comm):
     problem = zero_objective_min.ZeroObjectiveMin()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.001,
                          absolute_gap=0.001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0,
                          absolute_gap=0.001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.001,
                          absolute_gap=0.0)
 
@@ -657,17 +668,17 @@ def _test_zero_objective_min(comm):
     problem = zero_objective_min.ZeroObjectiveMin()
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0001,
                          absolute_gap=0.0001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0,
                          absolute_gap=0.0001)
     _execute_single_test(problem,
                          baseline,
-                         comm=comm,
+                         solver=solver,
                          relative_gap=0.0001,
                          absolute_gap=0.0)
 
@@ -693,7 +704,7 @@ def _test_zero_objective_min(comm):
         _execute_single_test(
             problem,
             baseline,
-            comm=comm,
+            solver=solver,
             relative_gap=0.01,
             absolute_gap=0.01,
             node_priority_strategy=node_priority_strategy)
