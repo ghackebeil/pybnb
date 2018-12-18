@@ -114,6 +114,7 @@ def _test_infeasible_max(comm):
                              baseline,
                              solver=solver)
 
+    """
     baseline = SolverResults()
     baseline.solution_status = "unknown"
     baseline.termination_condition = "no_nodes"
@@ -230,7 +231,7 @@ def _test_infeasible_max(comm):
                              baseline,
                              solver=solver,
                              time_limit=0)
-
+    """
     """
     if solver is None:
         solver = Solver(comm=comm)
@@ -272,7 +273,7 @@ def _test_infeasible_min(comm):
         _execute_single_test(problem,
                              baseline,
                              solver=solver)
-
+    """
     baseline = SolverResults()
     baseline.solution_status = "unknown"
     baseline.termination_condition = "no_nodes"
@@ -389,7 +390,7 @@ def _test_infeasible_min(comm):
                              baseline,
                              solver=solver,
                              time_limit=0)
-
+    """
     """
     if solver is None:
         solver = Solver(comm=comm)
