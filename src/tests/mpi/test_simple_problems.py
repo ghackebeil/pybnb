@@ -242,7 +242,7 @@ def _test_infeasible_max(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
@@ -271,7 +271,7 @@ def _test_infeasible_min(comm):
         _execute_single_test(problem,
                              baseline,
                              solver=solver)
-    """
+
     baseline = SolverResults()
     baseline.solution_status = "unknown"
     baseline.termination_condition = "no_nodes"
@@ -388,8 +388,7 @@ def _test_infeasible_min(comm):
                              baseline,
                              solver=solver,
                              time_limit=0)
-    """
-    """
+
     if solver is None:
         solver = Solver(comm=comm)
     baseline = SolverResults()
@@ -400,7 +399,7 @@ def _test_infeasible_min(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
@@ -408,7 +407,6 @@ def _test_infeasible_min(comm):
             baseline,
             solver=solver,
             node_priority_strategy=node_priority_strategy)
-    """
 
 def _test_root_infeasible_max(comm):
     solver = Solver(comm=comm)
@@ -423,7 +421,7 @@ def _test_root_infeasible_max(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
@@ -445,7 +443,7 @@ def _test_root_infeasible_min(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
@@ -467,7 +465,7 @@ def _test_unbounded_max(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
@@ -489,7 +487,7 @@ def _test_unbounded_min(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         _execute_single_test(
@@ -515,7 +513,6 @@ def _test_zero_objective_max(comm):
                          solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.01)
-    """
     _execute_single_test(problem,
                          baseline,
                          solver=solver,
@@ -589,7 +586,7 @@ def _test_zero_objective_max(comm):
     baseline.nodes = None
     baseline.wall_time = _ignore_value_
     problem = zero_objective_max.ZeroObjectiveMax()
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         if node_priority_strategy == "depth":
@@ -605,7 +602,6 @@ def _test_zero_objective_max(comm):
             relative_gap=0.01,
             absolute_gap=0.01,
             node_priority_strategy=node_priority_strategy)
-    """
 
 def _test_zero_objective_min(comm):
     solver = Solver(comm=comm)
@@ -624,7 +620,6 @@ def _test_zero_objective_min(comm):
                          solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.01)
-    """
     _execute_single_test(problem,
                          baseline,
                          solver=solver,
@@ -698,7 +693,7 @@ def _test_zero_objective_min(comm):
     baseline.nodes = None
     baseline.wall_time = _ignore_value_
     problem = zero_objective_min.ZeroObjectiveMin()
-    for node_priority_strategy in pybnb.NodePriorityStrategy:
+    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
         if node_priority_strategy == "custom":
             continue
         if node_priority_strategy == "depth":
@@ -714,7 +709,6 @@ def _test_zero_objective_min(comm):
             relative_gap=0.01,
             absolute_gap=0.01,
             node_priority_strategy=node_priority_strategy)
-    """
 
 def test_infeasible_max_nocomm():
     _test_infeasible_max(None)
