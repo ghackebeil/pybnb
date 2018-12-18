@@ -27,7 +27,7 @@ class MPI_InterruptHandler(object):
         self._original_handlers = \
             [(signum, signal.getsignal(signum))
              for signum in self._sigs]
-        def handler(signum, frame):               #pragma:nocover
+        def handler(signum, frame):
             self._handler(signum, frame)
             self.release()
         for signum in self._sigs:

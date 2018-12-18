@@ -26,29 +26,28 @@ class Test(object):
             [(signum, signal.getsignal(signum))
              for signum in MPI_InterruptHandler._sigs]
         with MPI_InterruptHandler(lambda s,f: None) as h:
-            pass
+            assert not h._released
         assert h._released
         for i, signum in enumerate(
                 MPI_InterruptHandler._sigs):
             orig = signal.getsignal(signum)
             assert original_handlers[i][0] == signum
             assert original_handlers[i][1] is orig
-        # now test the use of MPI_InterrupHandler
-        # in a subprocess
-        cmd = ' '.join(['python','-c',
-                        '"import sys; import time; '
-                        'from pybnb.misc import MPI_InterruptHandler; '
-                        'h = MPI_InterruptHandler(lambda signum, frame: '
-                        'sys.exit(27)); h.__enter__(); time.sleep(25)"'])
-        # not testing on windows as it is unreasonably difficult
-        # to send CTRL_C_EVENT to a subprocess.
-        if os.name != 'nt':
-            if hasattr(signal, 'SIGUSR1'):
-                proc = subprocess.Popen(cmd, shell=True)
-                time.sleep(2)
-                proc.send_signal(signal.SIGUSR1)
-                proc.wait()
-                assert proc.returncode == 27
+
+        def fn(s,f):
+            fn.called = True
+        fn.called = False
+        with MPI_InterruptHandler(fn) as h:
+            assert not h._released
+            signum = MPI_InterruptHandler._sigs[0]
+            signal.getsignal(signum)(None, None)
+            assert h._released
+            for i, signum in enumerate(
+                MPI_InterruptHandler._sigs):
+                orig = signal.getsignal(signum)
+                assert original_handlers[i][0] == signum
+                assert original_handlers[i][1] is orig
+        assert fn.called
 
     def test_metric_format(self):
         assert metric_format(None) == "<unknown>"
