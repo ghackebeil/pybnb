@@ -524,9 +524,8 @@ class DispatcherBase(object):
             to re-initialize the dispatcher queue to its
             current state.
         """
-
         return DispatcherQueueData(
-            nodes=[Node(data_=data)
+            nodes=[Node(data_=numpy.array(data, dtype=float))
                    for data in self.queue.items()],
             next_tree_id=self.next_tree_id)
 
