@@ -62,6 +62,10 @@ def _execute_single_test(problem,
            (solver.comm is not None) and \
            (solver.comm.size > 2):
             pass
+        elif (name == 'bound') and \
+           (solver.comm is not None) and \
+           (solver.comm.size > 2):
+            pass
         else:
             assert getattr(results, name) == getattr(baseline, name), \
                 ("value for '"+str(name)+"' ("+
