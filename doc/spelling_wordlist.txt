@@ -23,3 +23,5 @@ fifo
 Recv
 utils
 py
+hostname
+pid
