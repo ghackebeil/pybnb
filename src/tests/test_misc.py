@@ -42,7 +42,7 @@ class Test(object):
                         'sys.exit(27)); h.__enter__(); time.sleep(25)"'])
         # not testing on windows as it is unreasonably difficult
         # to send CTRL_C_EVENT to a subprocess.
-        if os.name == 'nt':
+        if os.name != 'nt':
             if hasattr(signal, 'SIGUSR1'):
                 proc = subprocess.Popen(cmd, shell=True)
                 time.sleep(2)
