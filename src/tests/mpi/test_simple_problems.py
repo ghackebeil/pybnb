@@ -114,7 +114,7 @@ def _test_infeasible_max(comm):
                              baseline,
                              solver=solver)
 
-    """
+
     baseline = SolverResults()
     baseline.solution_status = "unknown"
     baseline.termination_condition = "no_nodes"
@@ -132,6 +132,7 @@ def _test_infeasible_max(comm):
                              baseline,
                              solver=solver)
 
+    """
     baseline = SolverResults()
     baseline.solution_status = "unknown"
     baseline.termination_condition = "cutoff"
@@ -528,6 +529,7 @@ def _test_zero_objective_max(comm):
                          relative_gap=0.01,
                          absolute_gap=0.0)
 
+    """
     baseline = SolverResults()
     baseline.solution_status = "optimal"
     baseline.termination_condition = "optimality"
@@ -606,6 +608,7 @@ def _test_zero_objective_max(comm):
             relative_gap=0.01,
             absolute_gap=0.01,
             node_priority_strategy=node_priority_strategy)
+    """
 
 def _test_zero_objective_min(comm):
     solver = Solver(comm=comm)
@@ -635,6 +638,7 @@ def _test_zero_objective_min(comm):
                          relative_gap=0.01,
                          absolute_gap=0.0)
 
+    """
     baseline = SolverResults()
     baseline.solution_status = "optimal"
     baseline.termination_condition = "optimality"
@@ -713,6 +717,7 @@ def _test_zero_objective_min(comm):
             relative_gap=0.01,
             absolute_gap=0.01,
             node_priority_strategy=node_priority_strategy)
+    """
 
 def test_infeasible_max_nocomm():
     _test_infeasible_max(None)
