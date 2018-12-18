@@ -518,6 +518,7 @@ def _test_zero_objective_max(comm):
                          solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.01)
+    """
     _execute_single_test(problem,
                          baseline,
                          solver=solver,
@@ -529,7 +530,6 @@ def _test_zero_objective_max(comm):
                          relative_gap=0.01,
                          absolute_gap=0.0)
 
-    """
     baseline = SolverResults()
     baseline.solution_status = "optimal"
     baseline.termination_condition = "optimality"
@@ -627,6 +627,7 @@ def _test_zero_objective_min(comm):
                          solver=solver,
                          relative_gap=0.01,
                          absolute_gap=0.01)
+    """
     _execute_single_test(problem,
                          baseline,
                          solver=solver,
@@ -638,7 +639,6 @@ def _test_zero_objective_min(comm):
                          relative_gap=0.01,
                          absolute_gap=0.0)
 
-    """
     baseline = SolverResults()
     baseline.solution_status = "optimal"
     baseline.termination_condition = "optimality"
