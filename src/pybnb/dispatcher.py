@@ -7,6 +7,8 @@ import array
 import time
 import array
 import collections
+import os
+import socket
 
 import numpy
 
@@ -646,9 +648,12 @@ class DispatcherLocal(DispatcherBase):
             log_interval_seconds)
         if self.journalist is not None:
             self.log_info("Starting branch & bound solve:\n"
+                          " - dispatcher pid: %s (%s)\n"
                           " - worker processes: 1\n"
                           " - node priority strategy: %s"
-                          % (node_priority_strategy))
+                          % (os.getpid(),
+                             socket.gethostname(),
+                             node_priority_strategy))
             self.journalist.tic()
 
     def update(self,
@@ -948,9 +953,12 @@ class DispatcherDistributed(DispatcherBase):
             log_interval_seconds)
         if self.journalist is not None:
             self.log_info("Starting branch & bound solve:\n"
+                          " - dispatcher pid: %s (%s)\n"
                           " - worker processes: %d\n"
                           " - node priority strategy: %s"
-                          % (len(self.worker_ranks),
+                          % (os.getpid(),
+                             socket.gethostname(),
+                             len(self.worker_ranks),
                              node_priority_strategy))
             self.journalist.tic()
 
