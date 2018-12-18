@@ -1,6 +1,9 @@
 import os
 import tempfile
 import logging
+import subprocess
+import signal
+import time
 
 from pybnb.misc import (metric_format,
                         time_format,
@@ -16,6 +19,35 @@ import numpy
 
 class Test(object):
 
+    def test_MPI_InterruptHandler(self):
+        cmd = ' '.join(['python','-c',
+                        '"import sys; import time; '
+                        'from pybnb.misc import MPI_InterruptHandler; '
+                        'h = MPI_InterruptHandler(lambda signum, frame: '
+                        'sys.exit(27)); h.__enter__(); time.sleep(1000)"'])
+        if hasattr(subprocess, 'CREATE_NEW_PROCESS_GROUP'):
+            # windows
+            proc = subprocess.Popen(
+                cmd,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                shell=True)
+            time.sleep(0.5)
+            proc.send_signal(signal.CTRL_C_EVENT)
+            proc.wait()
+            assert proc.returncode == 27
+        else:
+            proc = subprocess.Popen(cmd, shell=True)
+            time.sleep(0.5)
+            proc.send_signal(signal.SIGINT)
+            proc.wait()
+            assert proc.returncode == 27
+            if hasattr(signal, 'SIGUSR1'):
+                proc = subprocess.Popen(cmd, shell=True)
+                time.sleep(0.5)
+                proc.send_signal(signal.SIGUSR1)
+                proc.wait()
+                assert proc.returncode == 27
+
     def test_metric_format(self):
         assert metric_format(None) == "<unknown>"
         assert metric_format(0.0) == "0.0 s"
@@ -27,6 +59,8 @@ class Test(object):
         assert metric_format(1000000.23, digits=4) == "1.0000 Ms"
         assert metric_format(0.23334, digits=1) == "233.3 ms"
         assert metric_format(0.23334, digits=2) == "233.34 ms"
+        assert metric_format(0.00023334, digits=1) == "233.3 us"
+        assert metric_format(0.00023334, digits=2) == "233.34 us"
 
     def test_time_format(self):
         assert time_format(None) == "<unknown>"
@@ -137,6 +171,27 @@ class Test(object):
             if 'default' in data[key]:
                 assert data[key]['default'] == kwds[key]
             assert "choices" not in data[key]
+        def f():
+            """Something
+
+            Parameters
+            ----------
+            junk1 : {"a", "b", 1}
+                Junk1 description.
+            junk2 : {"c", "d"}, optional
+                Junk2 description more than one
+                line. (default: "c")
+            junk3 : int
+                Junk3 description.
+            """
+        data = get_keyword_docs(f.__doc__)
+        assert data == \
+            {'junk1': {'choices': ['a', 'b', 1],
+                       'doc': 'Junk1 description.'},
+             'junk2': {'choices': ['c', 'd'],
+                       'default': 'c',
+                       'doc': 'Junk2 description more than one line.'},
+             'junk3': {'doc': 'Junk3 description.'}}
 
     def test_get_simple_logger(self):
         log = get_simple_logger(console=False)
