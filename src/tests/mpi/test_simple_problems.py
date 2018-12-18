@@ -62,10 +62,6 @@ def _execute_single_test(problem,
            (solver.comm is not None) and \
            (solver.comm.size > 2):
             pass
-        elif (name == 'bound') and \
-           (solver.comm is not None) and \
-           (solver.comm.size > 2):
-            pass
         else:
             assert getattr(results, name) == getattr(baseline, name), \
                 ("value for '"+str(name)+"' ("+
@@ -190,7 +186,10 @@ def _test_infeasible_max(comm):
                        problem,
                        baseline,
                        node_limit=31)
-    else:
+    elif comm.size <= 2:
+        # skip for larger comm sizes
+        # as the node_limit can lead to
+        # a number of different outcomes
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
@@ -211,7 +210,10 @@ def _test_infeasible_max(comm):
                        problem,
                        baseline,
                        node_limit=31)
-    else:
+    elif comm.size <= 2:
+        # skip for larger comm sizes
+        # as the node_limit can lead to
+        # a number of different outcomes
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
@@ -347,7 +349,10 @@ def _test_infeasible_min(comm):
                        problem,
                        baseline,
                        node_limit=31)
-    else:
+    elif comm.size <= 2:
+        # skip for larger comm sizes
+        # as the node_limit can lead to
+        # a number of different outcomes
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
@@ -368,7 +373,10 @@ def _test_infeasible_min(comm):
                        problem,
                        baseline,
                        node_limit=31)
-    else:
+    elif comm.size <= 2:
+        # skip for larger comm sizes
+        # as the node_limit can lead to
+        # a number of different outcomes
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
