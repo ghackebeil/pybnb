@@ -307,9 +307,6 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         self._problem = problem
         super(_SimpleSolveInfoCollector, self).__init__()
 
-    def clear_problem_reference(self):
-        self._problem = None
-
     #
     # Define Problem methods
     #
