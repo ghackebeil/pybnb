@@ -46,7 +46,7 @@ Note that the parallel solve implementation used by
 dispatcher.  If more than one process is involved in a
 solve, the dispatcher will only manage the global work
 queue, leaving the processing of all branch-and-bound nodes
-to the remaining processes. Thus, one should not expect an
+to the remaining processes. Thus, one should not expect any
 parallel speedup until at least three processes are used to
 solve a problem.
 
