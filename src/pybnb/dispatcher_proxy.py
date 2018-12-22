@@ -104,6 +104,7 @@ class DispatcherProxy(object):
         self.comm = comm
         self.worker_comm = None
         self._status = mpi4py.MPI.Status()
+        self._update_buffer = None
         (self.dispatcher_rank,
          self.worker_comm) = self._init(comm, ProcessType.worker)
 
@@ -111,6 +112,10 @@ class DispatcherProxy(object):
         if self.worker_comm is not None:
             self.worker_comm.Free()
             self.worker_comm = None
+        self.clear_cache()
+
+    def clear_cache(self):
+        self._update_buffer = None
 
     def update(self,
                best_objective,
@@ -124,7 +129,10 @@ class DispatcherProxy(object):
             for node_data_ in node_data_list:
                 size += 1
                 size += len(node_data_)
-        data = numpy.empty(size, dtype=float)
+        if (self._update_buffer is None) or \
+           len(self._update_buffer) < size:
+            self._update_buffer = numpy.empty(size, dtype=float)
+        data = self._update_buffer
         data[0] = best_objective
         assert float(data[0]) == best_objective
         data[1] = previous_bound
@@ -163,13 +171,15 @@ class DispatcherProxy(object):
         else:
             assert tag == DispatcherResponse.work
             recv_size = self._status.Get_count(mpi4py.MPI.DOUBLE)
-            if len(data) >= recv_size:
-                # avoid another allocation and just use a
-                # portion of the array was used to send the
-                # update data
-                data = data[:recv_size]
-            else:
-                data = numpy.empty(recv_size, dtype=float)
+            if len(self._update_buffer) < recv_size:
+                self._update_buffer = numpy.empty(size, dtype=float)
+            # Note that this function returns a node data
+            # array that is a view on its own update
+            # buffer. Thus, it assumes that the caller is no
+            # longer using the node data view that was
+            # returned when the next update is called
+            # (because it will be corrupted).
+            data = self._update_buffer[:recv_size]
             recv_data(self.comm,
                       self._status,
                       datatype=mpi4py.MPI.DOUBLE,

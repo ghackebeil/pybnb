@@ -783,6 +783,8 @@ class Solver(object):
                                       disable_objective_call,
                                       converger,
                                       results)
+                if not self.is_dispatcher:
+                    self._disp.clear_cache()
             (results.objective,
              results.bound,
              results.termination_condition,
