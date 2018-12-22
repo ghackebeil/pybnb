@@ -936,8 +936,6 @@ class DispatcherDistributed(DispatcherBase):
         self.needs_work_queue.clear()
         for solve_info in self._solve_info_by_source.values():
             solve_info.reset()
-        self._solve_info_by_source = \
-            {i: _SolveInfo() for i in self.worker_ranks}
         self.last_known_bound.clear()
         self.external_bounds.clear()
         for _r in self.first_update:
