@@ -116,7 +116,7 @@ def generate_cids(model,
     cid_to_object = collections.OrderedDict()
     if hasattr(pmo, 'preorder_traversal'):        #pragma:nocover
         fn = lambda *args, **kwds: pmo.preorder_traversal(model, *args, **kwds)
-    else:
+    else:                                         #pragma:nocover
         fn = model.preorder_traversal
     try:
         fn(return_key=True)
