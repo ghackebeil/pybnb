@@ -202,6 +202,15 @@ class _SolveInfo(object):
         for i in range(len(self.data)):
             self.data[i] = 0.0
 
+    def add_from(self, other):
+        if type(other) is not _SolveInfo:
+            raise TypeError("Type %s can not be added "
+                            "with a _SolveInfo object"
+                            % (other.__class__.__name__))
+        assert len(self.data) == len(other.data)
+        for i in range(_SolveInfo._data_size):
+            self.data[i] += other.data[i]
+
     @property
     def explored_nodes_count(self):
         return int(self.data[0])
