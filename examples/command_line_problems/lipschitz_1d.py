@@ -55,10 +55,6 @@ class Lipschitz1D(pybnb.Problem):
         return self._fmid_cached
 
     def bound(self):
-        if math.isnan(self._fL_cached):
-            self._fL_cached = self._f(self._xL)
-        if math.isnan(self._fU_cached):
-            self._fU_cached = self._f(self._xU)
         return 0.5*self._fL_cached + \
                0.5*self._fU_cached + \
                0.5*self._LC*(self._xU-self._xL)
