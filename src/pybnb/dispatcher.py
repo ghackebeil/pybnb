@@ -9,6 +9,7 @@ import array
 import collections
 import os
 import socket
+import logging
 
 import numpy
 
@@ -188,6 +189,8 @@ class StatusPrinter(object):
             output, even if logging criteria are not
             met. (default: False)
         """
+        if not self._log.isEnabledFor(logging.INFO)
+            return
         current_time = self._dispatcher.clock()
         new_objective = self._new_objective
         report_new_objective = self._report_new_objective
