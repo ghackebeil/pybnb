@@ -192,7 +192,7 @@ class Rosenbrock2D(PyomoProblem):
             self._model.load_solution(results.solution(0))
             assert self._model.x2y.stale
             return round(self._model.objective(), 7)
-        else:
+        else:                                     #pragma:nocover
             assert str(results.solver.status) == "warning"
             if str(results.solver.termination_condition) == "unbounded":
                 return self.unbounded_objective()
@@ -209,7 +209,7 @@ class Rosenbrock2D(PyomoProblem):
             self._model.load_solution(results.solution(0))
             self._last_bound_was_feasible = self.check_feasible()
             return round(self._model.objective(), 7)
-        else:
+        else:                                     #pragma:nocover
             assert str(results.solver.status) == "warning"
             if str(results.solver.termination_condition) == "unbounded":
                 return self.unbounded_objective()
