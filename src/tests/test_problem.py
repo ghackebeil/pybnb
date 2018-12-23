@@ -208,6 +208,40 @@ class Test_SolveInfo(object):
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
 
+    def test_add_from(self):
+        info = _SolveInfo()
+        info.explored_nodes_count = 1
+        info.total_queue_time = 2
+        info.queue_call_count = 3
+        info.total_objective_time = 4
+        info.objective_call_count = 5
+        info.total_bound_time = 6
+        info.bound_call_count = 7
+        info.total_branch_time = 8
+        info.branch_call_count = 9
+        info1 = _SolveInfo()
+        info1.explored_nodes_count = -2
+        info1.total_queue_time = -3
+        info1.queue_call_count = -4
+        info1.total_objective_time = -5
+        info1.objective_call_count = -6
+        info1.total_bound_time = -7
+        info1.bound_call_count = -8
+        info1.total_branch_time = -9
+        info1.branch_call_count = -10
+        info.add_from(info1)
+        assert info.explored_nodes_count  == -1
+        assert info.total_queue_time  == -1
+        assert info.queue_call_count  == -1
+        assert info.total_objective_time  == -1
+        assert info.objective_call_count  == -1
+        assert info.total_bound_time  == -1
+        assert info.bound_call_count  == -1
+        assert info.total_branch_time  == -1
+        assert info.branch_call_count  == -1
+        with pytest.raises(TypeError):
+            info.add_from(1)
+
     def test__SimpleSolveInfoCollector(self):
         class Junk(Problem):
             def __init__(self):
