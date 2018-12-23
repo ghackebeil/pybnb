@@ -172,7 +172,7 @@ class DispatcherProxy(object):
             assert tag == DispatcherResponse.work
             recv_size = self._status.Get_count(mpi4py.MPI.DOUBLE)
             if len(self._update_buffer) < recv_size:
-                self._update_buffer = numpy.empty(size, dtype=float)
+                self._update_buffer = numpy.empty(recv_size, dtype=float)
             # Note that this function returns a node data
             # array that is a view on its own update
             # buffer. Thus, it assumes that the caller is no
