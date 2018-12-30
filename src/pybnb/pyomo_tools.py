@@ -5,6 +5,7 @@ that are based on a pyomo.kernel model.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 
+import math
 import array
 import collections
 import hashlib
@@ -89,11 +90,15 @@ def _mpi_partition(comm, items, root=0):
                 while i < N:
                     comm.Recv(_null, status=status)
                     last_tag[status.Get_source()] = i
-                    requests.append(comm.Isend(_null, status.Get_source(), tag=i))
+                    requests.append(comm.Isend(_null,
+                                               status.Get_source(),
+                                               tag=i))
                     i += 1
                 for dest in last_tag:
                     if last_tag[dest] < N:
-                        requests.append(comm.Isend(_null, dest, tag=N))
+                        requests.append(comm.Isend(_null,
+                                                   dest,
+                                                   tag=N))
                     requests.append(comm.Irecv(_null, dest))
                 mpi4py.MPI.Request.Waitall(requests)
             else:
@@ -106,6 +111,30 @@ def _mpi_partition(comm, items, root=0):
                                   recvbuf=_null,
                                   source=root, status=status)
 
+def _correct_integer_lb(lb,
+                        integer_tolerance=1e-5):
+    """Converts a lower bound for an integer optimization
+    variable to an integer equal to ceil(ub), taking care
+    not to move a non-integer bound away from an integer
+    point already within a given tolerance."""
+    assert integer_tolerance < 0.5
+    if lb-math.floor(lb) > integer_tolerance:
+        return int(math.ceil(lb))
+    else:
+        return int(math.floor(lb))
+
+def _correct_integer_ub(ub,
+                        integer_tolerance=1e-5):
+    """Converts an upper bound for an integer optimization
+    variable to an integer equal to floor(ub), taking care
+    not to move a non-integer bound away from an integer
+    point already within a given tolerance."""
+    assert integer_tolerance < 0.5
+    if math.ceil(ub)-ub > integer_tolerance:
+        return int(math.floor(ub))
+    else:
+        return int(math.ceil(ub))
+
 def generate_cids(model,
                   prefix=(),
                   **kwds):
@@ -115,7 +144,9 @@ def generate_cids(model,
     object_to_cid = pmo.ComponentMap()
     cid_to_object = collections.OrderedDict()
     if hasattr(pmo, 'preorder_traversal'):        #pragma:nocover
-        fn = lambda *args, **kwds: pmo.preorder_traversal(model, *args, **kwds)
+        fn = lambda *args, **kwds: pmo.preorder_traversal(model,
+                                                          *args,
+                                                          **kwds)
     else:                                         #pragma:nocover
         fn = model.preorder_traversal
     try:
@@ -181,13 +212,13 @@ class PyomoProblem(pybnb.Problem):
     @property
     def pyomo_model(self):
         """Returns the pyomo model for this problem."""
-        raise NotImplementedError()                    #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     @property
     def pyomo_model_objective(self):
         """Returns the pyomo model objective for this
         problem."""
-        raise NotImplementedError()                    #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
 class RangeReductionProblem(pybnb.Problem):
     """A specialized implementation of the
@@ -340,11 +371,15 @@ class RangeReductionProblem(pybnb.Problem):
             upper_bounds_local = upper_bounds
             lower_bounds = array.array('d', lower_bounds)
             upper_bounds = array.array('d', upper_bounds)
-            self._comm.Allreduce([lower_bounds_local, mpi4py.MPI.DOUBLE],
-                                 [lower_bounds, mpi4py.MPI.DOUBLE],
+            self._comm.Allreduce([lower_bounds_local,
+                                  mpi4py.MPI.DOUBLE],
+                                 [lower_bounds,
+                                  mpi4py.MPI.DOUBLE],
                                  op=mpi4py.MPI.MAX)
-            self._comm.Allreduce([upper_bounds_local, mpi4py.MPI.DOUBLE],
-                                 [upper_bounds, mpi4py.MPI.DOUBLE],
+            self._comm.Allreduce([upper_bounds_local,
+                                  mpi4py.MPI.DOUBLE],
+                                 [upper_bounds,
+                                  mpi4py.MPI.DOUBLE],
                                  op=mpi4py.MPI.MIN)
 
         return objects, lower_bounds, upper_bounds
@@ -450,38 +485,38 @@ class RangeReductionProblem(pybnb.Problem):
     def range_reduction_model_setup(self):
         """Called prior to starting range reduction solves
         to set up the Pyomo model"""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     def range_reduction_objective_changed(self, objective):
         """Called to notify that the range reduction routine
         has changed the objective"""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     def range_reduction_constraint_added(self, constraint):
         """Called to notify that the range reduction routine
         has added a constraint"""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     def range_reduction_constraint_removed(self, constraint):
         """Called to notify that the range reduction routine
         has removed a constraint"""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     def range_reduction_get_objects(self):
         """Called to collect the set of objects over which
         to perform range reduction solves"""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     def range_reduction_solve_for_object_bound(self, x):
         """Called to perform a range reduction solve for a
         Pyomo model object"""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     def range_reduction_model_cleanup(self):
         """Called after range reduction has finished to
         allow the user to execute any cleanup to the Pyomo
         model."""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
 
     def range_reduction_process_bounds(self,
                                        objects,

@@ -7,6 +7,8 @@ try:
     import pyomo.kernel as pmo
     from pybnb.pyomo_tools import (_add_tmp_component,
                                    _create_optimality_bound,
+                                   _correct_integer_lb,
+                                   _correct_integer_ub,
                                    PyomoProblem,
                                    RangeReductionProblem)
     pyomo_available = True
@@ -22,6 +24,112 @@ class MaxProblem(pybnb.Problem):
 @pytest.mark.skipif(not pyomo_available,
                     reason="Pyomo is not available")
 class Test(object):
+
+    def test_correct_integer_lb(self):
+        # it is important that we use floating point numbers
+        # that are exactly representable in base 2 so the
+        # edge cases behave as expected.
+        eps = 0.03125
+        tol = 0.25
+        for b in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
+            assert _correct_integer_lb(b-tol-eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b-tol,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b-tol+eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b-eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b+eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b+tol-eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b+tol,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_lb(b+tol+eps,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_lb(b+1-eps,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_lb(b+1,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_lb(b+1+eps,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_lb(b+1+tol-eps,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_lb(b+1+tol,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_lb(b+1+tol+eps,
+                                       integer_tolerance=tol) \
+                == b+2
+
+    def test_correct_integer_ub(self):
+        # it is important that we use floating point numbers
+        # that are exactly representable in base 2 so the
+        # edge cases behave as expected.
+        eps = 0.03125
+        tol = 0.25
+        for b in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
+            assert _correct_integer_ub(b-tol-eps,
+                                       integer_tolerance=tol) \
+                == b-1
+            assert _correct_integer_ub(b-tol,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b-tol+eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b-eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b+eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b+tol-eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b+tol,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b+tol+eps,
+                                       integer_tolerance=tol) \
+                == b
+            assert _correct_integer_ub(b+1-eps,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_ub(b+1,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_ub(b+1+eps,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_ub(b+1+tol-eps,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_ub(b+1+tol,
+                                       integer_tolerance=tol) \
+                == b+1
+            assert _correct_integer_ub(b+1+tol+eps,
+                                       integer_tolerance=tol) \
+                == b+1
 
     def test_add_tmp_component(self):
         model = pmo.block()
