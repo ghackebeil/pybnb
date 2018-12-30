@@ -43,6 +43,12 @@ class TestConvergenceChecker(object):
                     assert p.objective_is_optimal(objective, bound)
                 elif bound != p.infeasible_objective:
                     assert not p.objective_is_optimal(objective, bound)
+            p = ConvergenceChecker(sense,
+                                   absolute_gap=0,
+                                   relative_gap=0)
+            assert p.objective_is_optimal(0,0)
+            assert p.objective_is_optimal(1,1)
+            assert p.objective_is_optimal(-1,-1)
 
     def test_compute_relative_gap(self):
 

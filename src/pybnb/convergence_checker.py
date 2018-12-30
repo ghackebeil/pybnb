@@ -133,12 +133,12 @@ class ConvergenceChecker(object):
            (objective != self.infeasible_objective):
             agap = self.compute_absolute_gap(bound,
                                              objective)
-            if agap < self.absolute_gap_tolerance:
+            if agap <= self.absolute_gap_tolerance:
                 return True
             else:
                 rgap = self.compute_relative_gap(bound,
                                                  objective)
-                if rgap < self.relative_gap_tolerance:
+                if rgap <= self.relative_gap_tolerance:
                     return True
         return False
 
