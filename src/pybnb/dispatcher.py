@@ -272,6 +272,7 @@ class DispatcherBase(object):
     def __init__(self):
         self.initialized = False
         self.start_time = None
+        self.last_global_bound = None
         self.best_objective = None
         self.converger = None
         self.queue = None
@@ -353,6 +354,7 @@ class DispatcherBase(object):
         # check if we are done
         if not self.stop:
             global_bound = self._get_current_bound()
+            self.last_global_bound = global_bound
             if (global_bound == self.converger.infeasible_objective) or \
                self.converger.objective_is_optimal(self.best_objective,
                                                    global_bound):
@@ -449,6 +451,7 @@ class DispatcherBase(object):
         self.start_time = self.clock()
         self.initialized = True
         self.converger = converger
+        self.last_global_bound = self.converger.unbounded_objective
         self.best_objective = converger.infeasible_objective
         if node_priority_strategy == "bound":
             self.queue = WorstBoundFirstPriorityQueue(
@@ -706,6 +709,7 @@ class DispatcherLocal(DispatcherBase):
                 self._check_update_worst_terminal_bound(
                     previous_bound)
         self.first_update = False
+        last_global_bound = self.last_global_bound
         self._check_convergence()
         if self.queue.size() == 0:
             self.stop = True
@@ -714,7 +718,11 @@ class DispatcherLocal(DispatcherBase):
             self.active_nodes = 1
             self.external_bound = Node._extract_bound(node_data)
             if self.journalist is not None:
-                self.journalist.tic()
+                force = (last_global_bound == \
+                         self.converger.unbounded_objective) and \
+                         (last_global_bound != \
+                          self.last_global_bound)
+                self.journalist.tic(force=force)
             return (False, self.best_objective, node_data)
         else:
             if self.journalist is not None:
@@ -1023,12 +1031,17 @@ class DispatcherDistributed(DispatcherBase):
                 self._check_update_worst_terminal_bound(
                     previous_bound)
         self.first_update[source] = False
+        last_global_bound = self.last_global_bound
         self._check_convergence()
         ret = self._send_work()
         stop = ret[0]
         if not stop:
             if self.journalist is not None:
-                self.journalist.tic()
+                force = (last_global_bound == \
+                         self.converger.unbounded_objective) and \
+                         (last_global_bound != \
+                          self.last_global_bound)
+                self.journalist.tic(force=force)
         else:
             if self.journalist is not None:
                 self.journalist.tic(force=True)
