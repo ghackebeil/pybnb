@@ -17,8 +17,6 @@ if getattr(pmo,'version_info',(0,)*3) < (5,4,3):   #pragma:nocover
     raise ImportError(
         "Pyomo 5.4.3 or later is not available")
 
-import pyomo.kernel as pmo
-
 import six
 from six.moves import xrange as range
 
@@ -521,4 +519,4 @@ class RangeReductionProblem(pybnb.Problem):
                                        upper_bounds):
         """Called to process the bounds obtained by the
         range reduction solves"""
-        raise NotImplementedError()                            #pragma:nocover
+        raise NotImplementedError()               #pragma:nocover
