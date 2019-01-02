@@ -460,15 +460,12 @@ class RangeReductionProblem(pybnb.Problem):
         return self.problem.branch(parent)
 
     def notify_new_best_objective_received(self,
-                                           worker_comm,
                                            best_objective):
         self._best_objective = best_objective
 
     def notify_new_best_objective(self,
-                                  worker_comm,
                                   best_objective):
-        self.notify_new_best_objective_received(worker_comm,
-                                                best_objective)
+        self.notify_new_best_objective_received(best_objective)
 
     def notify_solve_finished(self,
                               comm,

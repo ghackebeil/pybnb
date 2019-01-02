@@ -255,35 +255,41 @@ class Solver(object):
         self._global_solve_info = None
 
     def _check_update_best_objective(self,
-                                     converger,
+                                     convergence_checker,
                                      new_objective):
-        if converger.objective_improved(new_objective,
-                                        self._best_objective):
+        if convergence_checker.objective_improved(
+                new_objective,
+                self._best_objective):
             self._best_objective = new_objective
             return True
         else:
             return False
 
-    def _fill_results(self, results, converger):
-        if results.bound == converger.infeasible_objective:
-            assert results.objective == converger.infeasible_objective, \
+    def _fill_results(self, results, convergence_checker):
+        if results.bound == convergence_checker.infeasible_objective:
+            assert results.objective == \
+                convergence_checker.infeasible_objective, \
                 str(results.objective)
             results.solution_status = SolutionStatus.infeasible
-        elif results.objective == converger.infeasible_objective:
+        elif results.objective == \
+             convergence_checker.infeasible_objective:
             results.solution_status = SolutionStatus.unknown
-        elif results.objective == converger.unbounded_objective:
-            assert results.bound == converger.unbounded_objective, \
+        elif results.objective == \
+             convergence_checker.unbounded_objective:
+            assert results.bound == \
+                convergence_checker.unbounded_objective, \
                 str(results.bound)
             results.solution_status = SolutionStatus.unbounded
         else:
-            results.absolute_gap = converger.\
+            results.absolute_gap = convergence_checker.\
                                    compute_absolute_gap(results.bound,
                                                         results.objective)
-            results.relative_gap = converger.\
+            results.relative_gap = convergence_checker.\
                                    compute_relative_gap(results.bound,
                                                         results.objective)
-            if converger.objective_is_optimal(results.objective,
-                                              results.bound):
+            if convergence_checker.objective_is_optimal(
+                    results.objective,
+                    results.bound):
                 results.solution_status = SolutionStatus.optimal
             else:
                 results.solution_status = SolutionStatus.feasible
@@ -292,12 +298,14 @@ class Solver(object):
                problem,
                best_objective,
                disable_objective_call,
-               converger,
+               convergence_checker,
                results):
         infeasible_objective = problem.infeasible_objective()
-        assert infeasible_objective == converger.infeasible_objective
+        assert infeasible_objective == \
+            convergence_checker.infeasible_objective
         unbounded_objective = problem.unbounded_objective()
-        assert unbounded_objective == converger.unbounded_objective
+        assert unbounded_objective == \
+            convergence_checker.unbounded_objective
 
         self._best_objective = best_objective
         children = ()
@@ -309,7 +317,6 @@ class Solver(object):
 
         working_node = Node()
         assert working_node.tree_id is None
-
         # start the work loop
         while (1):
             update_start = self._time()
@@ -325,11 +332,10 @@ class Solver(object):
             self._local_solve_info.queue_call_count += 1
 
             updated = self._check_update_best_objective(
-                converger,
+                convergence_checker,
                 new_objective)
             if updated:
                 problem.notify_new_best_objective_received(
-                    self.worker_comm,
                     self._best_objective)
             del updated
 
@@ -354,15 +360,15 @@ class Solver(object):
             # we should not be receiving a node that
             # does not satisfy these assertions
             assert (bound != infeasible_objective) and \
-                converger.objective_can_improve(
+                convergence_checker.objective_can_improve(
                     self._best_objective,
                     bound) and \
-                    (not converger.cutoff_is_met(bound))
+                    (not convergence_checker.cutoff_is_met(bound))
 
             problem.load_state(working_node)
 
             new_bound = problem.bound()
-            if converger.bound_worsened(new_bound, bound):    #pragma:nocover
+            if convergence_checker.bound_worsened(new_bound, bound):    #pragma:nocover
                 self._disp.log_warning(
                     "WARNING: Bound became worse "
                     "(old=%r, new=%r)"
@@ -371,29 +377,29 @@ class Solver(object):
             bound = new_bound
 
             if (bound != infeasible_objective) and \
-                converger.objective_can_improve(
+                convergence_checker.objective_can_improve(
                     self._best_objective,
                     bound) and \
-                (not converger.cutoff_is_met(bound)):
+                (not convergence_checker.cutoff_is_met(bound)):
                 if not disable_objective_call:
                     obj = problem.objective()
                     working_node.objective = obj
                     if obj is not None:
-                        if converger.bound_is_suboptimal(bound, obj): #pragma:nocover
+                        if convergence_checker.bound_is_suboptimal(bound, obj): #pragma:nocover
                             self._disp.log_warning(
                                 "WARNING: Local node bound is worse "
                                 "than local node objective (bound=%r, "
                                 "objective=%r)" % (bound, obj))
                         updated = self._check_update_best_objective(
-                            converger,
+                            convergence_checker,
                             obj)
                         if updated:
                             problem.notify_new_best_objective(
-                                self.worker_comm,
                                 self._best_objective)
                         del updated
-                if (disable_objective_call or (obj != converger.unbounded_objective)) and \
-                   converger.objective_can_improve(
+                if (disable_objective_call or \
+                    (obj != convergence_checker.unbounded_objective)) and \
+                   convergence_checker.objective_can_improve(
                        self._best_objective,
                        bound):
                     clist = problem.branch(working_node)
@@ -402,7 +408,7 @@ class Solver(object):
                         assert child.tree_id is None
                         assert child.tree_depth >= current_tree_depth + 1
                         children.append(child._data)
-                        if converger.bound_worsened(child.bound, bound):    #pragma:nocover
+                        if convergence_checker.bound_worsened(child.bound, bound):    #pragma:nocover
                             self._disp.log_warning(
                                 "WARNING: Bound on child node "
                                 "returned from branch method "
@@ -723,12 +729,15 @@ class Solver(object):
                                      "except the dispatcher.")
 
         results = SolverResults()
-        converger = ConvergenceChecker(
+        convergence_checker = ConvergenceChecker(
             problem.sense(),
             absolute_gap=absolute_gap,
             relative_gap=relative_gap,
             absolute_tolerance=absolute_tolerance,
             cutoff=cutoff)
+        problem.notify_solve_begins(self.comm,
+                                    self.worker_comm,
+                                    convergence_checker)
         root = Node()
         problem.save_state(root)
         try:
@@ -751,7 +760,7 @@ class Solver(object):
                     best_objective,
                     initialize_queue,
                     node_priority_strategy,
-                    converger,
+                    convergence_checker,
                     node_limit,
                     time_limit,
                     log,
@@ -781,7 +790,7 @@ class Solver(object):
                     tmp = self._solve(problem,
                                       best_objective,
                                       disable_objective_call,
-                                      converger,
+                                      convergence_checker,
                                       results)
                 if not self.is_dispatcher:
                     self._disp.clear_cache()
@@ -790,7 +799,7 @@ class Solver(object):
              results.termination_condition,
              self._global_solve_info) = tmp
             results.nodes = self._global_solve_info.explored_nodes_count
-            self._fill_results(results, converger)
+            self._fill_results(results, convergence_checker)
         except:                                        #pragma:nocover
             sys.stderr.write("Exception caught: "+str(sys.exc_info()[1])+"\n")
             sys.stderr.write("Attempting to shut down, but this may hang.\n")
@@ -814,18 +823,18 @@ class Solver(object):
            (not log.disabled):
             self._disp.log_info("")
             if results.solution_status in ("feasible", "optimal"):
-                agap = converger.compute_absolute_gap(
+                agap = convergence_checker.compute_absolute_gap(
                     results.bound,
                     results.objective)
-                rgap = converger.compute_relative_gap(
+                rgap = convergence_checker.compute_relative_gap(
                     results.bound,
                     results.objective)
                 if results.solution_status == "feasible":
                     self._disp.log_info("Feasible solution found")
                 else:
-                    if agap < converger.absolute_gap_tolerance:
+                    if agap < convergence_checker.absolute_gap_tolerance:
                         self._disp.log_info("Absolute optimality tolerance met")
-                    if rgap < converger.relative_gap_tolerance:
+                    if rgap < convergence_checker.relative_gap_tolerance:
                         self._disp.log_info("Relative optimality tolerance met")
                     assert results.solution_status == "optimal"
                     self._disp.log_info("Optimal solution found")

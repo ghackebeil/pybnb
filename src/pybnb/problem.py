@@ -124,8 +124,33 @@ class Problem(object):
     # Optional Abstract Methods
     #
 
+    def notify_solve_begins(self,
+                            comm,
+                            worker_comm,
+                            convergence_checker):
+        """Called when a branch-and-bound solver
+        begins as solve. The :class:`Problem
+        <pybnb.problem.Problem>` base class provides a
+        default implementation for this method that does
+        nothing.
+
+        Parameters
+        ----------
+        comm : ``mpi4py.MPI.Comm`` or ``None``
+            The full MPI communicator that includes all
+            processes. Will be None if MPI has been
+            disabled.
+        worker_comm : ``mpi4py.MPI.Comm`` or ``None``
+            The MPI communicator that includes only worker
+            processes. Will be None if MPI has been
+            disabled.
+        convergence_checker : :class:`ConvergenceChecker <pybnb.convergence_checker.ConvergenceChecker>`:
+            The class used for comparing the objective and
+            bound values during the solve.
+        """
+        pass
+
     def notify_new_best_objective_received(self,
-                                           worker_comm,
                                            best_objective):
         """Called when a branch-and-bound solver receives a
         new best objective. The :class:`Problem
@@ -135,17 +160,12 @@ class Problem(object):
 
         Parameters
         ----------
-        worker_comm : ``mpi4py.MPI.Comm``
-            The MPI communicator that includes only worker
-            processes. Will be None if MPI has been
-            disabled.
         best_objective : float
             The new best objective value.
         """
         pass
 
     def notify_new_best_objective(self,
-                                  worker_comm,
                                   best_objective):
         """Called when a branch-and-bound solver locally
         computes a new best objective. The :class:`Problem
@@ -155,10 +175,6 @@ class Problem(object):
 
         Parameters
         ----------
-        worker_comm : ``mpi4py.MPI.Comm``
-            The MPI communicator that includes only worker
-            processes. Will be None if MPI has been
-            disabled.
         best_objective : float
             The new best objective value.
         """
@@ -176,11 +192,11 @@ class Problem(object):
 
         Parameters
         ----------
-        comm : ``mpi4py.MPI.Comm``
+        comm : ``mpi4py.MPI.Comm`` or ``None``
             The full MPI communicator that includes all
             processes. Will be None if MPI has been
             disabled.
-        worker_comm : ``mpi4py.MPI.Comm``
+        worker_comm : ``mpi4py.MPI.Comm`` or ``None``
             The MPI communicator that includes only worker
             processes. Will be None if MPI has been
             disabled.
@@ -351,22 +367,30 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         self._problem.load_state(node)
         self._solve_info._increment_explored_nodes_count(1)
 
+    def notify_solve_begins(self,
+                            comm,
+                            worker_comm,
+                            convergence_checker):
+        self._problem.notify_solve_begins(
+            comm,
+            worker_comm,
+            convergence_checker)
+
     def notify_new_best_objective_received(self,
-                                           worker_comm,
                                            best_objective):
-        self._problem.notify_new_best_objective_received(worker_comm,
-                                                         best_objective)
+        self._problem.notify_new_best_objective_received(
+            best_objective)
 
     def notify_new_best_objective(self,
-                                  worker_comm,
                                   best_objective):
-        self._problem.notify_new_best_objective(worker_comm,
-                                                best_objective)
+        self._problem.notify_new_best_objective(
+            best_objective)
 
     def notify_solve_finished(self,
                               comm,
                               worker_comm,
                               results):
-        self._problem.notify_solve_finished(comm,
-                                            worker_comm,
-                                            results)
+        self._problem.notify_solve_finished(
+            comm,
+            worker_comm,
+            results)

@@ -4,6 +4,10 @@ Changelog
 0.3.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
+* Adding an optional notify_solve_begins callback to the
+  Problem base class.
+* Removing worker_comm argument from
+  notify_new_best_objective_* callbacks.
 * adding documented Enum types for solution status,
   termination condition, and node priority strategy
 * adding handling for SIGINT and SIGUSER1 events to

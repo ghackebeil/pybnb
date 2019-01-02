@@ -47,12 +47,15 @@ class Simple(pybnb.Problem):
     #
     # optional methods
     #
+    def notify_solve_begins(self,
+                            comm,
+                            worker_comm,
+                            convergence_checker):
+        pass
     def notify_new_best_objective_received(self,
-                                           worker_comm,
                                            best_objective):
         pass
     def notify_new_best_objective(self,
-                                  worker_comm,
                                   best_objective):
         pass
     def notify_solve_finished(self,
