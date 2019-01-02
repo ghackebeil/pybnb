@@ -40,8 +40,9 @@ class TestProblem(object):
             p.save_state(None)
         with pytest.raises(NotImplementedError):
             p.branch(None)
-        p.notify_new_best_objective_received(None, None)
-        p.notify_new_best_objective(None, None)
+        p.notify_solve_begins(None, None, None)
+        p.notify_new_best_objective_received(None)
+        p.notify_new_best_objective(None)
         p.notify_solve_finished(None, None, None)
 
 class Test_SolveInfo(object):
@@ -252,6 +253,7 @@ class Test_SolveInfo(object):
                 self.d['save_state'] = False
                 self.d['load_state'] = False
                 self.d['branch'] = False
+                self.d['notify_solve_begins'] = False
                 self.d['notify_new_best_objective_received'] = False
                 self.d['notify_new_best_objective'] = False
                 self.d['notify_solve_finished'] = False
@@ -274,12 +276,15 @@ class Test_SolveInfo(object):
                 time.sleep(0.01)
                 self.d['branch'] = True
                 return -4
+            def notify_solve_begins(self,
+                                      comm,
+                                      worker_comm,
+                                      convergence_checker):
+                self.d['notify_solve_begins'] = True
             def notify_new_best_objective_received(self,
-                                                   worker_comm,
                                                    best_objective):
                 self.d['notify_new_best_objective_received'] = True
             def notify_new_best_objective(self,
-                                          worker_comm,
                                           best_objective):
                 self.d['notify_new_best_objective'] = True
             def notify_solve_finished(self,
@@ -294,6 +299,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == False
         assert j.d['load_state'] == False
         assert j.d['branch'] == False
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -316,6 +322,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == False
         assert j.d['load_state'] == False
         assert j.d['branch'] == False
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -335,6 +342,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == False
         assert j.d['load_state'] == False
         assert j.d['branch'] == False
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -354,6 +362,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == False
         assert j.d['load_state'] == False
         assert j.d['branch'] == False
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -373,6 +382,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == False
         assert j.d['load_state'] == False
         assert j.d['branch'] == False
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -392,6 +402,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == True
         assert j.d['load_state'] == False
         assert j.d['branch'] == False
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -411,6 +422,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == True
         assert j.d['load_state'] == True
         assert j.d['branch'] == False
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -430,6 +442,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == True
         assert j.d['load_state'] == True
         assert j.d['branch'] == True
+        assert j.d['notify_solve_begins'] == False
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -442,13 +455,34 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time > 0
         assert info.branch_call_count == 1
-        p.notify_new_best_objective_received(None, None)
+        p.notify_solve_begins(None, None, None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
         assert j.d['bound'] == True
         assert j.d['save_state'] == True
         assert j.d['load_state'] == True
         assert j.d['branch'] == True
+        assert j.d['notify_solve_begins'] == True
+        assert j.d['notify_new_best_objective_received'] == False
+        assert j.d['notify_new_best_objective'] == False
+        assert j.d['notify_solve_finished'] == False
+        assert info.explored_nodes_count == 1
+        assert info.total_queue_time == 0
+        assert info.queue_call_count == 0
+        assert info.total_objective_time > 0
+        assert info.objective_call_count == 1
+        assert info.total_bound_time > 0
+        assert info.bound_call_count == 1
+        assert info.total_branch_time > 0
+        assert info.branch_call_count == 1
+        p.notify_new_best_objective_received(None)
+        assert j.d['sense'] == True
+        assert j.d['objective'] == True
+        assert j.d['bound'] == True
+        assert j.d['save_state'] == True
+        assert j.d['load_state'] == True
+        assert j.d['branch'] == True
+        assert j.d['notify_solve_begins'] == True
         assert j.d['notify_new_best_objective_received'] == True
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
@@ -461,13 +495,14 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time > 0
         assert info.branch_call_count == 1
-        p.notify_new_best_objective(None, None)
+        p.notify_new_best_objective(None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
         assert j.d['bound'] == True
         assert j.d['save_state'] == True
         assert j.d['load_state'] == True
         assert j.d['branch'] == True
+        assert j.d['notify_solve_begins'] == True
         assert j.d['notify_new_best_objective_received'] == True
         assert j.d['notify_new_best_objective'] == True
         assert j.d['notify_solve_finished'] == False
@@ -487,6 +522,7 @@ class Test_SolveInfo(object):
         assert j.d['save_state'] == True
         assert j.d['load_state'] == True
         assert j.d['branch'] == True
+        assert j.d['notify_solve_begins'] == True
         assert j.d['notify_new_best_objective_received'] == True
         assert j.d['notify_new_best_objective'] == True
         assert j.d['notify_solve_finished'] == True
