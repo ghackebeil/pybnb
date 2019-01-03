@@ -1,16 +1,8 @@
 import pybnb
 
-pyomo_available = False
-try:
-    import pyomo.kernel as pmo
-    if getattr(pmo,'version_info',(0,)*3) >= (5,4,3):  #pragma:nocover
-        pyomo_available = True
-except ImportError:                                    #pragma:nocover
-    pass
-if not pyomo_available:                                #pragma:nocover
-    raise ImportError("This example requires Pyomo 5.4.3 or above")
-else:
-    from pybnb.pyomo_tools import PyomoProblem
+from pybnb.pyomo.problem import PyomoProblem
+
+import pyomo.kernel as pmo
 
 class McCormickEnvelope(pmo.constraint_tuple):
     """A class that stores constraints defining

@@ -28,7 +28,7 @@ sys.path.remove(os.path.join(examples_dir,
                              'command_line_problems'))
 
 import pybnb
-from pybnb.pyomo_tools import RangeReductionProblem
+from pybnb.pyomo.range_reduction import RangeReductionProblem
 
 class Rosenbrock2D_RangeReduction(RangeReductionProblem):
 
