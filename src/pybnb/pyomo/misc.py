@@ -10,11 +10,6 @@ import hashlib
 
 import pybnb
 
-try:
-    import mpi4py
-except ImportError:                               #pragma:nocover
-    pass
-
 import six
 from six.moves import xrange as range
 

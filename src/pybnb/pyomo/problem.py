@@ -4,8 +4,6 @@ on a pyomo.kernel model.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-import array
-
 from pybnb import Problem
 from pybnb.pyomo.misc import generate_cids
 
