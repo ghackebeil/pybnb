@@ -5,12 +5,12 @@ import pybnb
 pyomo_available = False
 try:
     import pyomo.kernel as pmo
-    from pybnb.pyomo_tools import (_add_tmp_component,
-                                   _create_optimality_bound,
-                                   _correct_integer_lb,
-                                   _correct_integer_ub,
-                                   PyomoProblem,
-                                   RangeReductionProblem)
+    from pybnb.pyomo.misc import (add_tmp_component,
+                                  create_optimality_bound,
+                                  correct_integer_lb,
+                                  correct_integer_ub)
+    from pybnb.pyomo.problem import PyomoProblem
+    from pybnb.pyomo.range_reduction import RangeReductionProblem
     pyomo_available = True
 except:
     pass
@@ -32,50 +32,50 @@ class Test(object):
         eps = 0.03125
         tol = 0.25
         for b in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
-            assert _correct_integer_lb(b-tol-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b-tol-eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b-tol,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b-tol,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b-tol+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b-tol+eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b-eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b+tol-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+tol-eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b+tol,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+tol,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_lb(b+tol+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+tol+eps,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_lb(b+1-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+1-eps,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_lb(b+1,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+1,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_lb(b+1+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+1+eps,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_lb(b+1+tol-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+1+tol-eps,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_lb(b+1+tol,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+1+tol,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_lb(b+1+tol+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_lb(b+1+tol+eps,
+                                      integer_tolerance=tol) \
                 == b+2
 
     def test_correct_integer_ub(self):
@@ -85,64 +85,64 @@ class Test(object):
         eps = 0.03125
         tol = 0.25
         for b in [-4, -3, -2, -1, 0, 1, 2, 3, 4]:
-            assert _correct_integer_ub(b-tol-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b-tol-eps,
+                                      integer_tolerance=tol) \
                 == b-1
-            assert _correct_integer_ub(b-tol,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b-tol,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b-tol+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b-tol+eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b-eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b+tol-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+tol-eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b+tol,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+tol,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b+tol+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+tol+eps,
+                                      integer_tolerance=tol) \
                 == b
-            assert _correct_integer_ub(b+1-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+1-eps,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_ub(b+1,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+1,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_ub(b+1+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+1+eps,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_ub(b+1+tol-eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+1+tol-eps,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_ub(b+1+tol,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+1+tol,
+                                      integer_tolerance=tol) \
                 == b+1
-            assert _correct_integer_ub(b+1+tol+eps,
-                                       integer_tolerance=tol) \
+            assert correct_integer_ub(b+1+tol+eps,
+                                      integer_tolerance=tol) \
                 == b+1
 
     def test_add_tmp_component(self):
         model = pmo.block()
         obj = pmo.objective()
-        name = _add_tmp_component(model,
-                                  "objective",
-                                  obj)
+        name = add_tmp_component(model,
+                                 "objective",
+                                 obj)
         assert name == "objective"
         assert getattr(model, name) is obj
         obj = pmo.objective()
-        name = _add_tmp_component(model,
-                                  "objective",
-                                  obj)
+        name = add_tmp_component(model,
+                                 "objective",
+                                 obj)
         assert name == ".objective."
         assert getattr(model, name) is obj
 
@@ -151,9 +151,9 @@ class Test(object):
         problem = MaxProblem()
         model = pmo.block()
         model.objective = pmo.objective(sense=pmo.maximize)
-        con = _create_optimality_bound(problem,
-                                       model.objective,
-                                       100)
+        con = create_optimality_bound(problem,
+                                      model.objective,
+                                      100)
         assert con.ctype is pmo.constraint._ctype
         assert con.body is model.objective
         assert con.lb == 100
@@ -161,9 +161,9 @@ class Test(object):
         problem = MinProblem()
         model = pmo.block()
         model.objective = pmo.objective(sense=pmo.minimize)
-        con = _create_optimality_bound(problem,
-                                       model.objective,
-                                       100)
+        con = create_optimality_bound(problem,
+                                      model.objective,
+                                      100)
         assert con.ctype is pmo.constraint._ctype
         assert con.body is model.objective
         assert con.ub == 100
