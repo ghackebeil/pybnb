@@ -150,9 +150,9 @@ class ConvergenceChecker(object):
         if old == new:
             return False
         if self.sense == minimize:
-            return new > old + self.absolute_tolerance
+            return new - old > self.absolute_tolerance
         else:
-            return new < old - self.absolute_tolerance
+            return old - new > self.absolute_tolerance
 
     def bound_worsened(self, new, old):
         """Returns True when the new bound is worse than the
@@ -161,9 +161,9 @@ class ConvergenceChecker(object):
         if old == new:
             return False
         if self.sense == minimize:
-            return new < old - self.absolute_tolerance
+            return old - new > self.absolute_tolerance
         else:
-            return new > old + self.absolute_tolerance
+            return new - old > self.absolute_tolerance
 
     def objective_improved(self, new, old):
         """Returns True when the new objective is better
@@ -173,9 +173,9 @@ class ConvergenceChecker(object):
         if old == new:
             return False
         if self.sense == minimize:
-            return new < old - self.absolute_tolerance
+            return old - new > self.absolute_tolerance
         else:
-            return new > old + self.absolute_tolerance
+            return new - old > self.absolute_tolerance
 
     def objective_can_improve(self, objective, bound):
         """Returns True when the absolute difference between
@@ -185,9 +185,9 @@ class ConvergenceChecker(object):
         if bound == objective:
             return False
         if self.sense == minimize:
-            return bound < objective - self.absolute_tolerance
+            return objective - bound > self.absolute_tolerance
         else:
-            return bound > objective + self.absolute_tolerance
+            return bound - objective > self.absolute_tolerance
 
     def bound_is_suboptimal(self, bound, objective):
         """Returns True when bound is worse than the
@@ -196,9 +196,9 @@ class ConvergenceChecker(object):
         if bound == objective:
             return False
         if self.sense == minimize:
-            return bound > objective + self.absolute_tolerance
+            return bound - objective > self.absolute_tolerance
         else:
-            return bound < objective - self.absolute_tolerance
+            return objective - bound > self.absolute_tolerance
 
     def cutoff_is_met(self, bound):
         """Returns true when the bound is better than the
