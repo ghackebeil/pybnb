@@ -107,7 +107,7 @@ class StatusPrinter(object):
                        "--------------------"
                        "--------------------"
                        "--------------------"
-                       "---------")+("-"*extra_space)
+                       "----------------")+("-"*extra_space)
         self._initial_header_line = \
             (self._lines + "\n"
              "         Nodes        |" + \
@@ -118,7 +118,7 @@ class StatusPrinter(object):
         self._header_line = \
             (" {explored:>9} {unexplored:>9}  |{objective:>15} "
              "{bound:>15} "+rgap_label_str+"  "+agap_label_str+" |{runtime:>9} {rate:>10} "
-             "{imbalance:>9}").\
+             "{imbalance:>9}  {idle:>5}").\
              format(explored="Expl",
                     unexplored="Unexpl",
                     objective="Incumbent",
@@ -127,15 +127,16 @@ class StatusPrinter(object):
                     rgap="Rel. Gap",
                     agap="Abs. Gap",
                     rate="Nodes/Sec",
-                    imbalance="Imbalance")
+                    imbalance="Imbalance",
+                    idle="Idle")
         self._line_template = \
             ("{tag:>1}{explored:>9d} {unexplored:>9d}  |{objective:>15.7g} "
              "{bound:>15.7g} "+rgap_number_str+"% "+agap_number_str+" |{runtime:>9.1f} {rate:>10.2f} "
-             "{imbalance:>8.2f}%")
+             "{imbalance:>8.2f}% {idle:>6d}")
         self._line_template_big_gap = \
             ("{tag:>1}{explored:>9d} {unexplored:>9d}  |{objective:>15.7g} "
              "{bound:>15.7g} "+rgap_label_str+"% "+agap_number_str+" |{runtime:>9.1f} {rate:>10.2f} "
-             "{imbalance:>8.2f}%")
+             "{imbalance:>8.2f}% {idle:>6d}")
 
         self._last_print_time = float('-inf')
         served, explored, unexplored = self._dispatcher._get_node_counts()
@@ -219,6 +220,9 @@ class StatusPrinter(object):
             rate = 0.0
 
         imbalance = self._dispatcher._compute_load_imbalance()
+        idle = 0
+        if hasattr(self._dispatcher,"needs_work_queue"):
+            idle = len(self._dispatcher.needs_work_queue)
 
         tag = '' if (not new_objective) else '*'
         bound = self._dispatcher._get_current_bound()
@@ -245,7 +249,8 @@ class StatusPrinter(object):
                 agap=agap,
                 runtime=current_time-self._dispatcher.start_time,
                 rate=rate,
-                imbalance=imbalance))
+                imbalance=imbalance,
+                idle=idle))
             self._last_rgap = None
         else:
             self._log.info(self._line_template.format(
@@ -258,7 +263,8 @@ class StatusPrinter(object):
                 agap=agap,
                 runtime=current_time-self._dispatcher.start_time,
                 rate=rate,
-                imbalance=imbalance))
+                imbalance=imbalance,
+                idle=idle))
             self._last_rgap = rgap
         self._last_explored_nodes_count = explored_nodes_count
         self._print_count += 1
