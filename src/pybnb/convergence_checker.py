@@ -150,9 +150,9 @@ class ConvergenceChecker(object):
         if old == new:
             return False
         if self.sense == minimize:
-            return old > new + self.absolute_tolerance
+            return new > old + self.absolute_tolerance
         else:
-            return old < new - self.absolute_tolerance
+            return new < old - self.absolute_tolerance
 
     def bound_worsened(self, new, old):
         """Returns True when the new bound is worse than the
@@ -208,3 +208,39 @@ class ConvergenceChecker(object):
         if self.cutoff is not None:
             return self.bound_is_suboptimal(bound, self.cutoff)
         return False
+
+    def worst_bound(self, *bounds):
+        """Returns the worst bound, as defined by the
+        objective sense, from a given iterable of bound
+        values."""
+        if self.sense == minimize:
+            return min(*bounds)
+        else:
+            return max(*bounds)
+
+    def best_bound(self, *bounds):
+        """Returns the best bound, as defined by the
+        objective sense, from a given iterable of bound
+        values."""
+        if self.sense == minimize:
+            return max(*bounds)
+        else:
+            return min(*bounds)
+
+    def worst_objective(self, *objectives):
+        """Returns the worst objective, as defined by the
+        objective sense, from a given iterable of objective
+        values."""
+        if self.sense == minimize:
+            return max(*objectives)
+        else:
+            return min(*objectives)
+
+    def best_objective(self, *objectives):
+        """Returns the best objective, as defined by the
+        objective sense, from a given iterable of objective
+        values."""
+        if self.sense == minimize:
+            return min(*objectives)
+        else:
+            return max(*objectives)
