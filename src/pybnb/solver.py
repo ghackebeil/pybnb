@@ -414,7 +414,7 @@ class Solver(object):
                                 "returned from branch method "
                                 "is worse than parent node "
                                 "(child=%r, parent=%r)"
-                                % (bound, child.bound))
+                                % (child.bound, bound))
 
         assert len(data) == 3
         global_bound = data[0]
