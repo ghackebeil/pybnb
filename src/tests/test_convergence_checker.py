@@ -3,28 +3,71 @@ import math
 
 from pybnb.common import (minimize,
                           maximize,
-                          inf)
+                          inf,
+                          TerminationCondition)
 from pybnb.convergence_checker import ConvergenceChecker
 
 class TestConvergenceChecker(object):
 
     def test_sense(self):
+        # min
         p = ConvergenceChecker(minimize)
         assert p.sense == minimize
+        # max
         p = ConvergenceChecker(maximize)
         assert p.sense == maximize
 
     def test_infeasible_objective(self):
+        # min
         p = ConvergenceChecker(minimize)
         assert p.infeasible_objective == inf
+        # max
         p = ConvergenceChecker(maximize)
         assert p.infeasible_objective == -inf
 
     def test_unbounded_objective(self):
+        # min
         p = ConvergenceChecker(minimize)
         assert p.unbounded_objective == -inf
+        # max
         p = ConvergenceChecker(maximize)
         assert p.unbounded_objective == inf
+
+    def test_check_termination_criteria(self):
+        # min
+        p = ConvergenceChecker(minimize)
+        assert p.check_termination_criteria(inf, None) is \
+            TerminationCondition.optimality
+        assert p.check_termination_criteria(0, 0) is \
+            TerminationCondition.optimality
+        assert p.check_termination_criteria(0, 1) is None
+        p = ConvergenceChecker(minimize,
+                               objective_stop=1)
+        assert p.check_termination_criteria(0, 1.1) is None
+        assert p.check_termination_criteria(0, 1) is \
+            TerminationCondition.objective_limit
+        p = ConvergenceChecker(minimize,
+                               bound_stop=0)
+        assert p.check_termination_criteria(-0.1, 1) is None
+        assert p.check_termination_criteria(0, 1) is \
+            TerminationCondition.objective_limit
+        # max
+        p = ConvergenceChecker(maximize)
+        assert p.check_termination_criteria(-inf, None) is \
+            TerminationCondition.optimality
+        assert p.check_termination_criteria(0, 0) is \
+            TerminationCondition.optimality
+        assert p.check_termination_criteria(0, -1) is None
+        p = ConvergenceChecker(maximize,
+                               objective_stop=-1)
+        assert p.check_termination_criteria(0, -1.1) is None
+        assert p.check_termination_criteria(0, -1) is \
+            TerminationCondition.objective_limit
+        p = ConvergenceChecker(maximize,
+                               bound_stop=0)
+        assert p.check_termination_criteria(0.1, -1) is None
+        assert p.check_termination_criteria(0, -1) is \
+            TerminationCondition.objective_limit
 
     def test_objective_is_optimal(self):
 

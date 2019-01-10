@@ -9,7 +9,8 @@ import math
 
 from pybnb.common import (minimize,
                           maximize,
-                          inf)
+                          inf,
+                          TerminationCondition)
 
 def compute_absolute_gap(sense, bound, objective):
     """Returns the absolute gap between the bound and
@@ -37,20 +38,27 @@ def compute_absolute_gap(sense, bound, objective):
             gap = bound - objective
         return gap
 
+def scale_absolute_gap(gap, objective):
+    """Convert an absolute gap to a relative gap by scaling
+    it by the value `max{1.0,|objective|}`."""
+    if math.isinf(gap):
+        return gap
+    # avoid using abs() as it is slow, for some reason
+    if objective > 1.0:
+        return gap / objective
+    elif objective < -1.0:
+        return gap / -objective
+    else:
+        return gap
+
 def compute_relative_gap(sense, bound, objective):
     """Returns the relative gap between the bound and
     the objective, respecting the sign relative to the
     objective sense of this problem."""
-    rgap = compute_absolute_gap(sense, bound, objective)
-    if math.isinf(rgap):
-        return rgap
-    # avoid using abs() as it is slow
-    if objective > 1.0:
-        return rgap / objective
-    elif objective < -1.0:
-        return rgap / -objective
-    else:
-        return rgap
+    return scale_absolute_gap(compute_absolute_gap(sense,
+                                                   bound,
+                                                   objective),
+                              objective)
 
 class ConvergenceChecker(object):
     """A class used to check convergence.
@@ -69,17 +77,23 @@ class ConvergenceChecker(object):
         The absolute tolerance use when deciding if two
         objective or bound values are sufficiently
         different. (default: 1e-10)
-    cutoff : float, optional
-        If provided, when the best objective is proven worse
-        than this value (by greater than
-        `absolute_tolerance`), then the cutoff termination
-        criteria is met. (default: None)
+    objective_stop : float, optional
+        If provided, the "objective_limit" termination
+        criteria is met when a feasible objective is found
+        that is at least as good as the specified
+        value. (default: None)
+    bound_stop : float, optional
+        If provided, the "objective_limit" termination
+        criteria is met when the best bound on the objective
+        is at least as good as the specified
+        value. (default: None)
     """
     __slots__ = ("sense",
                  "absolute_gap_tolerance",
                  "relative_gap_tolerance",
                  "absolute_tolerance",
-                 "cutoff",
+                 "objective_stop",
+                 "bound_stop",
                  "infeasible_objective",
                  "unbounded_objective")
 
@@ -88,15 +102,22 @@ class ConvergenceChecker(object):
                  absolute_gap=1e-8,
                  relative_gap=1e-4,
                  absolute_tolerance=1e-10,
-                 cutoff=None):
+                 objective_stop=None,
+                 bound_stop=None):
         self.sense = sense
         self.absolute_gap_tolerance = float(absolute_gap)
         self.relative_gap_tolerance = float(relative_gap)
         self.absolute_tolerance = float(absolute_tolerance)
-        self.cutoff = None
-        if cutoff is not None:
-            self.cutoff = float(cutoff)
-            assert not math.isinf(self.cutoff)
+        self.objective_stop = None
+        if objective_stop is not None:
+            self.objective_stop = float(objective_stop)
+            assert not math.isinf(self.objective_stop)
+            assert not math.isnan(self.objective_stop)
+        self.bound_stop = None
+        if bound_stop is not None:
+            self.bound_stop = float(bound_stop)
+            assert not math.isinf(self.bound_stop)
+            assert not math.isnan(self.bound_stop)
 
         if self.sense == minimize:
             self.infeasible_objective = inf
@@ -111,6 +132,33 @@ class ConvergenceChecker(object):
             (not math.isinf(self.relative_gap_tolerance))
         assert self.absolute_tolerance > 0 and \
             (not math.isinf(self.absolute_tolerance))
+
+    def check_termination_criteria(self,
+                                   global_bound,
+                                   best_objective):
+        """Checks if any termination criteria are met and returns
+        the corresponding :class:`TerminationCondition
+        <pybnb.common.TerminationCondition>` enum value;
+        otherwise, `None` is returned."""
+        result = None
+        if (global_bound == self.infeasible_objective) or \
+           (self.objective_is_optimal(best_objective, global_bound)):
+            result = TerminationCondition.optimality
+        elif self.objective_stop is not None:
+            if self.sense == minimize:
+                if best_objective <= self.objective_stop:
+                    result = TerminationCondition.objective_limit
+            else:
+                if best_objective >= self.objective_stop:
+                    result = TerminationCondition.objective_limit
+        elif self.bound_stop is not None:
+            if self.sense == minimize:
+                if global_bound >= self.bound_stop:
+                    result = TerminationCondition.objective_limit
+            else:
+                if global_bound <= self.bound_stop:
+                    result = TerminationCondition.objective_limit
+        return result
 
     def compute_absolute_gap(self, bound, objective):
         """Returns the absolute gap between the bound and
@@ -131,14 +179,13 @@ class ConvergenceChecker(object):
         assert bound != self.infeasible_objective
         if (objective != self.unbounded_objective) and \
            (objective != self.infeasible_objective):
-            agap = self.compute_absolute_gap(bound,
-                                             objective)
-            if agap <= self.absolute_gap_tolerance:
+            gap = self.compute_absolute_gap(bound,
+                                            objective)
+            if gap <= self.absolute_gap_tolerance:
                 return True
             else:
-                rgap = self.compute_relative_gap(bound,
-                                                 objective)
-                if rgap <= self.relative_gap_tolerance:
+                gap = scale_absolute_gap(gap, objective)
+                if gap <= self.relative_gap_tolerance:
                     return True
         return False
 
@@ -199,15 +246,6 @@ class ConvergenceChecker(object):
             return bound - objective > self.absolute_tolerance
         else:
             return objective - bound > self.absolute_tolerance
-
-    def cutoff_is_met(self, bound):
-        """Returns true when the bound is better than the
-        cutoff value by greater than the absolute
-        tolerance. If no cutoff value was provided, this
-        method always returns False."""
-        if self.cutoff is not None:
-            return self.bound_is_suboptimal(bound, self.cutoff)
-        return False
 
     def worst_bound(self, *bounds):
         """Returns the worst bound, as defined by the

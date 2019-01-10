@@ -134,7 +134,7 @@ def _test_infeasible_max(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
-    baseline.termination_condition = "cutoff"
+    baseline.termination_condition = "objective_limit"
     baseline.objective = -inf
     baseline.bound = -16
     baseline.nodes = 31
@@ -144,16 +144,16 @@ def _test_infeasible_max(comm):
         _execute_tests(comm,
                        problem,
                        baseline,
-                       cutoff=-15)
+                       bound_stop=-15)
     else:
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
-                             cutoff=-15)
+                             bound_stop=-15)
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
-    baseline.termination_condition = "cutoff"
+    baseline.termination_condition = "objective_limit"
     baseline.objective = -20
     baseline.bound = -16
     baseline.absolute_gap = 4
@@ -166,12 +166,12 @@ def _test_infeasible_max(comm):
         _execute_tests(comm,
                        problem,
                        baseline,
-                       cutoff=-15)
+                       bound_stop=-15)
     else:
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
-                             cutoff=-15)
+                             bound_stop=-15)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
@@ -297,7 +297,7 @@ def _test_infeasible_min(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
-    baseline.termination_condition = "cutoff"
+    baseline.termination_condition = "objective_limit"
     baseline.objective = inf
     baseline.bound = 16
     baseline.nodes = 31
@@ -307,16 +307,16 @@ def _test_infeasible_min(comm):
         _execute_tests(comm,
                        problem,
                        baseline,
-                       cutoff=15)
+                       bound_stop=15)
     else:
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
-                             cutoff=15)
+                             bound_stop=15)
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
-    baseline.termination_condition = "cutoff"
+    baseline.termination_condition = "objective_limit"
     baseline.objective = 20
     baseline.bound = 16
     baseline.absolute_gap = 4
@@ -329,12 +329,12 @@ def _test_infeasible_min(comm):
         _execute_tests(comm,
                        problem,
                        baseline,
-                       cutoff=15)
+                       bound_stop=15)
     else:
         _execute_single_test(problem,
                              baseline,
                              solver=solver,
-                             cutoff=15)
+                             bound_stop=15)
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"

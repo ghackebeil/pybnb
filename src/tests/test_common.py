@@ -61,7 +61,7 @@ class Test(object):
 
     def test_TerminationCondition(self):
         assert TerminationCondition.optimality == "optimality"
-        assert TerminationCondition.cutoff == "cutoff"
+        assert TerminationCondition.objective_limit == "objective_limit"
         assert TerminationCondition.node_limit == "node_limit"
         assert TerminationCondition.time_limit == "time_limit"
         assert TerminationCondition.no_nodes == "no_nodes"

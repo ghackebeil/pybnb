@@ -277,6 +277,7 @@ class DispatcherBase(object):
 
     def __init__(self):
         self.initialized = False
+        self.termination_condition = None
         self.start_time = None
         self.last_global_bound = None
         self.best_objective = None
@@ -287,12 +288,6 @@ class DispatcherBase(object):
         self.time_limit = None
         self.served_nodes_count = None
         self.worst_terminal_bound = None
-        self.stop = None
-        self.stop_optimality = None
-        self.stop_node_limit = None
-        self.stop_time_limit = None
-        self.stop_cutoff = None
-        self.stop_interrupted = None
         self.next_tree_id = None
         self.clock = None
 
@@ -321,22 +316,6 @@ class DispatcherBase(object):
                                          self.worst_terminal_bound):
             self.worst_terminal_bound = bound
 
-    def _get_termination_condition(self):
-        """Get the solve termination description"""
-        if self.stop:
-            if self.stop_optimality:
-                return TerminationCondition.optimality
-            elif self.stop_node_limit:
-                return TerminationCondition.node_limit
-            elif self.stop_time_limit:
-                return TerminationCondition.time_limit
-            elif self.stop_cutoff:
-                return TerminationCondition.cutoff
-            elif self.stop_interrupted:           #pragma:nocover
-                return TerminationCondition.interrupted
-            else:
-                return TerminationCondition.no_nodes
-
     def _check_update_best_objective(self, objective):
         updated = False
         if self.converger.objective_improved(objective,
@@ -358,23 +337,22 @@ class DispatcherBase(object):
 
     def _check_convergence(self):
         # check if we are done
-        if not self.stop:
+        if self.termination_condition is None:
             global_bound = self._get_current_bound()
             self.last_global_bound = global_bound
-            if (global_bound == self.converger.infeasible_objective) or \
-               self.converger.objective_is_optimal(self.best_objective,
-                                                   global_bound):
-                self.stop_optimality = self.stop = True
-            elif self.converger.cutoff_is_met(global_bound):
-                self.stop_cutoff = self.stop = True
-            if not self.stop:
+            self.termination_condition = self.converger.\
+                check_termination_criteria(global_bound,
+                                           self.best_objective)
+            if self.termination_condition is None:
                 if (self.node_limit is not None) and \
                    (self.served_nodes_count >= self.node_limit):
-                    self.stop_node_limit = self.stop = True
-                if not self.stop:
+                    self.termination_condition = \
+                        TerminationCondition.node_limit
+                if self.termination_condition is None:
                     if (self.time_limit is not None) and \
                        ((self.clock() - self.start_time) >= self.time_limit):
-                        self.stop_time_limit = self.stop = True
+                        self.termination_condition = \
+                            TerminationCondition.time_limit
 
     def _get_work_item(self):
         node_data = self.queue.get()
@@ -456,6 +434,7 @@ class DispatcherBase(object):
             (time_limit >= 0)
         self.start_time = self.clock()
         self.initialized = True
+        self.termination_condition = None
         self.converger = converger
         self.last_global_bound = self.converger.unbounded_objective
         self.best_objective = converger.infeasible_objective
@@ -489,12 +468,6 @@ class DispatcherBase(object):
             self.time_limit = float(time_limit)
         self.served_nodes_count = 0
         self.worst_terminal_bound = None
-        self.stop = False
-        self.stop_optimality = False
-        self.stop_node_limit = False
-        self.stop_time_limit = False
-        self.stop_cutoff = False
-        self.stop_interrupted = False
         self.next_tree_id = initialize_queue.next_tree_id
         self.journalist = None
         if (log is not None) and (not log.disabled):
@@ -717,9 +690,10 @@ class DispatcherLocal(DispatcherBase):
         self.first_update = False
         last_global_bound = self.last_global_bound
         self._check_convergence()
-        if self.queue.size() == 0:
-            self.stop = True
-        if not self.stop:
+        if (self.queue.size() == 0) and \
+           (self.termination_condition is None):
+            self.termination_condition = TerminationCondition.no_nodes
+        if self.termination_condition is None:
             node_data = self._get_work_item()
             self.active_nodes = 1
             self.external_bound = Node._extract_bound(node_data)
@@ -738,7 +712,7 @@ class DispatcherLocal(DispatcherBase):
             return (True,
                     self.best_objective,
                     (self._get_current_bound(),
-                     self._get_termination_condition(),
+                     self.termination_condition,
                      self._get_final_solve_info()))
 
 class DispatcherDistributed(DispatcherBase):
@@ -876,7 +850,7 @@ class DispatcherDistributed(DispatcherBase):
             if self._send_requests is None:
                 self._send_requests = \
                     {i: None for i in self.worker_ranks}
-            if not self.stop:
+            if self.termination_condition is None:
                 while (self.queue.size() > 0) and \
                       (len(self.needs_work_queue) > 0):
                     stop = False
@@ -893,7 +867,9 @@ class DispatcherDistributed(DispatcherBase):
                        (self.served_nodes_count >= self.node_limit):
                         break
             if len(self.needs_work_queue) == (self.comm.size-1):
-                self.stop = True
+                if self.termination_condition is None:
+                    self.termination_condition = \
+                        TerminationCondition.no_nodes
                 requests = []
                 for r_ in self._send_requests.values():
                     if r_ is not None:
@@ -902,7 +878,7 @@ class DispatcherDistributed(DispatcherBase):
                 self._send_requests = None
                 stop = True
                 data = (self._get_current_bound(),
-                        self._get_termination_condition(),
+                        self.termination_condition,
                         self._get_final_solve_info())
                 send_ = numpy.empty(3+_SolveInfo._data_size,
                                     dtype=float)

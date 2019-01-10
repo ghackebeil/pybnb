@@ -362,8 +362,7 @@ class Solver(object):
             assert (bound != infeasible_objective) and \
                 convergence_checker.objective_can_improve(
                     self._best_objective,
-                    bound) and \
-                    (not convergence_checker.cutoff_is_met(bound))
+                    bound)
 
             problem.load_state(working_node)
 
@@ -379,8 +378,7 @@ class Solver(object):
             if (bound != infeasible_objective) and \
                 convergence_checker.objective_can_improve(
                     self._best_objective,
-                    bound) and \
-                (not convergence_checker.cutoff_is_met(bound)):
+                    bound):
                 if not disable_objective_call:
                     obj = problem.objective()
                     working_node.objective = obj
@@ -581,7 +579,8 @@ class Solver(object):
               node_priority_strategy="bound",
               absolute_gap=1e-8,
               relative_gap=1e-4,
-              cutoff=None,
+              objective_stop=None,
+              bound_stop=None,
               node_limit=None,
               time_limit=None,
               absolute_tolerance=1e-10,
@@ -622,50 +621,52 @@ class Solver(object):
             to be considered solved to optimality.
             (default: 1e-8)
         relative_gap : float, optional
-            The maximum relative difference (scaled by
-            `max{1.0,|objective|}`) between the global bound
-            and best objective for the problem to be
-            considered solved to optimality.
-            (default: 1e-4)
-        cutoff : float, optional
-            If provided, when the best objective is proven
-            worse than this value, the solver will begin to
-            terminate, and the termination_condition flag on
-            the results object will be set to the string
-            "cutoff". (default: None)
-        node_limit : int, optional
-            If provided, the solver will begin to terminate
-            once this many nodes have been processed. It is
-            possible that more nodes will be processed when
-            running there are multiple workers, but not by
-            more than the number of available workers. If
-            this setting initiates a shutdown, then the
+            The maximum relative difference (absolute
+            difference scaled by `max{1.0,|objective|}`)
+            between the global bound and best objective for
+            the problem to be considered solved to
+            optimality.  (default: 1e-4)
+        objective_stop : float, optional
+            If provided, the solve will terminate when a
+            feasible objective is found that is at least as
+            good as the specified value, and the
             termination_condition flag on the results object
-            will be set to the string
+            will be set to "objective_limit".
+            (default: None)
+        bound_stop : float, optional
+            If provided, the solve will terminate when the
+            global bound on the objective is at least as good
+            as the specified value, and the
+            termination_condition flag on the results object
+            will be set to "objective_limit".
+            (default: None)
+        node_limit : int, optional
+            If provided, the solve will begin to terminate
+            once this many nodes have been served from the
+            dispatcher queue, and the termination_condition
+            flag on the results object will be set to
             "node_limit". (default: None)
         time_limit : float, optional
-            If provided, the solver will begin to terminate
-            the solve once this amount of time has
-            passed. The solver may run for an arbitrarily
-            longer amount of time, depending how long
-            workers spend processing their current node. If
-            this setting initiates a shutdown, then the
+            If provided, the solve will begin to terminate
+            once this amount of time has passed, and the
             termination_condition flag on the results object
-            will be set to the string
-            "time_limit". (default: None)
+            will be set to "time_limit". Note that the solve
+            may run for an arbitrarily longer amount of
+            time, depending how long worker processes spend
+            completing their final task. (default: None)
         absolute_tolerance : float, optional
             The absolute tolerance used when deciding if two
             objective / bound values are sufficiently
             different. For instance, this option controls
             what nodes are added to the queue by checking if
-            their bound is at this much better than the
-            current best object. (default: 1e-10)
+            their bound is at least this much better than
+            the current best object. (default: 1e-10)
         log_interval_seconds : float, optional
-            The approximate maximum time (in seconds)
-            between solver log updates. More time may pass
-            between log updates if no updates have been
-            received from any workers, and less time may
-            pass if a new incumbent is found. (default: 1.0)
+            The approximate time (in seconds) between solver
+            log updates. More time may pass between log
+            updates if no updates have been received from
+            worker processes, and less time may pass if a
+            new incumbent objective is found. (default: 1.0)
         log : logging.Logger, optional
             A log object where solver output should be
             sent. The default value causes all output to be
@@ -694,27 +695,33 @@ class Solver(object):
            (self.comm.size > 1):
             node_priority_strategy_int = \
                 _node_priority_strategy_to_int[node_priority_strategy]
-            settings = array.array("d", [best_objective,
-                                         node_priority_strategy_int,
-                                         absolute_gap,
-                                         relative_gap,
-                                         cutoff if cutoff is not None else nan,
-                                         absolute_tolerance])
+            settings = array.array(
+                "d",
+                [best_objective,
+                 node_priority_strategy_int,
+                 absolute_gap,
+                 relative_gap,
+                 nan if objective_stop is None else objective_stop,
+                 nan if bound_stop is None else bound_stop,
+                 absolute_tolerance])
             self.comm.Bcast([settings,mpi4py.MPI.DOUBLE],
                             root=self._disp.dispatcher_rank)
             (best_objective,
              node_priority_strategy_int,
              absolute_gap,
              relative_gap,
-             cutoff,
+             objective_stop,
+             bound_stop,
              absolute_tolerance) = settings
             assert node_priority_strategy_int == \
                 int(node_priority_strategy_int)
             node_priority_strategy = \
                 _int_to_node_priority_strategy[
                     int(node_priority_strategy_int)]
-            if math.isnan(cutoff):
-                cutoff = None
+            if math.isnan(objective_stop):
+                objective_stop = None
+            if math.isnan(bound_stop):
+                bound_stop = None
             del settings
             if not self.is_dispatcher:
                 # These are not used unless this process is
@@ -734,7 +741,8 @@ class Solver(object):
             absolute_gap=absolute_gap,
             relative_gap=relative_gap,
             absolute_tolerance=absolute_tolerance,
-            cutoff=cutoff)
+            objective_stop=objective_stop,
+            bound_stop=bound_stop)
         problem.notify_solve_begins(self.comm,
                                     self.worker_comm,
                                     convergence_checker)
@@ -772,8 +780,8 @@ class Solver(object):
                         "Waiting for current worker "
                         "jobs to complete before "
                         "terminating the solve.")
-                    self._disp.stop = True
-                    self._disp.stop_interrupted = True
+                    self._disp.termination_condition = \
+                        TerminationCondition.interrupted
                 with MPI_InterruptHandler(handler):
                     tmp = self._disp.serve()
             else:
@@ -784,8 +792,8 @@ class Solver(object):
                             "Waiting for current worker "
                             "jobs to complete before "
                             "terminating the solve.")
-                        self._disp.stop = True
-                        self._disp.stop_interrupted = True
+                        self._disp.termination_condition = \
+                            TerminationCondition.interrupted
                 with MPI_InterruptHandler(handler):
                     tmp = self._solve(problem,
                                       best_objective,

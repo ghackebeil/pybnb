@@ -442,10 +442,15 @@ def create_command_line_solver(problem, parser=None):
         default=solve_defaults.pop("relative_gap"),
         help=solve_docs["relative_gap"]["doc"])
     parser.add_argument(
-        "--cutoff",
+        "--objective-stop",
         type=float,
-        default=solve_defaults.pop("cutoff"),
-        help=solve_docs["cutoff"]["doc"])
+        default=solve_defaults.pop("objective_stop"),
+        help=solve_docs["objective_stop"]["doc"])
+    parser.add_argument(
+        "--bound-stop",
+        type=float,
+        default=solve_defaults.pop("bound_stop"),
+        help=solve_docs["bound_stop"]["doc"])
     parser.add_argument(
         "--node-limit",
         type=int,

@@ -4,6 +4,10 @@ Changelog
 0.3.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
+* Renaming the cutoff solve option to bound_stop. Also
+  adding an objective_stop solve option. Both options
+  trigger the 'objective_limit' termination condition
+  (replaces the 'cutoff' termination condition).
 * Adding an optional notify_solve_begins callback to the
   Problem base class.
 * Removing worker_comm argument from
@@ -15,8 +19,6 @@ Changelog
   with an 'interrupted' termination condition.
 * adding a solver option that disables calls to the problem
   objective
-* allow nested solver implementations to propagate online
-  solve statistics
 * removing a number of collective MPI communicator calls
   from the solve finalization process
 * adding a queue implementation that uses random priority

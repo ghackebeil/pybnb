@@ -106,9 +106,10 @@ class TerminationCondition(str, enum.Enum):
     optimality = "optimality"
     """The dispatcher terminated the solve based on
     optimality criteria."""
-    cutoff = "cutoff"
+    objective_limit = "objective_limit"
     """The dispatcher terminated the solve based on the
-    user-supplied objective cutoff being satisfied."""
+    user-supplied limit on the objective or bound being
+    satisfied."""
     node_limit = "node_limit"
     """The dispatcher terminated the solve due to the
     user-supplied explored node limit being surpassed."""
