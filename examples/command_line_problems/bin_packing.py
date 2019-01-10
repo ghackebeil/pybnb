@@ -65,7 +65,6 @@ class BinPacking(pybnb.Problem):
         for yi in self.model.y.components():
             self.true_domain_type[yi] = yi.domain_type
             yi.domain_type = pmo.RealSet
-        self._last_bound_was_feasible = False
 
         self.opt = pmo.SolverFactory(
             pyomo_solver,
@@ -172,7 +171,7 @@ class BinPacking(pybnb.Problem):
                     break
             if bv is not None:
                 break
-        else:
+        else:                                     #pragma:nocover
             return ()
 
         assert bv is not None
@@ -260,20 +259,15 @@ class BinPacking(pybnb.Problem):
         return self.model.objective()
 
     def bound(self):
-        self._last_bound_was_feasible = False
         results = self.opt.solve(self.model, load_solutions=False)
         if (str(results.solver.status) == "ok") and \
            (str(results.solver.termination_condition) == "optimal"):
             self.model.load_solution(results.solution(0))
-            self._last_bound_was_feasible = self._check_feasible()
             return round(self.model.objective(), 7)
-        elif str(results.solver.termination_condition) == "unbounded":
-            assert str(results.solver.status) in ("ok","warning")
-            return self.unbounded_objective()
         elif str(results.solver.termination_condition) == "infeasible":
             assert str(results.solver.status) in ("ok","warning")
             return self.infeasible_objective()
-        else:
+        else:                                     #pragma:nocover
             assert str(results.solver.status) == "error"
             assert "Restoration Phase Failed" in \
                 results.solver.message
@@ -313,11 +307,8 @@ class BinPacking(pybnb.Problem):
         for yi in self.model.y.components():
             yi.ub = state[ndx]
             ndx += 1
-        self._last_bound_was_feasible = False
 
     def branch(self, parent):
-        if self._last_bound_was_feasible:
-            return ()
         # try to branch on y
         children = self._branch_y(parent)
         if len(children):
