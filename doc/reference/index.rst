@@ -25,4 +25,4 @@ Modules
     dispatcher_proxy
     mpi_utils
     misc
-    pyomo_tools
+    pyomo
