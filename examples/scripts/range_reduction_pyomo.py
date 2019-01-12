@@ -5,8 +5,8 @@
 # range reduction in parallel for 7 nodes of a serial
 # branch-and-bound solve. After this completes, it continues
 # the solve using parallel branch-and-bound (without range
-# reduction), initializing the dispatcher queue unprocessed
-# nodes from the previous solve.
+# reduction), initializing the dispatcher queue with the
+# unprocessed nodes from the previous solve.
 #
 # This example can be executed in serial as
 #
