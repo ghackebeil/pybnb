@@ -776,6 +776,7 @@ class Solver(object):
                                     self.worker_comm,
                                     convergence_checker)
         root = Node()
+        root.queue_priority = 0
         problem.save_state(root)
         try:
             if self.is_dispatcher:

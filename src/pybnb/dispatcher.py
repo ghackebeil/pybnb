@@ -438,7 +438,7 @@ class DispatcherBase(object):
         self.termination_condition = None
         self.converger = converger
         self.last_global_bound = self.converger.unbounded_objective
-        self.best_objective = converger.infeasible_objective
+        self.best_objective = best_objective
         if node_priority_strategy == "bound":
             self.queue = WorstBoundFirstPriorityQueue(
                 self.converger.sense)
@@ -476,10 +476,13 @@ class DispatcherBase(object):
                 self,
                 log,
                 log_interval_seconds=log_interval_seconds)
-        self._check_update_best_objective(best_objective)
-        for node in initialize_queue.nodes:
-            self._add_work_to_queue(node._data,
-                                    set_tree_id=False)
+        if len(initialize_queue.nodes):
+            self.converger.best_objective(
+                node.objective for node in initialize_queue.nodes)
+            for node in initialize_queue.nodes:
+                assert node.tree_id is not None
+                self._add_work_to_queue(node._data,
+                                        set_tree_id=False)
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
