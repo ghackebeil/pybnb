@@ -397,6 +397,8 @@ def create_command_line_solver(problem, parser=None):
         set(solve_docs.keys())
     solve_defaults.pop("initialize_queue")
     solve_docs.pop("initialize_queue")
+    solve_defaults.pop("scale_function")
+    solve_docs.pop("scale_function")
     solve_defaults.pop("log")
     solve_docs.pop("log")
     assert len(solve_defaults) == len(solve_docs)
@@ -462,10 +464,10 @@ def create_command_line_solver(problem, parser=None):
         default=solve_defaults.pop("time_limit"),
         help=solve_docs["time_limit"]["doc"])
     parser.add_argument(
-        "--absolute-tolerance",
+        "--comparison-tolerance",
         type=float,
-        default=solve_defaults.pop("absolute_tolerance"),
-        help=solve_docs["absolute_tolerance"]["doc"])
+        default=solve_defaults.pop("comparison_tolerance"),
+        help=solve_docs["comparison_tolerance"]["doc"])
     parser.add_argument(
         "--log-interval-seconds",
         type=float,

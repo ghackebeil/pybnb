@@ -84,16 +84,18 @@ class StatusPrinter(object):
         self._log = log
 
         percent_relative_gap_tol = 1e-6
-        if self._dispatcher.converger.relative_gap_tolerance != 0:
+        if (self._dispatcher.converger.relative_gap is not None) and \
+           self._dispatcher.converger.relative_gap != 0:
             percent_relative_gap_tol = 100.0 * \
-                self._dispatcher.converger.relative_gap_tolerance
+                self._dispatcher.converger.relative_gap
         rgap_str_length, rgap_label_str, rgap_number_str = \
             get_gap_labels(percent_relative_gap_tol, key="rgap")
 
         absolute_gap_tol = 1e-8
-        if self._dispatcher.converger.absolute_gap_tolerance != 0:
+        if (self._dispatcher.converger.absolute_gap is not None) and \
+           self._dispatcher.converger.absolute_gap != 0:
             absolute_gap_tol = \
-                self._dispatcher.converger.absolute_gap_tolerance
+                self._dispatcher.converger.absolute_gap
         agap_str_length, agap_label_str, agap_number_str = \
             get_gap_labels(absolute_gap_tol, key="agap", format='g')
 
@@ -301,9 +303,8 @@ class DispatcherBase(object):
             assert Node._has_tree_id(node_data)
             assert Node._extract_tree_id(node_data) < self.next_tree_id
         bound = Node._extract_bound(node_data)
-        if self.converger.objective_can_improve(
-                self.best_objective,
-                bound):
+        if self.converger.eligible_for_queue(bound,
+                                             self.best_objective):
             self.queue.put(node_data)
             return True
         else:
@@ -324,12 +325,12 @@ class DispatcherBase(object):
             if self.journalist is not None:
                 self.journalist.new_objective(report=True)
             self.best_objective = objective
-            objective_can_improve_ = self.converger.objective_can_improve
+            eligible_for_queue_ = self.converger.eligible_for_queue
             extract_bound_ = Node._extract_bound
             removed = self.queue.filter(
-                lambda node_data_: objective_can_improve_(
-                    objective,
-                    extract_bound_(node_data_)))
+                lambda node_data_: eligible_for_queue_(
+                    extract_bound_(node_data_),
+                    objective))
             for node_data in removed:
                 self._check_update_worst_terminal_bound(
                     Node._extract_bound(node_data))
@@ -598,9 +599,9 @@ class DispatcherLocal(DispatcherBase):
             _check_update_best_objective(objective)
         if updated and \
            (self.external_bound is not None):
-            if not self.converger.objective_can_improve(
-                    objective,
-                    self.external_bound):
+            if not self.converger.eligible_for_queue(
+                    self.external_bound,
+                    objective):
                 self.external_bound = None
 
     #
@@ -811,15 +812,15 @@ class DispatcherDistributed(DispatcherBase):
             _check_update_best_objective(objective)
         if updated:
             self_external_bounds = self.external_bounds
-            objective_can_improve = self.converger.objective_can_improve
+            eligible_for_queue = self.converger.eligible_for_queue
             # trim the sorted external_bounds list
             N = len(self_external_bounds)
             if self.converger.sense == maximize:
                 i = 0
                 for i in range(N):
-                    if objective_can_improve(
-                            objective,
-                            self_external_bounds[i]):
+                    if eligible_for_queue(
+                            self_external_bounds[i],
+                            objective):
                         break
                 if i != 0:
                     self.external_bounds = SortedList(
@@ -827,9 +828,9 @@ class DispatcherDistributed(DispatcherBase):
             else:
                 i = N-1
                 for i in range(N-1,-1,-1):
-                    if objective_can_improve(
-                            objective,
-                            self_external_bounds[i]):
+                    if eligible_for_queue(
+                            self_external_bounds[i],
+                            objective):
                         break
                 if i != N-1:
                     self.external_bounds = SortedList(

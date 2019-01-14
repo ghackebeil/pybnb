@@ -139,7 +139,7 @@ class TestConvergenceChecker(object):
         assert not p.bound_improved(0.0, inf)
         assert not p.bound_improved(0.0, 0.0)
         p = ConvergenceChecker(minimize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.bound_improved(0.1, 0.0)
         assert p.bound_improved(0.11, 0.0)
         # max
@@ -154,7 +154,7 @@ class TestConvergenceChecker(object):
         assert p.bound_improved(0.0, inf)
         assert not p.bound_improved(0.0, 0.0)
         p = ConvergenceChecker(maximize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.bound_improved(-0.1, 0.0)
         assert p.bound_improved(-0.11, 0.0)
 
@@ -171,7 +171,7 @@ class TestConvergenceChecker(object):
         assert p.bound_worsened(0.0, inf)
         assert not p.bound_worsened(0.0, 0.0)
         p = ConvergenceChecker(minimize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.bound_worsened(-0.1, 0.0)
         assert p.bound_worsened(-0.11, 0.0)
         # max
@@ -186,7 +186,7 @@ class TestConvergenceChecker(object):
         assert not p.bound_worsened(0.0, inf)
         assert not p.bound_worsened(0.0, 0.0)
         p = ConvergenceChecker(maximize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.bound_worsened(0.1, 0.0)
         assert p.bound_worsened(0.11, 0.0)
 
@@ -203,7 +203,7 @@ class TestConvergenceChecker(object):
         assert p.objective_improved(0.0, inf)
         assert not p.objective_improved(0.0, 0.0)
         p = ConvergenceChecker(minimize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.objective_improved(-0.1, 0.0)
         assert p.objective_improved(-0.11, 0.0)
         # max
@@ -218,7 +218,7 @@ class TestConvergenceChecker(object):
         assert not p.objective_improved(0.0, inf)
         assert not p.objective_improved(0.0, 0.0)
         p = ConvergenceChecker(maximize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.objective_improved(0.1, 0.0)
         assert p.objective_improved(0.11, 0.0)
 
@@ -235,7 +235,7 @@ class TestConvergenceChecker(object):
         assert not p.objective_can_improve(0.0, inf)
         assert not p.objective_can_improve(0.0, 0.0)
         p = ConvergenceChecker(minimize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.objective_can_improve(0.0, -0.1)
         assert p.objective_can_improve(0.0, -0.11)
         # max
@@ -250,7 +250,7 @@ class TestConvergenceChecker(object):
         assert p.objective_can_improve(0.0, inf)
         assert not p.objective_can_improve(0.0, 0.0)
         p = ConvergenceChecker(maximize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.objective_can_improve(0.0, 0.1)
         assert p.objective_can_improve(0.0, 0.11)
 
@@ -267,7 +267,7 @@ class TestConvergenceChecker(object):
         assert not p.bound_is_suboptimal(0.0, inf)
         assert not p.bound_is_suboptimal(0.0, 0.0)
         p = ConvergenceChecker(minimize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.bound_is_suboptimal(0.0, -0.1)
         assert p.bound_is_suboptimal(0.0, -0.11)
         # max
@@ -282,7 +282,7 @@ class TestConvergenceChecker(object):
         assert p.bound_is_suboptimal(0.0, inf)
         assert not p.bound_is_suboptimal(0.0, 0.0)
         p = ConvergenceChecker(maximize,
-                               absolute_tolerance=0.1)
+                               comparison_tolerance=0.1)
         assert not p.bound_is_suboptimal(0.0, 0.1)
         assert p.bound_is_suboptimal(0.0, 0.11)
 

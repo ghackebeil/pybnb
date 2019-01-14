@@ -38,27 +38,37 @@ def compute_absolute_gap(sense, bound, objective):
             gap = bound - objective
         return gap
 
-def scale_absolute_gap(gap, objective):
-    """Convert an absolute gap to a relative gap by scaling
-    it by the value `max{1.0,|objective|}`."""
-    if math.isinf(gap):
-        return gap
-    # avoid using abs() as it is slow, for some reason
-    if objective > 1.0:
-        return gap / objective
-    elif objective < -1.0:
-        return gap / -objective
+def _scale_absolute_gap(gap, scale):
+    """Convert an absolute gap to a relative gap with the
+    given scaling factor."""
+    assert scale > 0
+    if not math.isinf(gap):
+        return gap / scale
     else:
         return gap
 
-def compute_relative_gap(sense, bound, objective):
+def _default_scale(bound, objective):
+    """`max{1.0,|objective|}`"""
+    # avoid using abs() as it uses the same logic, but adds
+    # additional function call overhead
+    if objective > 1.0:
+        return objective
+    elif objective < -1.0:
+        return -objective
+    else:
+        return 1.0
+
+def compute_relative_gap(sense,
+                         bound,
+                         objective,
+                         scale=_default_scale):
     """Returns the relative gap between the bound and
     the objective, respecting the sign relative to the
     objective sense of this problem."""
-    return scale_absolute_gap(compute_absolute_gap(sense,
-                                                   bound,
-                                                   objective),
-                              objective)
+    return _scale_absolute_gap(compute_absolute_gap(sense,
+                                                    bound,
+                                                    objective),
+                               scale(bound, objective))
 
 class ConvergenceChecker(object):
     """A class used to check convergence.
@@ -73,10 +83,31 @@ class ConvergenceChecker(object):
     relative_gap : float, optional
         The relative difference between the objective and
         bound that determines optimality. (default: 1e-4)
-    absolute_tolerance : float, optional
-        The absolute tolerance use when deciding if two
+    scale_function : function, optional
+        A function with signature `f(bound, objective) ->
+        float` that returns a positive scale factor used to
+        convert the absolute difference between the bound
+        and objective into a relative difference. The
+        relative difference is compared with the
+        `relative_gap` convergence tolerance to determine if
+        the solver should terminate. The default is
+        equivalent to `max{1.0,|objective|}`. Other examples
+        one could use are `max{|bound|,|objective|}`,
+        `(|bound|+|objective|)/2`, etc.
+    queue_tolerance : float, optional
+        The absolute tolerance used when deciding if a node
+        is eligible to enter the queue. The difference
+        between the node bound and the incumbent objective
+        must be greater than or equal to this value. The
+        default setting of zero means that nodes whose bound
+        is equal to the incumbent objective will remain in
+        the queue. (default: 0)
+    comparison_tolerance : float, optional
+        The absolute tolerance used when deciding if two
         objective or bound values are sufficiently
-        different. (default: 1e-10)
+        different. This tolerance controls when the solver
+        considers a new incumbent objective to be
+        found. (default: 0)
     objective_stop : float, optional
         If provided, the "objective_limit" termination
         criteria is met when a feasible objective is found
@@ -89,9 +120,11 @@ class ConvergenceChecker(object):
         value. (default: None)
     """
     __slots__ = ("sense",
-                 "absolute_gap_tolerance",
-                 "relative_gap_tolerance",
-                 "absolute_tolerance",
+                 "absolute_gap",
+                 "relative_gap",
+                 "scale_function",
+                 "queue_tolerance",
+                 "comparison_tolerance",
                  "objective_stop",
                  "bound_stop",
                  "infeasible_objective",
@@ -101,24 +134,12 @@ class ConvergenceChecker(object):
                  sense,
                  absolute_gap=1e-8,
                  relative_gap=1e-4,
-                 absolute_tolerance=1e-10,
+                 scale_function=_default_scale,
+                 queue_tolerance=0,
+                 comparison_tolerance=1e-10,
                  objective_stop=None,
                  bound_stop=None):
         self.sense = sense
-        self.absolute_gap_tolerance = float(absolute_gap)
-        self.relative_gap_tolerance = float(relative_gap)
-        self.absolute_tolerance = float(absolute_tolerance)
-        self.objective_stop = None
-        if objective_stop is not None:
-            self.objective_stop = float(objective_stop)
-            assert not math.isinf(self.objective_stop)
-            assert not math.isnan(self.objective_stop)
-        self.bound_stop = None
-        if bound_stop is not None:
-            self.bound_stop = float(bound_stop)
-            assert not math.isinf(self.bound_stop)
-            assert not math.isnan(self.bound_stop)
-
         if self.sense == minimize:
             self.infeasible_objective = inf
             self.unbounded_objective = -inf
@@ -126,12 +147,34 @@ class ConvergenceChecker(object):
             assert self.sense == maximize
             self.infeasible_objective = -inf
             self.unbounded_objective = inf
-        assert (self.absolute_gap_tolerance >= 0) and \
-            (not math.isinf(self.absolute_gap_tolerance))
-        assert self.relative_gap_tolerance >= 0 and \
-            (not math.isinf(self.relative_gap_tolerance))
-        assert self.absolute_tolerance > 0 and \
-            (not math.isinf(self.absolute_tolerance))
+        self.absolute_gap = None
+        if absolute_gap is not None:
+            self.absolute_gap = float(absolute_gap)
+            assert (self.absolute_gap >= 0) and \
+                (not math.isinf(self.absolute_gap))
+        self.relative_gap = None
+        if relative_gap is not None:
+            self.relative_gap = float(relative_gap)
+            assert self.relative_gap >= 0 and \
+                (not math.isinf(self.relative_gap))
+        self.scale_function = scale_function
+        self.queue_tolerance = queue_tolerance
+        assert self.queue_tolerance >= 0 and \
+            (not math.isinf(self.queue_tolerance)) and \
+            (not math.isnan(self.queue_tolerance))
+        self.comparison_tolerance = float(comparison_tolerance)
+        assert self.comparison_tolerance > 0 and \
+            (not math.isinf(self.comparison_tolerance))
+        self.objective_stop = None
+        if objective_stop is not None:
+            self.objective_stop = float(objective_stop)
+            assert self.objective_stop != self.unbounded_objective
+            assert not math.isnan(self.objective_stop)
+        self.bound_stop = None
+        if bound_stop is not None:
+            self.bound_stop = float(bound_stop)
+            assert self.bound_stop != self.infeasible_objective
+            assert not math.isnan(self.bound_stop)
 
     def check_termination_criteria(self,
                                    global_bound,
@@ -145,107 +188,113 @@ class ConvergenceChecker(object):
            (self.objective_is_optimal(best_objective, global_bound)):
             result = TerminationCondition.optimality
         elif self.objective_stop is not None:
-            if self.sense == minimize:
-                if best_objective <= self.objective_stop:
-                    result = TerminationCondition.objective_limit
+            if self.objective_stop != self.infeasible_objective:
+                if self.sense == minimize:
+                    if best_objective <= self.objective_stop:
+                        result = TerminationCondition.objective_limit
+                else:
+                    if best_objective >= self.objective_stop:
+                        result = TerminationCondition.objective_limit
             else:
-                if best_objective >= self.objective_stop:
+                if best_objective != self.infeasible_objective:
                     result = TerminationCondition.objective_limit
         elif self.bound_stop is not None:
-            if self.sense == minimize:
-                if global_bound >= self.bound_stop:
-                    result = TerminationCondition.objective_limit
+            if self.bound_stop != self.unbounded_objective:
+                if self.sense == minimize:
+                    if global_bound >= self.bound_stop:
+                        result = TerminationCondition.objective_limit
+                else:
+                    if global_bound <= self.bound_stop:
+                        result = TerminationCondition.objective_limit
             else:
-                if global_bound <= self.bound_stop:
+                if global_bound != self.unbounded_objective:
                     result = TerminationCondition.objective_limit
         return result
 
-    def compute_absolute_gap(self, bound, objective):
-        """Returns the absolute gap between the bound and
-        the objective, respecting the sign relative to the
-        objective sense of this problem."""
-        return compute_absolute_gap(self.sense, bound, objective)
-
-    def compute_relative_gap(self, bound, objective):
-        """Returns the relative gap between the bound and
-        the objective, respecting the sign relative to the
-        objective sense of this problem."""
-        return compute_relative_gap(self.sense, bound, objective)
-
     def objective_is_optimal(self, objective, bound):
         """Determines if the objective is optimal by
-        checking if the optimality gap is below the absolute
-        or relative gap tolerances."""
+        checking if the optimality gap is small enough
+        relative to the absolute gap or relative gap
+        settings."""
         assert bound != self.infeasible_objective
         if (objective != self.unbounded_objective) and \
            (objective != self.infeasible_objective):
             gap = self.compute_absolute_gap(bound,
                                             objective)
-            if gap <= self.absolute_gap_tolerance:
+            if (self.absolute_gap is not None) and \
+               (gap <= self.absolute_gap):
                 return True
-            else:
-                gap = scale_absolute_gap(gap, objective)
-                if gap <= self.relative_gap_tolerance:
+            elif (self.relative_gap is not None):
+                scale = self.scale_function(bound, objective)
+                gap = _scale_absolute_gap(gap, scale)
+                if gap <= self.relative_gap:
                     return True
         return False
 
+    def compute_absolute_gap(self, bound, objective):
+        """Returns the absolute gap between the bound and
+        the objective, respecting the sign relative to the
+        objective sense of this problem."""
+        return compute_absolute_gap(self.sense,
+                                    bound,
+                                    objective)
+
+    def compute_relative_gap(self, bound, objective):
+        """Returns the relative gap between the bound and
+        the objective, respecting the sign relative to the
+        objective sense of this problem."""
+        return compute_relative_gap(self.sense,
+                                    bound,
+                                    objective,
+                                    scale=self.scale_function)
+
+    def eligible_for_queue(self, bound, objective):
+        """Returns True when the queue object with the given
+        bound is eligible for the queue relative to the
+        given objective."""
+        # handles the both equal and infinite case
+        if bound == self.infeasible_objective:
+            return False
+        if self.sense == minimize:
+            return objective - bound >= self.queue_tolerance
+        else:
+            return bound - objective >= self.queue_tolerance
+
     def bound_improved(self, new, old):
         """Returns True when the new bound is better than
-        the old bound by greater than the absolute
+        the old bound by greater than the comparison
         tolerance."""
         # handles the both equal and infinite case
         if old == new:
             return False
         if self.sense == minimize:
-            return new - old > self.absolute_tolerance
+            return new - old > self.comparison_tolerance
         else:
-            return old - new > self.absolute_tolerance
+            return old - new > self.comparison_tolerance
 
     def bound_worsened(self, new, old):
         """Returns True when the new bound is worse than the
-        old bound by greater than the absolute tolerance."""
-        # handles the both equal and infinite case
-        if old == new:
-            return False
-        if self.sense == minimize:
-            return old - new > self.absolute_tolerance
-        else:
-            return new - old > self.absolute_tolerance
-
-    def objective_improved(self, new, old):
-        """Returns True when the new objective is better
-        than the old objective by greater than the absolute
+        old bound by greater than the comparison
         tolerance."""
         # handles the both equal and infinite case
         if old == new:
             return False
         if self.sense == minimize:
-            return old - new > self.absolute_tolerance
+            return old - new > self.comparison_tolerance
         else:
-            return new - old > self.absolute_tolerance
+            return new - old > self.comparison_tolerance
 
-    def objective_can_improve(self, objective, bound):
-        """Returns True when the absolute difference between
-        the objective and the bound is greater than the
-        absolute tolerance."""
+    def objective_improved(self, new, old):
+        """Returns True when the new objective is better
+        than the old objective by greater than the
+        comparison tolerance."""
         # handles the both equal and infinite case
-        if bound == objective:
+        if old == new:
             return False
         if self.sense == minimize:
-            return objective - bound > self.absolute_tolerance
+            return old - new > self.comparison_tolerance
         else:
-            return bound - objective > self.absolute_tolerance
-
-    def bound_is_suboptimal(self, bound, objective):
-        """Returns True when bound is worse than the
-        objective by greater than the absolute tolerance."""
-        # handles the both equal and infinite case
-        if bound == objective:
-            return False
-        if self.sense == minimize:
-            return bound - objective > self.absolute_tolerance
-        else:
-            return objective - bound > self.absolute_tolerance
+            return new - old > self.comparison_tolerance
 
     def worst_bound(self, *bounds):
         """Returns the worst bound, as defined by the

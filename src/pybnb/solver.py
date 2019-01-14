@@ -9,6 +9,8 @@ import time
 import math
 
 from pybnb.common import (nan,
+                          minimize,
+                          maximize,
                           NodePriorityStrategy,
                           _node_priority_strategy_to_int,
                           _int_to_node_priority_strategy,
@@ -22,7 +24,8 @@ from pybnb.misc import (MPI_InterruptHandler,
                         as_stream,
                         get_simple_logger)
 from pybnb.node import Node
-from pybnb.convergence_checker import ConvergenceChecker
+from pybnb.convergence_checker import (_default_scale,
+                                       ConvergenceChecker)
 from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (DispatcherLocal,
                               DispatcherDistributed,
@@ -290,13 +293,18 @@ class Solver(object):
             if convergence_checker.objective_is_optimal(
                     results.objective,
                     results.bound):
-                results.solution_status = SolutionStatus.optimal
+                results.solution_status = SolutionStatus.invalid
+                if (convergence_checker.sense == minimize) and \
+                   (results.bound <= results.objective):
+                    results.solution_status = SolutionStatus.optimal
+                elif (convergence_checker.sense == maximize) and \
+                     (results.bound >= results.objective):
+                    results.solution_status = SolutionStatus.optimal
             else:
                 results.solution_status = SolutionStatus.feasible
 
     def _solve(self,
                problem,
-               best_objective,
                disable_objective_call,
                convergence_checker,
                results):
@@ -307,7 +315,7 @@ class Solver(object):
         assert unbounded_objective == \
             convergence_checker.unbounded_objective
 
-        self._best_objective = best_objective
+        self._best_objective = infeasible_objective
         children = ()
         bound = unbounded_objective
         if not isinstance(problem, _ProblemWithSolveInfoCollection):
@@ -359,10 +367,9 @@ class Solver(object):
 
             # we should not be receiving a node that
             # does not satisfy these assertions
-            assert (bound != infeasible_objective) and \
-                convergence_checker.objective_can_improve(
-                    self._best_objective,
-                    bound)
+            assert convergence_checker.eligible_for_queue(
+                    bound,
+                    self._best_objective)
 
             problem.load_state(working_node)
 
@@ -375,15 +382,14 @@ class Solver(object):
             working_node.bound = new_bound
             bound = new_bound
 
-            if (bound != infeasible_objective) and \
-                convergence_checker.objective_can_improve(
-                    self._best_objective,
-                    bound):
+            if convergence_checker.eligible_for_queue(
+                    bound,
+                    self._best_objective):
                 if not disable_objective_call:
                     obj = problem.objective()
                     working_node.objective = obj
                     if obj is not None:
-                        if convergence_checker.bound_is_suboptimal(bound, obj): #pragma:nocover
+                        if convergence_checker.best_bound(bound, obj) != obj: #pragma:nocover
                             self._disp.log_warning(
                                 "WARNING: Local node bound is worse "
                                 "than local node objective (bound=%r, "
@@ -397,9 +403,9 @@ class Solver(object):
                         del updated
                 if (disable_objective_call or \
                     (obj != convergence_checker.unbounded_objective)) and \
-                   convergence_checker.objective_can_improve(
-                       self._best_objective,
-                       bound):
+                   convergence_checker.eligible_for_queue(
+                       bound,
+                       self._best_objective):
                     clist = problem.branch(working_node)
                     for child in clist:
                         assert child.parent_tree_id == current_tree_id
@@ -579,11 +585,12 @@ class Solver(object):
               node_priority_strategy="bound",
               absolute_gap=1e-8,
               relative_gap=1e-4,
+              scale_function=_default_scale,
+              comparison_tolerance=1e-10,
               objective_stop=None,
               bound_stop=None,
               node_limit=None,
               time_limit=None,
-              absolute_tolerance=1e-10,
               log_interval_seconds=1.0,
               log=_notset):
         """Solve a problem using branch-and-bound.
@@ -618,27 +625,55 @@ class Solver(object):
         absolute_gap : float, optional
             The maximum absolute difference between the
             global bound and best objective for the problem
-            to be considered solved to optimality.
+            to be considered solved to optimality. Setting
+            to `None` will disable this optimality check.
             (default: 1e-8)
         relative_gap : float, optional
             The maximum relative difference (absolute
             difference scaled by `max{1.0,|objective|}`)
             between the global bound and best objective for
             the problem to be considered solved to
-            optimality.  (default: 1e-4)
+            optimality. Setting to `None` will disable this
+            optimality check. (default: 1e-4)
+        scale_function : function, optional
+            A function with signature `f(bound, objective)
+            -> float` that returns a positive scale factor
+            used to convert the absolute difference between
+            the bound and objective into a relative
+            difference. The relative difference is compared
+            with the `relative_gap` convergence tolerance to
+            determine if the solver should terminate. The
+            default is equivalent to `max{1.0,|objective|}`.
+            Other examples one could use are
+            `max{|bound|,|objective|}`,
+            `(|bound|+|objective|)/2`, etc.
+        comparison_tolerance : float, optional
+            The absolute tolerance used when deciding if two
+            objective / bound values are sufficiently
+            different. For instance, this option controls
+            what nodes are added to the queue by checking if
+            their bound is at least this much better than
+            the current best object. It is a good idea to
+            keep this tolerance small relative to the
+            absolute gap used for checking optimality.
+            (default: 1e-10)
         objective_stop : float, optional
             If provided, the solve will terminate when a
             feasible objective is found that is at least as
             good as the specified value, and the
             termination_condition flag on the results object
-            will be set to "objective_limit".
+            will be set to "objective_limit". If this value
+            is infinite, the solve will terminate as soon as
+            a finite objective is found.
             (default: None)
         bound_stop : float, optional
             If provided, the solve will terminate when the
-            global bound on the objective is at least as good
-            as the specified value, and the
+            global bound on the objective is at least as
+            good as the specified value, and the
             termination_condition flag on the results object
-            will be set to "objective_limit".
+            will be set to "objective_limit". If this value
+            is infinite, the solve will terminate as soon as
+            a finite bound is found.
             (default: None)
         node_limit : int, optional
             If provided, the solve will begin to terminate
@@ -654,13 +689,6 @@ class Solver(object):
             may run for an arbitrarily longer amount of
             time, depending how long worker processes spend
             completing their final task. (default: None)
-        absolute_tolerance : float, optional
-            The absolute tolerance used when deciding if two
-            objective / bound values are sufficiently
-            different. For instance, this option controls
-            what nodes are added to the queue by checking if
-            their bound is at least this much better than
-            the current best object. (default: 1e-10)
         log_interval_seconds : float, optional
             The approximate time (in seconds) between solver
             log updates. More time may pass between log
@@ -740,7 +768,8 @@ class Solver(object):
             problem.sense(),
             absolute_gap=absolute_gap,
             relative_gap=relative_gap,
-            absolute_tolerance=absolute_tolerance,
+            scale_function=scale_function,
+            comparison_tolerance=comparison_tolerance,
             objective_stop=objective_stop,
             bound_stop=bound_stop)
         problem.notify_solve_begins(self.comm,
@@ -796,7 +825,6 @@ class Solver(object):
                             TerminationCondition.interrupted
                 with MPI_InterruptHandler(handler):
                     tmp = self._solve(problem,
-                                      best_objective,
                                       disable_objective_call,
                                       convergence_checker,
                                       results)
@@ -840,20 +868,20 @@ class Solver(object):
                 if results.solution_status == "feasible":
                     self._disp.log_info("Feasible solution found")
                 else:
-                    if agap < convergence_checker.absolute_gap_tolerance:
+                    if (convergence_checker.absolute_gap is not None) and \
+                       agap <= convergence_checker.absolute_gap:
                         self._disp.log_info("Absolute optimality tolerance met")
-                    if rgap < convergence_checker.relative_gap_tolerance:
+                    if (convergence_checker.relative_gap is not None) and \
+                       rgap <= convergence_checker.relative_gap:
                         self._disp.log_info("Relative optimality tolerance met")
                     assert results.solution_status == "optimal"
-                    self._disp.log_info("Optimal solution found")
-                self._disp.log_info(" - absolute gap: %.6g"
-                                    % (agap))
-                self._disp.log_info(" - relative gap: %.6g"
-                                    % (rgap))
+                    self._disp.log_info("Optimal solution found!")
             elif results.solution_status == "infeasible":
                 self._disp.log_info("Problem is infeasible")
             elif results.solution_status == "unbounded":
                 self._disp.log_info("Problem is unbounded")
+            elif results.solution_status == "invalid":      #pragma:nocover
+                self._disp.log_info("Problem is invalid")
             else:
                 assert results.solution_status == "unknown"
                 self._disp.log_info("Status unknown")

@@ -9,6 +9,10 @@ Changelog
 0.3.0 - 2019-01-10
 ~~~~~~~~~~~~~~~~~~
 
+* Adding scale_function solver keyword to allow customizing
+  how the absolute gap is converted to a relative
+  gap. Default is max{1.0,|objective|}.
+* Renaming absolute_tolerance keyword to comparison_tolerance
 * Renaming the pybnb.pyomo_tools sub-package to pybnb.pyomo.
 * Renaming the cutoff solve option to bound_stop. Also
   adding an objective_stop solve option. Both options
