@@ -81,7 +81,8 @@ class Problem(object):
     def branch(self, parent_node):                #pragma:nocover
         """Returns a list of :class:`pybnb.node.Node`
         objects that partition the parent node state into
-        zero or more children.
+        zero or more children. This method can also be
+        defined as a generator.
 
         Note
         ----
@@ -355,10 +356,10 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
 
     def branch(self, parent_node):
         start = self._clock()
-        tmp = self._problem.branch(parent_node)
+        for item in self._problem.branch(parent_node):
+            yield item
         stop = self._clock()
         self._solve_info._increment_branch_stat(stop-start, 1)
-        return tmp
 
     def save_state(self, node):
         self._problem.save_state(node)
