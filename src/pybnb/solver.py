@@ -806,7 +806,7 @@ class Solver(object):
             if not self.is_worker:
                 def handler(signum, frame):       #pragma:nocover
                     self._disp.log_warning(
-                        "Solve interrupted by user "
+                        "Solve interrupted by user. "
                         "Waiting for current worker "
                         "jobs to complete before "
                         "terminating the solve.")
@@ -818,7 +818,7 @@ class Solver(object):
                 def handler(signum, frame):       #pragma:nocover
                     if self.is_dispatcher:
                         self._disp.log_warning(
-                            "Solve interrupted by user "
+                            "Solve interrupted by user. "
                             "Waiting for current worker "
                             "jobs to complete before "
                             "terminating the solve.")
