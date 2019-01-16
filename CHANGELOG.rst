@@ -6,7 +6,7 @@ Changelog
 
 * TODO
 
-0.3.0 - 2019-01-10
+0.3.0 - 2019-01-16
 ~~~~~~~~~~~~~~~~~~
 
 * Adding scale_function solver keyword to allow customizing
@@ -32,8 +32,8 @@ Changelog
   objective.
 * Removing a number of collective MPI communicator calls
   from the solve finalization process.
-* Adding a queue implementation that uses random priority
-  assignments.
+* Adding additional queue strategy implementations: 'random'
+  and 'local_gap'
 
 0.2.9 - 2018-12-03
 ~~~~~~~~~~~~~~~~~~

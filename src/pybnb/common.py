@@ -36,6 +36,9 @@ class NodePriorityStrategy(str, enum.Enum):
     depth = "depth"
     """The node with the largest tree depth is always
     selected next (i.e., depth-first search)."""
+    local_gap = "local_gap"
+    """The node with the largest gap between its local
+    objective and bound is always selected next."""
     fifo = "fifo"
     """Nodes are served in first-in, first-out order."""
     random = "random"

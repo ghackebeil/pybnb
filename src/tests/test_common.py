@@ -35,12 +35,13 @@ class Test(object):
         assert NodePriorityStrategy.objective == "objective"
         assert NodePriorityStrategy.breadth == "breadth"
         assert NodePriorityStrategy.depth == "depth"
+        assert NodePriorityStrategy.local_gap == "local_gap"
         assert NodePriorityStrategy.fifo == "fifo"
         assert NodePriorityStrategy.random == "random"
         assert NodePriorityStrategy.custom == "custom"
-        assert len(NodePriorityStrategy) == 7
-        assert len(_node_priority_strategy_to_int) == 7
-        assert len(_int_to_node_priority_strategy) == 7
+        assert len(NodePriorityStrategy) == 8
+        assert len(_node_priority_strategy_to_int) == 8
+        assert len(_int_to_node_priority_strategy) == 8
         for val in NodePriorityStrategy:
             assert _int_to_node_priority_strategy[
                 _node_priority_strategy_to_int[val]] is val

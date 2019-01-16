@@ -517,3 +517,32 @@ class RandomPriorityQueue(CustomPriorityQueue):
     def put_get(self, item):
         Node._insert_queue_priority(item, random.random())
         return super(RandomPriorityQueue, self).put_get(item)
+
+class LocalGapPriorityQueue(CustomPriorityQueue):
+    """A priority queue implementation that serves nodes
+    with the largest gap between the local objective and
+    bound first.
+
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
+        The objective sense for the problem.
+    """
+
+    def _get_gap(self, item):
+        objective = Node._extract_objective(item)
+        bound = Node._extract_bound(item)
+        if self._sense == minimize:
+            gap = objective - bound
+        else:
+            gap = bound - objective
+        assert not math.isnan(gap)
+        return gap
+
+    def put(self, item):
+        gap = self._get_gap(item)
+        Node._insert_queue_priority(item, gap)
+        return super(LocalGapPriorityQueue, self).put(item)
+
+    def put_get(self, item):
+        gap = self._get_gap(item)
+        Node._insert_queue_priority(item, gap)
+        return super(LocalGapPriorityQueue, self).put_get(item)

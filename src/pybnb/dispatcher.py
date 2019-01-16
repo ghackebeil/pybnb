@@ -31,7 +31,8 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   BreadthFirstPriorityQueue,
                                   DepthFirstPriorityQueue,
                                   FIFOQueue,
-                                  RandomPriorityQueue)
+                                  RandomPriorityQueue,
+                                  LocalGapPriorityQueue)
 
 try:
     import mpi4py
@@ -456,6 +457,9 @@ class DispatcherBase(object):
                 self.converger.sense)
         elif node_priority_strategy == "depth":
             self.queue = DepthFirstPriorityQueue(
+                self.converger.sense)
+        elif node_priority_strategy == "local_gap":
+            self.queue = LocalGapPriorityQueue(
                 self.converger.sense)
         else:
             assert node_priority_strategy == "random"

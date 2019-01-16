@@ -3,7 +3,8 @@ import random
 import pytest
 
 from pybnb.common import (minimize,
-                          maximize)
+                          maximize,
+                          inf)
 from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.node import Node
 from pybnb.priority_queue import \
@@ -15,7 +16,8 @@ from pybnb.priority_queue import \
      BreadthFirstPriorityQueue,
      DepthFirstPriorityQueue,
      FIFOQueue,
-     RandomPriorityQueue)
+     RandomPriorityQueue,
+     LocalGapPriorityQueue)
 
 def assert_isheap(x):
     for k in range(len(x)):
@@ -693,3 +695,101 @@ class TestRandomPriorityQueue(object):
         assert 0 <= l3.queue_priority <= 1
         assert data_ is max([l2, l3],
                             key=lambda x_: x_.queue_priority)._data
+
+
+class TestRandomPriorityQueue(object):
+
+    def test_overwrites_queue_priority(self):
+        q = LocalGapPriorityQueue(minimize)
+        node = Node(size=0)
+        node.bound = -inf
+        node.objective = inf
+        assert node.queue_priority is None
+        assert q.put(node._data) == 0
+        assert node.queue_priority is not None
+        assert node.queue_priority == inf
+        child = node.new_child()
+        assert child.bound == -inf
+        assert child.objective == inf
+        child.bound = 0
+        assert child.queue_priority is None
+        assert q.put(child._data) == 1
+        assert child.queue_priority is not None
+        assert child.queue_priority == inf
+        child = child.new_child()
+        assert child.bound == 0
+        assert child.objective == inf
+        child.objective = 1
+        assert child.queue_priority is None
+        assert q.put(child._data) == 2
+        assert child.queue_priority is not None
+        assert child.queue_priority == 1
+
+        l1 = Node(size=0)
+        l1.bound = 1
+        l1.objective = 5
+        l2 = l1.new_child()
+        l3 = l2.new_child()
+        q = LocalGapPriorityQueue(minimize)
+        assert l2.queue_priority is None
+        cnt, data = q.put_get(l2._data)
+        assert data is l2._data
+        assert l2.queue_priority is not None
+        assert l2.queue_priority == 4
+        assert cnt == 0
+        cnt = q.put(l2._data)
+        assert cnt == 1
+        assert l3.queue_priority is None
+        l3.objective = 6
+        cnt, data_ = q.put_get(l3._data)
+        assert cnt == 2
+        assert l3.queue_priority is not None
+        assert l3.queue_priority == 5
+        assert data_ is l3._data
+
+        q = LocalGapPriorityQueue(maximize)
+        node = Node(size=0)
+        node.bound = inf
+        node.objective = -inf
+        assert node.queue_priority is None
+        assert q.put(node._data) == 0
+        assert node.queue_priority is not None
+        assert node.queue_priority == inf
+        child = node.new_child()
+        assert child.bound == inf
+        assert child.objective == -inf
+        child.bound = 0
+        assert child.queue_priority is None
+        assert q.put(child._data) == 1
+        assert child.queue_priority is not None
+        assert child.queue_priority == inf
+        child = child.new_child()
+        assert child.bound == 0
+        assert child.objective == -inf
+        child.objective = -1
+        assert child.queue_priority is None
+        assert q.put(child._data) == 2
+        assert child.queue_priority is not None
+        assert child.queue_priority == 1
+
+        l1 = Node(size=0)
+        l1.bound = -1
+        l1.objective = -5
+        l2 = l1.new_child()
+        l3 = l2.new_child()
+        q = LocalGapPriorityQueue(maximize)
+        assert l2.queue_priority is None
+        cnt, data = q.put_get(l2._data)
+        assert data is l2._data
+        assert l2.queue_priority is not None
+        assert l2.queue_priority == 4
+        assert cnt == 0
+        cnt = q.put(l2._data)
+        assert cnt == 1
+        assert l3.queue_priority is None
+        l3.objective = -6
+        cnt, data_ = q.put_get(l3._data)
+        assert cnt == 2
+        assert l3.queue_priority is not None
+        assert l3.queue_priority == 5
+        assert data_ is l3._data
