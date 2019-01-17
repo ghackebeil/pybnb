@@ -389,24 +389,24 @@ class Solver(object):
                 if not disable_objective_call:
                     objective = problem.objective()
                     working_node.objective = objective
-                    if convergence_checker.best_bound(bound, objective) != objective: #pragma:nocover
-                        self._disp.log_warning(
-                            "WARNING: Local node bound is worse "
-                            "than local node objective (bound=%r, "
-                            "objective=%r)" % (bound, objective))
-                    updated = self._check_update_best_objective(
-                        convergence_checker,
-                        objective)
-                    if updated and \
-                       (self._best_objective != unbounded_objective):
-                        problem.notify_new_best_objective(
-                            self._best_objective)
-                    del updated
+                if convergence_checker.best_bound(bound, objective) != objective: #pragma:nocover
+                    self._disp.log_warning(
+                        "WARNING: Local node bound is worse "
+                        "than local node objective (bound=%r, "
+                        "objective=%r)" % (bound, objective))
+                updated = self._check_update_best_objective(
+                    convergence_checker,
+                    objective)
+                if updated and \
+                   (self._best_objective != unbounded_objective):
+                    problem.notify_new_best_objective(
+                        self._best_objective)
+                del updated
                 if (objective != convergence_checker.unbounded_objective) and \
                     convergence_checker.eligible_for_queue(
                         bound,
                         self._best_objective):
-                    if (bound != objective):
+                    if convergence_checker.eligible_to_branch(bound, objective):
                         clist = problem.branch(working_node)
                         for child in clist:
                             assert child.parent_tree_id == current_tree_id
@@ -587,7 +587,7 @@ class Solver(object):
               relative_gap=1e-4,
               scale_function=_default_scale,
               queue_tolerance=0,
-              comparison_tolerance=1e-10,
+              comparison_tolerance=0,
               objective_stop=None,
               bound_stop=None,
               node_limit=None,
@@ -671,12 +671,14 @@ class Solver(object):
             **(A)** The absolute tolerance used when
             deciding if two objective / bound values are
             sufficiently different. For instance, this
-            option controls what nodes are added to the
-            queue by checking if their bound is at least
-            this much better than the current best
-            object. It is a good idea to keep this tolerance
-            small relative to the absolute gap used for
-            checking optimality. (default: 1e-10)
+            tolerance is used when deciding an objective
+            value has improved the incumbent objective
+            enough to be reported. It also control when
+            branching should continue on a node by checking
+            if the local node bound and objective are
+            sufficently different. It is a good idea to keep
+            this tolerance small relative to the absolute
+            gap used for checking optimality. (default: 0)
         objective_stop : float, optional
             **(A)** If provided, the solve will terminate
             when a feasible objective is found that is at

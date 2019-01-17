@@ -139,7 +139,7 @@ class ConvergenceChecker(object):
                  relative_gap=1e-4,
                  scale_function=_default_scale,
                  queue_tolerance=0,
-                 comparison_tolerance=1e-10,
+                 comparison_tolerance=0,
                  objective_stop=None,
                  bound_stop=None):
         self.sense = sense
@@ -166,7 +166,7 @@ class ConvergenceChecker(object):
             (not math.isinf(self.queue_tolerance)) and \
             (not math.isnan(self.queue_tolerance))
         self.comparison_tolerance = float(comparison_tolerance)
-        assert self.comparison_tolerance > 0 and \
+        assert self.comparison_tolerance >= 0 and \
             (not math.isinf(self.comparison_tolerance))
         self.objective_stop = None
         if objective_stop is not None:
@@ -263,17 +263,14 @@ class ConvergenceChecker(object):
         else:
             return bound - objective >= self.queue_tolerance
 
-    def bound_improved(self, new, old):
-        """Returns True when the new bound is better than
-        the old bound by greater than the comparison
-        tolerance."""
+    def eligible_to_branch(self, bound, objective):
+        """Returns True when the bound and objective
+        are sufficiently far apart to allow branching."""
         # handles the both equal and infinite case
-        if old == new:
-            return False
         if self.sense == minimize:
-            return new - old > self.comparison_tolerance
+            return objective - bound > self.comparison_tolerance
         else:
-            return old - new > self.comparison_tolerance
+            return bound - objective > self.comparison_tolerance
 
     def bound_worsened(self, new, old):
         """Returns True when the new bound is worse than the

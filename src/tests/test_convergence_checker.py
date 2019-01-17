@@ -126,37 +126,37 @@ class TestConvergenceChecker(object):
                         assert p.compute_relative_gap(bound,objective) == \
                             -inf
 
-    def test_bound_improved(self):
+    def test_eligible_to_branch(self):
         # min
         p = ConvergenceChecker(minimize)
-        assert not p.bound_improved(-inf, -inf)
-        assert not p.bound_improved(-inf, inf)
-        assert not p.bound_improved(-inf, 0.0)
-        assert p.bound_improved(inf, -inf)
-        assert not p.bound_improved(inf, inf)
-        assert p.bound_improved(inf, 0.0)
-        assert p.bound_improved(0.0, -inf)
-        assert not p.bound_improved(0.0, inf)
-        assert not p.bound_improved(0.0, 0.0)
+        assert not p.eligible_to_branch(-inf, -inf)
+        assert p.eligible_to_branch(-inf, inf)
+        assert p.eligible_to_branch(-inf, 0.0)
+        assert not p.eligible_to_branch(inf, -inf)
+        assert not p.eligible_to_branch(inf, inf)
+        assert not p.eligible_to_branch(inf, 0.0)
+        assert not p.eligible_to_branch(0.0, -inf)
+        assert p.eligible_to_branch(0.0, inf)
+        assert not p.eligible_to_branch(0.0, 0.0)
         p = ConvergenceChecker(minimize,
                                comparison_tolerance=0.1)
-        assert not p.bound_improved(0.1, 0.0)
-        assert p.bound_improved(0.11, 0.0)
+        assert not p.eligible_to_branch(-0.1, 0.0)
+        assert p.eligible_to_branch(-0.11, 0.0)
         # max
         p = ConvergenceChecker(maximize)
-        assert not p.bound_improved(-inf, -inf)
-        assert p.bound_improved(-inf, inf)
-        assert p.bound_improved(-inf, 0.0)
-        assert not p.bound_improved(inf, -inf)
-        assert not p.bound_improved(inf, inf)
-        assert not p.bound_improved(inf, 0.0)
-        assert not p.bound_improved(0.0, -inf)
-        assert p.bound_improved(0.0, inf)
-        assert not p.bound_improved(0.0, 0.0)
+        assert not p.eligible_to_branch(-inf, -inf)
+        assert not p.eligible_to_branch(-inf, inf)
+        assert not p.eligible_to_branch(-inf, 0.0)
+        assert p.eligible_to_branch(inf, -inf)
+        assert not p.eligible_to_branch(inf, inf)
+        assert p.eligible_to_branch(inf, 0.0)
+        assert p.eligible_to_branch(0.0, -inf)
+        assert not p.eligible_to_branch(0.0, inf)
+        assert not p.eligible_to_branch(0.0, 0.0)
         p = ConvergenceChecker(maximize,
                                comparison_tolerance=0.1)
-        assert not p.bound_improved(-0.1, 0.0)
-        assert p.bound_improved(-0.11, 0.0)
+        assert not p.eligible_to_branch(0.1, 0.0)
+        assert p.eligible_to_branch(0.11, 0.0)
 
     def test_bound_worsened(self):
         # min
@@ -221,70 +221,6 @@ class TestConvergenceChecker(object):
                                comparison_tolerance=0.1)
         assert not p.objective_improved(0.1, 0.0)
         assert p.objective_improved(0.11, 0.0)
-
-    def test_objective_can_improve(self):
-        # min
-        p = ConvergenceChecker(minimize)
-        assert not p.objective_can_improve(-inf, -inf)
-        assert not p.objective_can_improve(-inf, inf)
-        assert not p.objective_can_improve(-inf, 0.0)
-        assert p.objective_can_improve(inf, -inf)
-        assert not p.objective_can_improve(inf, inf)
-        assert p.objective_can_improve(inf, 0.0)
-        assert p.objective_can_improve(0.0, -inf)
-        assert not p.objective_can_improve(0.0, inf)
-        assert not p.objective_can_improve(0.0, 0.0)
-        p = ConvergenceChecker(minimize,
-                               comparison_tolerance=0.1)
-        assert not p.objective_can_improve(0.0, -0.1)
-        assert p.objective_can_improve(0.0, -0.11)
-        # max
-        p = ConvergenceChecker(maximize)
-        assert not p.objective_can_improve(-inf, -inf)
-        assert p.objective_can_improve(-inf, inf)
-        assert p.objective_can_improve(-inf, 0.0)
-        assert not p.objective_can_improve(inf, -inf)
-        assert not p.objective_can_improve(inf, inf)
-        assert not p.objective_can_improve(inf, 0.0)
-        assert not p.objective_can_improve(0.0, -inf)
-        assert p.objective_can_improve(0.0, inf)
-        assert not p.objective_can_improve(0.0, 0.0)
-        p = ConvergenceChecker(maximize,
-                               comparison_tolerance=0.1)
-        assert not p.objective_can_improve(0.0, 0.1)
-        assert p.objective_can_improve(0.0, 0.11)
-
-    def test_bound_is_suboptimal(self):
-        # min
-        p = ConvergenceChecker(minimize)
-        assert not p.bound_is_suboptimal(-inf, -inf)
-        assert not p.bound_is_suboptimal(-inf, inf)
-        assert not p.bound_is_suboptimal(-inf, 0.0)
-        assert p.bound_is_suboptimal(inf, -inf)
-        assert not p.bound_is_suboptimal(inf, inf)
-        assert p.bound_is_suboptimal(inf, 0.0)
-        assert p.bound_is_suboptimal(0.0, -inf)
-        assert not p.bound_is_suboptimal(0.0, inf)
-        assert not p.bound_is_suboptimal(0.0, 0.0)
-        p = ConvergenceChecker(minimize,
-                               comparison_tolerance=0.1)
-        assert not p.bound_is_suboptimal(0.0, -0.1)
-        assert p.bound_is_suboptimal(0.0, -0.11)
-        # max
-        p = ConvergenceChecker(maximize)
-        assert not p.bound_is_suboptimal(-inf, -inf)
-        assert p.bound_is_suboptimal(-inf, inf)
-        assert p.bound_is_suboptimal(-inf, 0.0)
-        assert not p.bound_is_suboptimal(inf, -inf)
-        assert not p.bound_is_suboptimal(inf, inf)
-        assert not p.bound_is_suboptimal(inf, 0.0)
-        assert not p.bound_is_suboptimal(0.0, -inf)
-        assert p.bound_is_suboptimal(0.0, inf)
-        assert not p.bound_is_suboptimal(0.0, 0.0)
-        p = ConvergenceChecker(maximize,
-                               comparison_tolerance=0.1)
-        assert not p.bound_is_suboptimal(0.0, 0.1)
-        assert p.bound_is_suboptimal(0.0, 0.11)
 
     def test_worst_bound(self):
         # min
