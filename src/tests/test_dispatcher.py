@@ -19,14 +19,12 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
 class TestDispatcherSimple(object):
 
     def test_queue_strategy(self):
-        converger = ConvergenceChecker(minimize)
+        convergence_checker = ConvergenceChecker(minimize)
         root = Node(size=0)
         Node._insert_tree_id(root._data, 0)
-        Node._insert_bound(root._data,
-                           converger.unbounded_objective)
-        Node._insert_objective(root._data,
-                               converger.infeasible_objective)
-        initialize_queue = DispatcherQueueData(
+        root.bound = convergence_checker.unbounded_objective
+        root.objective = convergence_checker.infeasible_objective
+        queue = DispatcherQueueData(
             nodes=[root],
             next_tree_id=1)
 
@@ -39,9 +37,9 @@ class TestDispatcherSimple(object):
 
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'bound',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
@@ -49,9 +47,9 @@ class TestDispatcherSimple(object):
         assert type(disp.queue) is WorstBoundFirstPriorityQueue
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'custom',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
@@ -59,9 +57,9 @@ class TestDispatcherSimple(object):
         assert type(disp.queue) is CustomPriorityQueue
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'objective',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
@@ -69,9 +67,9 @@ class TestDispatcherSimple(object):
         assert type(disp.queue) is BestObjectiveFirstPriorityQueue
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'breadth',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
@@ -79,9 +77,9 @@ class TestDispatcherSimple(object):
         assert type(disp.queue) is BreadthFirstPriorityQueue
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'depth',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
@@ -89,9 +87,9 @@ class TestDispatcherSimple(object):
         assert type(disp.queue) is DepthFirstPriorityQueue
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'fifo',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
@@ -99,9 +97,9 @@ class TestDispatcherSimple(object):
         assert type(disp.queue) is FIFOQueue
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'random',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
@@ -109,11 +107,58 @@ class TestDispatcherSimple(object):
         assert type(disp.queue) is RandomPriorityQueue
         disp.initialize(
             inf,
-            initialize_queue,
+            queue,
             'local_gap',
-            converger,
+            convergence_checker,
             node_limit,
             time_limit,
             log,
             log_interval_seconds)
         assert type(disp.queue) is LocalGapPriorityQueue
+
+    def test_initialize_queue(self):
+        node_limit = None
+        time_limit = None
+        log = get_simple_logger()
+        log_interval_seconds = inf
+        convergence_checker = ConvergenceChecker(minimize)
+        root = Node(size=0)
+        Node._insert_tree_id(root._data, 0)
+        root.bound = convergence_checker.unbounded_objective
+        root.objective = convergence_checker.infeasible_objective
+        queue = DispatcherQueueData(
+            nodes=[root],
+            next_tree_id=1)
+
+        disp = DispatcherLocal()
+        disp.initialize(
+            0,
+            queue,
+            'bound',
+            convergence_checker,
+            node_limit,
+            time_limit,
+            log,
+            log_interval_seconds)
+        assert disp.best_objective == 0
+        disp.initialize(
+            1,
+            queue,
+            'bound',
+            convergence_checker,
+            node_limit,
+            time_limit,
+            log,
+            log_interval_seconds)
+        assert disp.best_objective == 1
+        root.objective = -1
+        disp.initialize(
+            1,
+            queue,
+            'bound',
+            convergence_checker,
+            node_limit,
+            time_limit,
+            log,
+            log_interval_seconds)
+        assert disp.best_objective == -1

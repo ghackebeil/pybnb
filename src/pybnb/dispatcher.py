@@ -466,8 +466,9 @@ class DispatcherBase(object):
                 log,
                 log_interval_seconds=log_interval_seconds)
         if len(initialize_queue.nodes):
-            self.converger.best_objective(
-                node.objective for node in initialize_queue.nodes)
+            self._check_update_best_objective(
+                self.converger.best_objective(
+                    node.objective for node in initialize_queue.nodes))
             for node in initialize_queue.nodes:
                 assert node.tree_id is not None
                 self._add_work_to_queue(node._data,
