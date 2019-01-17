@@ -281,6 +281,7 @@ class DispatcherBase(object):
 
     def __init__(self):
         self.initialized = False
+        self.log_new_incumbent = False
         self.termination_condition = None
         self.start_time = None
         self.last_global_bound = None
@@ -325,7 +326,8 @@ class DispatcherBase(object):
                                              self.best_objective):
             updated = True
             if self.journalist is not None:
-                self.journalist.new_objective(report=True)
+                self.journalist.new_objective(
+                    report=self.log_new_incumbent)
             self.best_objective = objective
             eligible_for_queue_ = self.converger.eligible_for_queue
             extract_bound_ = Node._extract_bound
@@ -378,7 +380,8 @@ class DispatcherBase(object):
                    node_limit,
                    time_limit,
                    log,
-                   log_interval_seconds):
+                   log_interval_seconds,
+                   log_new_incumbent):
         """Initialize the dispatcher for a new solve.
 
         Parameters
@@ -410,7 +413,14 @@ class DispatcherBase(object):
             between solver log updates. More time may pass
             between log updates if no updates have been
             received from any workers, and less time may
-            pass if a new incumbent is found. (default: 1.0)
+            pass if a new incumbent is found.
+        log_new_incumbent : bool
+            Controls whether updates to the best objective
+            are logged immediately (overriding the log
+            interval). Setting this to false can be useful
+            when frequent updates to the incumbent are
+            expected and the additional logging slows down
+            the dispatcher.
         """
         assert (node_limit is None) or \
             ((node_limit > 0) and \
@@ -419,6 +429,7 @@ class DispatcherBase(object):
             (time_limit >= 0)
         self.start_time = self.clock()
         self.initialized = True
+        self.log_new_incumbent = log_new_incumbent
         self.termination_condition = None
         self.converger = converger
         self.last_global_bound = self.converger.unbounded_objective
@@ -609,7 +620,8 @@ class DispatcherLocal(DispatcherBase):
                    node_limit,
                    time_limit,
                    log,
-                   log_interval_seconds):
+                   log_interval_seconds,
+                   log_new_incumbent):
         """Initialize the dispatcher. See the
         :func:`pybnb.dispatcher.DispatcherBase.initialize`
         method for argument descriptions."""
@@ -624,7 +636,8 @@ class DispatcherLocal(DispatcherBase):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         if self.journalist is not None:
             self.log_info("Starting branch & bound solve:\n"
                           " - dispatcher pid: %s (%s)\n"
@@ -911,8 +924,8 @@ class DispatcherDistributed(DispatcherBase):
                    node_limit,
                    time_limit,
                    log,
-                   log_interval_seconds):
-
+                   log_interval_seconds,
+                   log_new_incumbent):
         """Initialize the dispatcher. See the
         :func:`pybnb.dispatcher.DispatcherBase.initialize`
         method for argument descriptions."""
@@ -934,7 +947,8 @@ class DispatcherDistributed(DispatcherBase):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         if self.journalist is not None:
             self.log_info("Starting branch & bound solve:\n"
                           " - dispatcher pid: %s (%s)\n"

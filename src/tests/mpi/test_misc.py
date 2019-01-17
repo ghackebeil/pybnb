@@ -64,7 +64,8 @@ def _logging_check(comm):
                                                stream=out,
                                                level=logging.DEBUG,
                                                formatter=formatter),
-                             0.0)
+                             0.0,
+                             True)
         opt._disp.log_debug("0: debug")
         opt._disp.log_info("0: info")
         opt._disp.log_warning("0: warning")

@@ -19,7 +19,13 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
 class TestDispatcherSimple(object):
 
     def test_queue_strategy(self):
+        node_limit = None
+        time_limit = None
+        log = get_simple_logger()
+        log_interval_seconds = inf
+        log_new_incumbent = True
         convergence_checker = ConvergenceChecker(minimize)
+
         root = Node(size=0)
         Node._insert_tree_id(root._data, 0)
         root.bound = convergence_checker.unbounded_objective
@@ -28,13 +34,7 @@ class TestDispatcherSimple(object):
             nodes=[root],
             next_tree_id=1)
 
-        node_limit = None
-        time_limit = None
-        log = get_simple_logger()
-        log_interval_seconds = inf
-
         disp = DispatcherLocal()
-
         disp.initialize(
             inf,
             queue,
@@ -43,7 +43,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is WorstBoundFirstPriorityQueue
         disp.initialize(
             inf,
@@ -53,7 +54,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is CustomPriorityQueue
         disp.initialize(
             inf,
@@ -63,7 +65,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is BestObjectiveFirstPriorityQueue
         disp.initialize(
             inf,
@@ -73,7 +76,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is BreadthFirstPriorityQueue
         disp.initialize(
             inf,
@@ -83,7 +87,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is DepthFirstPriorityQueue
         disp.initialize(
             inf,
@@ -93,7 +98,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is FIFOQueue
         disp.initialize(
             inf,
@@ -103,7 +109,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is RandomPriorityQueue
         disp.initialize(
             inf,
@@ -113,7 +120,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert type(disp.queue) is LocalGapPriorityQueue
 
     def test_initialize_queue(self):
@@ -121,7 +129,9 @@ class TestDispatcherSimple(object):
         time_limit = None
         log = get_simple_logger()
         log_interval_seconds = inf
+        log_new_incumbent = True
         convergence_checker = ConvergenceChecker(minimize)
+
         root = Node(size=0)
         Node._insert_tree_id(root._data, 0)
         root.bound = convergence_checker.unbounded_objective
@@ -139,7 +149,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert disp.best_objective == 0
         disp.initialize(
             1,
@@ -149,7 +160,8 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert disp.best_objective == 1
         root.objective = -1
         disp.initialize(
@@ -160,5 +172,6 @@ class TestDispatcherSimple(object):
             node_limit,
             time_limit,
             log,
-            log_interval_seconds)
+            log_interval_seconds,
+            log_new_incumbent)
         assert disp.best_objective == -1

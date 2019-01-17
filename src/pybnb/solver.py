@@ -590,6 +590,7 @@ class Solver(object):
               node_limit=None,
               time_limit=None,
               log_interval_seconds=1.0,
+              log_new_incumbent=True,
               log=_notset):
         """Solve a problem using branch-and-bound.
 
@@ -693,6 +694,13 @@ class Solver(object):
             updates if no updates have been received from
             worker processes, and less time may pass if a
             new incumbent objective is found. (default: 1.0)
+        log_new_incumbent : bool
+            Controls whether updates to the best objective
+            are logged immediately (overriding the log
+            interval). Setting this to false can be useful
+            when frequent updates to the incumbent are
+            expected and the additional logging slows down
+            the dispatcher. (default: True)
         log : logging.Logger, optional
             A log object where solver output should be
             sent. The default value causes all output to be
@@ -800,7 +808,8 @@ class Solver(object):
                     node_limit,
                     time_limit,
                     log,
-                    log_interval_seconds)
+                    log_interval_seconds,
+                    log_new_incumbent)
             if not self.is_worker:
                 def handler(signum, frame):       #pragma:nocover
                     self._disp.log_warning(

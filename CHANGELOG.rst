@@ -9,15 +9,19 @@ Changelog
 0.3.0 - 2019-01-16
 ~~~~~~~~~~~~~~~~~~
 
+* Adding 'log_new_incumbent' solver option that can be set
+  to False to disable immediate logging of incumbent
+  updates, in case this is slowing down the dispatcher.
 * Renaming 'node_priority_strategy' solver option to
   'queue_strategy'.
-* Adding scale_function solver keyword to allow customizing
+* Adding 'scale_function' solver option to allow customizing
   how the absolute gap is converted to a relative
   gap. Default is max{1.0,|objective|}.
-* Renaming absolute_tolerance keyword to comparison_tolerance
+* Renaming 'absolute_tolerance' solver option to
+  'comparison_tolerance'.
 * Renaming the pybnb.pyomo_tools sub-package to pybnb.pyomo.
-* Renaming the cutoff solve option to bound_stop. Also
-  adding an objective_stop solve option. Both options
+* Renaming the 'cutoff' solve option to 'bound_stop'. Also
+  adding an 'objective_stop' solve option. Both options
   trigger the 'objective_limit' termination condition
   (replaces the 'cutoff' termination condition).
 * Adding an optional notify_solve_begins callback to the
@@ -30,12 +34,12 @@ Changelog
 * Adding handling for SIGINT and SIGUSER1 events to
   initiate a graceful shutdown that tags the results
   with an 'interrupted' termination condition.
-* Adding a solver option that disables calls to the problem
-  objective.
+* Adding 'disable_objective_call' solver option that
+  disables calls to the problem objective.
 * Removing a number of collective MPI communicator calls
   from the solve finalization process.
 * Adding additional queue strategy implementations: 'random'
-  and 'local_gap'
+  and 'local_gap'.
 
 0.2.9 - 2018-12-03
 ~~~~~~~~~~~~~~~~~~
