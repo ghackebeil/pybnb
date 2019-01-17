@@ -408,7 +408,7 @@ def create_command_line_solver(problem, parser=None):
         assert "choices" not in solve_docs[key]
         if key == "queue_strategy":
             solve_docs[key]["choices"] = \
-                [v_.value for v_ in pybnb.NodePriorityStrategy]
+                [v_.value for v_ in pybnb.QueueStrategy]
             solve_docs[key]["doc"] = ("Sets the strategy for prioritizing "
                                       "nodes in the central dispatcher queue.")
     parser.add_argument(
@@ -425,7 +425,7 @@ def create_command_line_solver(problem, parser=None):
         action="store_true",
         help=solve_docs["disable_objective_call"]["doc"])
     parser.add_argument(
-        "--node-priority-strategy",
+        "--queue-strategy",
         type=str,
         choices=solve_docs["queue_strategy"]["choices"],
         default=solve_defaults.pop("queue_strategy"),
