@@ -4,11 +4,19 @@ Reference
 Quick Links
 -----------
 
- - :class:`Problem <pybnb.problem.Problem>`
+ - :func:`pybnb.solve <pybnb.solver.solve>`
 
- - :class:`Solver <pybnb.solver.Solver>`
+ - :class:`pybnb.Problem <pybnb.problem.Problem>`
 
- - :class:`SolverResults <pybnb.solver.SolverResults>`
+ - :class:`pybnb.Solver <pybnb.solver.Solver>`
+
+ - :class:`pybnb.SolverResults <pybnb.solver.SolverResults>`
+
+ - :class:`pybnb.SolutionStatus <pybnb.common.SolutionStatus>`
+
+ - :class:`pybnb.TerminationCondition <pybnb.common.TerminationCondition>`
+
+ - :class:`pybnb.QueueStrategy <pybnb.common.QueueStrategy>`
 
 Modules
 -------

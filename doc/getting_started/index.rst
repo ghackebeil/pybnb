@@ -70,12 +70,15 @@ at least the six required methods shown below.
        def load_state(self, node): ...
        def branch(self, parent_node): ...
        # optional methods
+       def notify_solve_begins(self,
+                               comm,
+                               worker_comm,
+                               convergence_checker):
+           ...
        def notify_new_best_objective_received(self,
-                                              worker_comm,
                                               best_objective):
            ...
        def notify_new_best_objective(self,
-                                     worker_comm,
                                      best_objective):
            ...
        def notify_solve_finished(self,
@@ -183,7 +186,7 @@ description of each of the required methods.
    node states should improve (or not be worse than) the
    bound for the parent node. Once the child bound is
    computed, if it is found to be worse than the bound from
-   the parent node, then the branch-and-bound solver will
+   the parent node then the branch-and-bound solver will
    issue a warning, as this is likely indicative of a
    programming error or other numerical issues.
 

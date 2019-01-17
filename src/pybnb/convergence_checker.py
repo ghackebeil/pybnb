@@ -101,7 +101,10 @@ class ConvergenceChecker(object):
         must be greater than or equal to this value. The
         default setting of zero means that nodes whose bound
         is equal to the incumbent objective will remain in
-        the queue. (default: 0)
+        the queue. Setting this to larger values can be used
+        to control the queue size, but it should be kept
+        small enough to allow absolute and relative
+        optimality tolerances to be met. (default: 0)
     comparison_tolerance : float, optional
         The absolute tolerance used when deciding if two
         objective or bound values are sufficiently

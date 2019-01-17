@@ -243,16 +243,16 @@ class Solver(object):
         assert self._disp is not None
         assert self._time is not None
         self._solve_start = None
-        self._wall_time = None
+        self._wall_time = 0.0
         self._best_objective = None
-        self._local_solve_info = None
+        self._local_solve_info = _SolveInfo()
         self._global_solve_info = None
 
     def _reset_local_solve_stats(self):
         self._solve_start = None
         self._wall_time = 0.0
         self._best_objective = None
-        self._local_solve_info = _SolveInfo()
+        self._local_solve_info.reset()
         self._global_solve_info = None
 
     def _check_update_best_objective(self,
@@ -303,6 +303,7 @@ class Solver(object):
 
     def _solve(self,
                problem,
+               best_objective,
                disable_objective_call,
                convergence_checker,
                results):
@@ -313,7 +314,7 @@ class Solver(object):
         assert unbounded_objective == \
             convergence_checker.unbounded_objective
 
-        self._best_objective = infeasible_objective
+        self._best_objective = best_objective
         children = ()
         bound = unbounded_objective
         if not isinstance(problem, _ProblemWithSolveInfoCollection):
@@ -579,20 +580,38 @@ class Solver(object):
               problem,
               best_objective=None,
               disable_objective_call=False,
-              initialize_queue=None,
-              queue_strategy="bound",
               absolute_gap=1e-8,
               relative_gap=1e-4,
               scale_function=_default_scale,
+              queue_tolerance=0,
               comparison_tolerance=1e-10,
               objective_stop=None,
               bound_stop=None,
               node_limit=None,
               time_limit=None,
+              initialize_queue=None,
+              queue_strategy="bound",
               log_interval_seconds=1.0,
               log_new_incumbent=True,
               log=_notset):
         """Solve a problem using branch-and-bound.
+
+        Note
+        ----
+        Parameters for this function are treated differently
+        depending on whether the process is a worker or
+        dispatcher. For the serial case (no MPI), the single
+        process is both a worker and a dispatcher. For the
+        parallel case, exactly one process is a dispatcher
+        and all processes are workers. A **(W)** in the
+        parameter description indicates that it is only used
+        by worker processes (ignored otherwise). A **(D)**
+        in the parameter description indicates that it is
+        only used by the dispatcher process (ignored
+        otherwise). An **(A)** indicates that it is used by
+        all processes, and it is assumed the same value is
+        provided for each process; otherwise, the behavior
+        is undefined.
 
         Parameters
         ----------
@@ -600,111 +619,127 @@ class Solver(object):
             An object defining a branch-and-bound problem.
         best_objective : float, optional
             Initializes the solve with an assumed best
-            objective. (default: None)
+            objective. This is the only option used by both
+            worker and dispatcher processes that can be set
+            to a different value on each process. The
+            dispatcher will collect all values and use the
+            best. (default: None)
         disable_objective_call : bool, optional
-            Disables requests for an objective value from
+            **(W)** Disables requests for an objective value from
             subproblems. (default: False)
-        initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
-            Initializes the dispatcher queue with that
-            remaining from a previous solve (obtained by
-            calling :func:`Solver.save_dispatcher_queue`
-            after the solve). If left as None, the queue
-            will be initialized with a single root node
-            created by calling :func:`problem.save_state
-            <pybnb.problem.Problem.save_state`.
-            (default: None)
-        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
-            Sets the strategy for prioritizing nodes in the
-            central dispatcher queue. See the
-            :class:`QueueStrategy <pybnb.common.QueueStrategy>`
-            enum for the list of acceptable values. This
-            keyword can be assigned one of the enumeration
-            attributes or an equivalent string name.
-            (default: "bound")
         absolute_gap : float, optional
-            The maximum absolute difference between the
-            global bound and best objective for the problem
-            to be considered solved to optimality. Setting
-            to `None` will disable this optimality check.
-            (default: 1e-8)
+            **(A)** The maximum absolute difference between
+            the global bound and best objective for the
+            problem to be considered solved to
+            optimality. Setting to `None` will disable this
+            optimality check. (default: 1e-8)
         relative_gap : float, optional
-            The maximum relative difference (absolute
+            **(A)** The maximum relative difference (absolute
             difference scaled by `max{1.0,|objective|}`)
             between the global bound and best objective for
             the problem to be considered solved to
             optimality. Setting to `None` will disable this
             optimality check. (default: 1e-4)
         scale_function : function, optional
-            A function with signature `f(bound, objective)
-            -> float` that returns a positive scale factor
-            used to convert the absolute difference between
-            the bound and objective into a relative
-            difference. The relative difference is compared
-            with the `relative_gap` convergence tolerance to
-            determine if the solver should terminate. The
-            default is equivalent to `max{1.0,|objective|}`.
-            Other examples one could use are
-            `max{|bound|,|objective|}`,
+            **(A)** A function with signature `f(bound,
+            objective) -> float` that returns a positive
+            scale factor used to convert the absolute
+            difference between the bound and objective into
+            a relative difference. The relative difference
+            is compared with the `relative_gap` convergence
+            tolerance to determine if the solver should
+            terminate. The default is equivalent to
+            `max{1.0,|objective|}`.  Other examples one
+            could use are `max{|bound|,|objective|}`,
             `(|bound|+|objective|)/2`, etc.
+        queue_tolerance : float, optional
+            **(A)** The absolute tolerance used when
+            deciding if a node is eligible to enter the
+            queue. The difference between the node bound and
+            the incumbent objective must be greater than or
+            equal to this value. The default setting of zero
+            means that nodes whose bound is equal to the
+            incumbent objective will remain in the
+            queue. Setting this to larger values can be used
+            to control the queue size, but it should be kept
+            small enough to allow absolute and relative
+            optimality tolerances to be met. (default: 0)
         comparison_tolerance : float, optional
-            The absolute tolerance used when deciding if two
-            objective / bound values are sufficiently
-            different. For instance, this option controls
-            what nodes are added to the queue by checking if
-            their bound is at least this much better than
-            the current best object. It is a good idea to
-            keep this tolerance small relative to the
-            absolute gap used for checking optimality.
-            (default: 1e-10)
+            **(A)** The absolute tolerance used when
+            deciding if two objective / bound values are
+            sufficiently different. For instance, this
+            option controls what nodes are added to the
+            queue by checking if their bound is at least
+            this much better than the current best
+            object. It is a good idea to keep this tolerance
+            small relative to the absolute gap used for
+            checking optimality. (default: 1e-10)
         objective_stop : float, optional
-            If provided, the solve will terminate when a
-            feasible objective is found that is at least as
-            good as the specified value, and the
+            **(A)** If provided, the solve will terminate
+            when a feasible objective is found that is at
+            least as good as the specified value, and the
             termination_condition flag on the results object
             will be set to "objective_limit". If this value
             is infinite, the solve will terminate as soon as
-            a finite objective is found.
-            (default: None)
+            a finite objective is found. (default: None)
         bound_stop : float, optional
-            If provided, the solve will terminate when the
-            global bound on the objective is at least as
-            good as the specified value, and the
+            **(A)** If provided, the solve will terminate
+            when the global bound on the objective is at
+            least as good as the specified value, and the
             termination_condition flag on the results object
             will be set to "objective_limit". If this value
             is infinite, the solve will terminate as soon as
-            a finite bound is found.
-            (default: None)
+            a finite bound is found. (default: None)
         node_limit : int, optional
-            If provided, the solve will begin to terminate
-            once this many nodes have been served from the
-            dispatcher queue, and the termination_condition
-            flag on the results object will be set to
-            "node_limit". (default: None)
-        time_limit : float, optional
-            If provided, the solve will begin to terminate
-            once this amount of time has passed, and the
+            **(D)** If provided, the solve will begin to
+            terminate once this many nodes have been served
+            from the dispatcher queue, and the
             termination_condition flag on the results object
-            will be set to "time_limit". Note that the solve
-            may run for an arbitrarily longer amount of
-            time, depending how long worker processes spend
-            completing their final task. (default: None)
+            will be set to "node_limit". (default: None)
+        time_limit : float, optional
+            **(D)** If provided, the solve will begin to
+            terminate once this amount of time has passed,
+            and the termination_condition flag on the
+            results object will be set to "time_limit". Note
+            that the solve may run for an arbitrarily longer
+            amount of time, depending how long worker
+            processes spend completing their final
+            task. (default: None)
+        initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
+            **(D)** Initializes the dispatcher queue with
+            that remaining from a previous solve (obtained
+            by calling :func:`Solver.save_dispatcher_queue`
+            after the solve). If left as None, the queue
+            will be initialized with a single root node
+            created by calling :func:`problem.save_state
+            <pybnb.problem.Problem.save_state`.
+            (default: None)
+        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
+            **(D)** Sets the strategy for prioritizing nodes
+            in the central dispatcher queue. See the
+            :class:`QueueStrategy
+            <pybnb.common.QueueStrategy>` enum for the list
+            of acceptable values. This keyword can be
+            assigned one of the enumeration attributes or an
+            equivalent string name. (default: "bound")
         log_interval_seconds : float, optional
-            The approximate time (in seconds) between solver
-            log updates. More time may pass between log
-            updates if no updates have been received from
-            worker processes, and less time may pass if a
-            new incumbent objective is found. (default: 1.0)
+            **(D)** The approximate time (in seconds)
+            between solver log updates. More time may pass
+            between log updates if no updates have been
+            received from worker processes, and less time
+            may pass if a new incumbent objective is
+            found. (default: 1.0)
         log_new_incumbent : bool
-            Controls whether updates to the best objective
-            are logged immediately (overriding the log
-            interval). Setting this to false can be useful
-            when frequent updates to the incumbent are
-            expected and the additional logging slows down
-            the dispatcher. (default: True)
+            **(D)** Controls whether updates to the best
+            objective are logged immediately (overriding the
+            log interval). Setting this to false can be
+            useful when frequent updates to the incumbent
+            are expected and the additional logging slows
+            down the dispatcher. (default: True)
         log : logging.Logger, optional
-            A log object where solver output should be
-            sent. The default value causes all output to be
-            streamed to the console. Setting to None
+            **(D)** A log object where solver output should
+            be sent. The default value causes all output to
+            be streamed to the console. Setting to None
             disables all output.
 
         Returns
@@ -718,63 +753,13 @@ class Solver(object):
         if best_objective is None:
             best_objective = problem.infeasible_objective()
 
-        if node_priority_strategy not in _node_priority_strategy_to_int:
-            raise ValueError("The 'node_priority_strategy' keyword "
-                             "must be one of: %s"
-                             % (str([v.value for v in NodePriorityStrategy])))
-
-        # broadcast options from dispatcher to everyone else
-        # to ensure consistency
-        if (self.comm is not None) and \
-           (self.comm.size > 1):
-            node_priority_strategy_int = \
-                _node_priority_strategy_to_int[node_priority_strategy]
-            settings = array.array(
-                "d",
-                [best_objective,
-                 node_priority_strategy_int,
-                 absolute_gap,
-                 relative_gap,
-                 nan if objective_stop is None else objective_stop,
-                 nan if bound_stop is None else bound_stop,
-                 absolute_tolerance])
-            self.comm.Bcast([settings,mpi4py.MPI.DOUBLE],
-                            root=self._disp.dispatcher_rank)
-            (best_objective,
-             node_priority_strategy_int,
-             absolute_gap,
-             relative_gap,
-             objective_stop,
-             bound_stop,
-             absolute_tolerance) = settings
-            assert node_priority_strategy_int == \
-                int(node_priority_strategy_int)
-            node_priority_strategy = \
-                _int_to_node_priority_strategy[
-                    int(node_priority_strategy_int)]
-            if math.isnan(objective_stop):
-                objective_stop = None
-            if math.isnan(bound_stop):
-                bound_stop = None
-            del settings
-            if not self.is_dispatcher:
-                # These are not used unless this process is
-                # the dispatcher
-                node_limit = None
-                time_limit = None
-                log_interval_seconds = None
-                log = None
-                if initialize_queue is not None:       #pragma:nocover
-                    raise ValueError("The 'initialize_queue' keyword "
-                                     "must be None for all processes "
-                                     "except the dispatcher.")
-
         results = SolverResults()
         convergence_checker = ConvergenceChecker(
             problem.sense(),
             absolute_gap=absolute_gap,
             relative_gap=relative_gap,
             scale_function=scale_function,
+            queue_tolerance=queue_tolerance,
             comparison_tolerance=comparison_tolerance,
             objective_stop=objective_stop,
             bound_stop=bound_stop)
@@ -833,6 +818,7 @@ class Solver(object):
                             TerminationCondition.interrupted
                 with MPI_InterruptHandler(handler):
                     tmp = self._solve(problem,
+                                      best_objective,
                                       disable_objective_call,
                                       convergence_checker,
                                       results)
