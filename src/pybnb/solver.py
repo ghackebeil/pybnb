@@ -937,6 +937,8 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         else:
             stream.write("Load Imbalance:     %6.2f%%\n"
                          % (numerator/div*100.0))
+            stream.write(" - min: %d\n" % (numpy.min(explored_nodes_count)))
+            stream.write(" - max: %d\n" % (numpy.max(explored_nodes_count)))
         stream.write("Average Worker Timing:\n")
         queue_call_count_str = "%d" % queue_call_count.sum()
         tmp = "%"+str(len(queue_call_count_str))+"d"
