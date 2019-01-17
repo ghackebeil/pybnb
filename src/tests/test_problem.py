@@ -282,10 +282,10 @@ class Test_SolveInfo(object):
                                       convergence_checker):
                 self.d['notify_solve_begins'] = True
             def notify_new_best_objective_received(self,
-                                                   best_objective):
+                                                   objective):
                 self.d['notify_new_best_objective_received'] = True
             def notify_new_best_objective(self,
-                                          best_objective):
+                                          objective):
                 self.d['notify_new_best_objective'] = True
             def notify_solve_finished(self,
                                       comm,

@@ -341,7 +341,8 @@ class Solver(object):
             updated = self._check_update_best_objective(
                 convergence_checker,
                 new_objective)
-            if updated:
+            if updated and \
+               (self._best_objective != unbounded_objective):
                 problem.notify_new_best_objective_received(
                     self._best_objective)
             del updated
@@ -384,40 +385,42 @@ class Solver(object):
             if convergence_checker.eligible_for_queue(
                     bound,
                     self._best_objective):
+                objective = working_node.objective
                 if not disable_objective_call:
-                    obj = problem.objective()
-                    working_node.objective = obj
-                    if obj is not None:
-                        if convergence_checker.best_bound(bound, obj) != obj: #pragma:nocover
-                            self._disp.log_warning(
-                                "WARNING: Local node bound is worse "
-                                "than local node objective (bound=%r, "
-                                "objective=%r)" % (bound, obj))
-                        updated = self._check_update_best_objective(
-                            convergence_checker,
-                            obj)
-                        if updated:
-                            problem.notify_new_best_objective(
-                                self._best_objective)
-                        del updated
-                if (disable_objective_call or \
-                    (obj != convergence_checker.unbounded_objective)) and \
-                   convergence_checker.eligible_for_queue(
-                       bound,
-                       self._best_objective):
-                    clist = problem.branch(working_node)
-                    for child in clist:
-                        assert child.parent_tree_id == current_tree_id
-                        assert child.tree_id is None
-                        assert child.tree_depth >= current_tree_depth + 1
-                        children.append(child._data)
-                        if convergence_checker.bound_worsened(child.bound, bound):    #pragma:nocover
-                            self._disp.log_warning(
-                                "WARNING: Bound on child node "
-                                "returned from branch method "
-                                "is worse than parent node "
-                                "(child=%r, parent=%r)"
-                                % (child.bound, bound))
+                    objective = problem.objective()
+                    working_node.objective = objective
+                    if convergence_checker.best_bound(bound, objective) != objective: #pragma:nocover
+                        self._disp.log_warning(
+                            "WARNING: Local node bound is worse "
+                            "than local node objective (bound=%r, "
+                            "objective=%r)" % (bound, objective))
+                    updated = self._check_update_best_objective(
+                        convergence_checker,
+                        objective)
+                    if updated and \
+                       (self._best_objective != unbounded_objective):
+                        problem.notify_new_best_objective(
+                            self._best_objective)
+                    del updated
+                if (objective != convergence_checker.unbounded_objective) and \
+                    convergence_checker.eligible_for_queue(
+                        bound,
+                        self._best_objective):
+                    if (bound != objective):
+                        clist = problem.branch(working_node)
+                        for child in clist:
+                            assert child.parent_tree_id == current_tree_id
+                            assert child.tree_id is None
+                            assert child.tree_depth >= current_tree_depth + 1
+                            assert child.objective == working_node.objective
+                            children.append(child._data)
+                            if convergence_checker.bound_worsened(child.bound, bound):    #pragma:nocover
+                                self._disp.log_warning(
+                                    "WARNING: Bound on child node "
+                                    "returned from branch method "
+                                    "is worse than parent node "
+                                    "(child=%r, parent=%r)"
+                                    % (child.bound, bound))
 
         assert len(data) == 3
         global_bound = data[0]

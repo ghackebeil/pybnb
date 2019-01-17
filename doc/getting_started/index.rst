@@ -76,10 +76,10 @@ at least the six required methods shown below.
                                convergence_checker):
            ...
        def notify_new_best_objective_received(self,
-                                              best_objective):
+                                              objective):
            ...
        def notify_new_best_objective(self,
-                                     best_objective):
+                                     objective):
            ...
        def notify_solve_finished(self,
                                  comm,

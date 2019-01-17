@@ -53,10 +53,10 @@ class Simple(pybnb.Problem):
                             convergence_checker):
         pass
     def notify_new_best_objective_received(self,
-                                           best_objective):
+                                           objective):
         pass
     def notify_new_best_objective(self,
-                                  best_objective):
+                                  objective):
         pass
     def notify_solve_finished(self,
                               comm,

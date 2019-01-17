@@ -152,31 +152,31 @@ class Problem(object):
         pass
 
     def notify_new_best_objective_received(self,
-                                           best_objective):
+                                           objective):
         """Called when a branch-and-bound solver receives a
-        new best objective. The :class:`Problem
+        new finite best objective. The :class:`Problem
         <pybnb.problem.Problem>` base class provides a
         default implementation for this method that does
         nothing.
 
         Parameters
         ----------
-        best_objective : float
+        objective : float
             The new best objective value.
         """
         pass
 
     def notify_new_best_objective(self,
-                                  best_objective):
+                                  objective):
         """Called when a branch-and-bound solver locally
-        computes a new best objective. The :class:`Problem
-        <pybnb.problem.Problem>` base class provides a
-        default implementation for this method that does
-        nothing.
+        computes a new finite best objective. The
+        :class:`Problem <pybnb.problem.Problem>` base class
+        provides a default implementation for this method
+        that does nothing.
 
         Parameters
         ----------
-        best_objective : float
+        objective : float
             The new best objective value.
         """
         pass
@@ -378,14 +378,14 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
             convergence_checker)
 
     def notify_new_best_objective_received(self,
-                                           best_objective):
+                                           objective):
         self._problem.notify_new_best_objective_received(
-            best_objective)
+            objective)
 
     def notify_new_best_objective(self,
-                                  best_objective):
+                                  objective):
         self._problem.notify_new_best_objective(
-            best_objective)
+            objective)
 
     def notify_solve_finished(self,
                               comm,
