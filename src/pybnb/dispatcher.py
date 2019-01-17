@@ -743,15 +743,15 @@ class DispatcherDistributed(DispatcherBase):
         self.clock = mpi4py.MPI.Wtime
         self.comm = comm
         # send rank of dispatcher to all workers
-        self.dispatcher_rank, self.root_worker_rank = \
-            DispatcherProxy._init(
-                self.comm,
-                ProcessType.dispatcher)
+        self.dispatcher_rank = DispatcherProxy._init(
+            self.comm,
+            ProcessType.dispatcher)
         assert self.dispatcher_rank == self.comm.rank
         self.worker_ranks = [i for i in range(self.comm.size)
                              if i != self.comm.rank]
-        self.needs_work_queue = collections.deque([],
-                                                  len(self.worker_ranks))
+        self.needs_work_queue = \
+            collections.deque([],
+                              len(self.worker_ranks))
         self._solve_info_by_source = \
             {i: _SolveInfo() for i in self.worker_ranks}
         self.last_known_bound = dict()

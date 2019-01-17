@@ -76,8 +76,9 @@ class DispatcherProxy(object):
         assert ProcessType.dispatcher == 1
         assert ProcessType.worker == 0
         assert ptype in ProcessType
-        ptype_, dispatcher_rank = comm.allreduce(sendobj=(ptype, comm.rank),
-                                                 op=mpi4py.MPI.MAXLOC)
+        ptype_, dispatcher_rank = comm.allreduce(
+            sendobj=(ptype, comm.rank),
+            op=mpi4py.MPI.MAXLOC)
         assert ptype_ == ProcessType.dispatcher
         color = None
         if ptype == ProcessType.dispatcher:
@@ -90,12 +91,8 @@ class DispatcherProxy(object):
         worker_comm = comm.Split(color)
         if color == 1:
             worker_comm.Free()
-            status = recv_nothing(comm)
-            return dispatcher_rank, status.Get_source()
+            return dispatcher_rank
         else:
-            if worker_comm.rank == 0:
-                send_nothing(comm,
-                             dispatcher_rank)
             return dispatcher_rank, worker_comm
 
     def __init__(self, comm):

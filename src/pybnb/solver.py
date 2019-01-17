@@ -521,7 +521,6 @@ class Solver(object):
                 assert self.worker_comm is None
                 assert self.is_dispatcher
                 self.comm.Recv([gathered, mpi4py.MPI.DOUBLE],
-                               source=self._disp.root_worker_rank,
                                tag=11112111)
             gathered = gathered.T.tolist()
             stats['wall_time'] = gathered[0]
