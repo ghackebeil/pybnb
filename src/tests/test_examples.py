@@ -42,6 +42,7 @@ exdir = os.path.join(topdir, "examples")
 examples = []
 examples.extend(glob.glob(os.path.join(exdir,"command_line_problems","*.py")))
 examples.extend(glob.glob(os.path.join(exdir,"scripts","*.py")))
+examples.extend(glob.glob(os.path.join(exdir,"scripts","tsp","tsp_naive.py")))
 baselinedir = os.path.join(thisdir, "example_baselines")
 
 assert os.path.exists(exdir)
@@ -72,7 +73,7 @@ def test_example(example_name, procs):
                         "test_range_reduction_pyomo"):
         if not (pyomo_available and ipopt_available):
             pytest.skip("Pyomo or Ipopt is not available")
-    if example_name == "test_simple":
+    if example_name in ("test_simple","test_tsp_naive"):
         if not mpi4py_available:
             pytest.skip("MPI is not available")
     if (not mpi4py_available) and (procs > 1):
@@ -83,9 +84,12 @@ def test_example(example_name, procs):
     os.close(fid)
     try:
         if procs == 1:
-            if example_name == "test_range_reduction_pyomo":
+            if example_name in ("test_range_reduction_pyomo",
+                                "test_tsp_naive"):
                 rc = subprocess.call(['python', filename,
                                       "--results-file", results_filename])
+            elif example_name == "test_simple":
+                rc = subprocess.call(['python', filename])
             else:
                 rc = subprocess.call(['python', filename, '--disable-mpi',
                                       "--results-file", results_filename])

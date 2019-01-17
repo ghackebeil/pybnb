@@ -213,4 +213,4 @@ class DispatcherProxy(object):
         assert self.worker_comm.rank == 0
         send_nothing(self.comm,
                      self.dispatcher_rank,
-                     DispatcherAction.stop_listen)
+                     tag=DispatcherAction.stop_listen)
