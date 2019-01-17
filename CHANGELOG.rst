@@ -9,6 +9,8 @@ Changelog
 0.3.0 - 2019-01-16
 ~~~~~~~~~~~~~~~~~~
 
+* Renaming 'node_priority_strategy' solver option to
+  'queue_strategy'.
 * Adding scale_function solver keyword to allow customizing
   how the absolute gap is converted to a relative
   gap. Default is max{1.0,|objective|}.

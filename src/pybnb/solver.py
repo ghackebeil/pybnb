@@ -11,9 +11,7 @@ import math
 from pybnb.common import (nan,
                           minimize,
                           maximize,
-                          NodePriorityStrategy,
-                          _node_priority_strategy_to_int,
-                          _int_to_node_priority_strategy,
+                          QueueStrategy,
                           TerminationCondition,
                           SolutionStatus)
 from pybnb.problem import (_SolveInfo,
@@ -582,7 +580,7 @@ class Solver(object):
               best_objective=None,
               disable_objective_call=False,
               initialize_queue=None,
-              node_priority_strategy="bound",
+              queue_strategy="bound",
               absolute_gap=1e-8,
               relative_gap=1e-4,
               scale_function=_default_scale,
@@ -614,10 +612,10 @@ class Solver(object):
             created by calling :func:`problem.save_state
             <pybnb.problem.Problem.save_state`.
             (default: None)
-        node_priority_strategy : :class:`NodePriorityStrategy <pybnb.common.NodePriorityStrategy>`
+        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
             Sets the strategy for prioritizing nodes in the
             central dispatcher queue. See the
-            :class:`NodePriorityStrategy <pybnb.common.NodePriorityStrategy>`
+            :class:`QueueStrategy <pybnb.common.QueueStrategy>`
             enum for the list of acceptable values. This
             keyword can be assigned one of the enumeration
             attributes or an equivalent string name.
@@ -790,14 +788,14 @@ class Solver(object):
                         next_tree_id=1)
                 if log is _notset:
                     log = get_simple_logger()
-                if type(node_priority_strategy) is \
-                   NodePriorityStrategy:
-                    node_priority_strategy = \
-                        node_priority_strategy.value
+                if type(queue_strategy) is \
+                   QueueStrategy:
+                    queue_strategy = \
+                        queue_strategy.value
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
-                    node_priority_strategy,
+                    queue_strategy,
                     convergence_checker,
                     node_limit,
                     time_limit,

@@ -248,14 +248,14 @@ def _test_infeasible_max(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
             solver=solver,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def _test_infeasible_min(comm):
     solver = None
@@ -411,14 +411,14 @@ def _test_infeasible_min(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
             solver=solver,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def _test_root_infeasible_max(comm):
     solver = Solver(comm=comm)
@@ -433,14 +433,14 @@ def _test_root_infeasible_max(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
             solver=solver,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def _test_root_infeasible_min(comm):
     solver = Solver(comm=comm)
@@ -455,14 +455,14 @@ def _test_root_infeasible_min(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
             solver=solver,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def _test_unbounded_max(comm):
     solver = Solver(comm=comm)
@@ -477,14 +477,14 @@ def _test_unbounded_max(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
             solver=solver,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def _test_unbounded_min(comm):
     solver = Solver(comm=comm)
@@ -499,14 +499,14 @@ def _test_unbounded_min(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
         _execute_single_test(
             problem,
             baseline,
             solver=solver,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def _test_zero_objective_max(comm):
     solver = Solver(comm=comm)
@@ -598,12 +598,12 @@ def _test_zero_objective_max(comm):
     baseline.nodes = None
     baseline.wall_time = _ignore_value_
     problem = zero_objective_max.ZeroObjectiveMax()
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
-        if node_priority_strategy == "depth":
+        if queue_strategy == "depth":
             baseline.nodes = 2033
-        elif node_priority_strategy == "random":
+        elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
         else:
             baseline.nodes = 255
@@ -613,7 +613,7 @@ def _test_zero_objective_max(comm):
             solver=solver,
             relative_gap=0.01,
             absolute_gap=0.01,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def _test_zero_objective_min(comm):
     solver = Solver(comm=comm)
@@ -705,12 +705,12 @@ def _test_zero_objective_min(comm):
     baseline.nodes = None
     baseline.wall_time = _ignore_value_
     problem = zero_objective_min.ZeroObjectiveMin()
-    for node_priority_strategy in sorted(pybnb.NodePriorityStrategy):
-        if node_priority_strategy == "custom":
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
             continue
-        if node_priority_strategy == "depth":
+        if queue_strategy == "depth":
             baseline.nodes = 2033
-        elif node_priority_strategy == "random":
+        elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
         else:
             baseline.nodes = 255
@@ -720,7 +720,7 @@ def _test_zero_objective_min(comm):
             solver=solver,
             relative_gap=0.01,
             absolute_gap=0.01,
-            node_priority_strategy=node_priority_strategy)
+            queue_strategy=queue_strategy)
 
 def test_infeasible_max_nocomm():
     _test_infeasible_max(None)

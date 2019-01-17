@@ -3,7 +3,7 @@ from pybnb.common import (minimize,
                           maximize,
                           inf,
                           nan,
-                          NodePriorityStrategy,
+                          QueueStrategy,
                           SolutionStatus,
                           TerminationCondition)
 from pybnb.problem import Problem

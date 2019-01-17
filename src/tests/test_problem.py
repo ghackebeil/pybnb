@@ -275,7 +275,7 @@ class Test_SolveInfo(object):
             def branch(self, parent_node):
                 time.sleep(0.01)
                 self.d['branch'] = True
-                return -4
+                return ()
             def notify_solve_begins(self,
                                       comm,
                                       worker_comm,
@@ -435,7 +435,7 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
-        p.branch(None)
+        list(p.branch(None))
         assert j.d['sense'] == True
         assert j.d['objective'] == True
         assert j.d['bound'] == True

@@ -19,7 +19,7 @@ nan = float("nan")
 """A floating point constant set to ``float('nan')``."""
 
 @enum.unique
-class NodePriorityStrategy(str, enum.Enum):
+class QueueStrategy(str, enum.Enum):
     """Strategies for prioritizing nodes in the central
     dispatcher queue. For all strategies, ties are broken by
     insertion order."""
@@ -51,12 +51,12 @@ class NodePriorityStrategy(str, enum.Enum):
     assign a priority to all nodes returned from the
     :func:`branch <pybnb.problem.Problem.branch>`
     method on their problem."""
-_node_priority_strategy_to_int = {}
-_int_to_node_priority_strategy = []
-for _i, _val in enumerate(sorted(NodePriorityStrategy,
+_queue_strategy_to_int = {}
+_int_to_queue_strategy = []
+for _i, _val in enumerate(sorted(QueueStrategy,
                                  key=lambda v: v.value)):
-    _node_priority_strategy_to_int[_val] = _i
-    _int_to_node_priority_strategy.append(_val)
+    _queue_strategy_to_int[_val] = _i
+    _int_to_queue_strategy.append(_val)
 del _i
 del _val
 

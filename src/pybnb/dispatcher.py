@@ -15,6 +15,7 @@ import numpy
 
 from pybnb.common import (maximize,
                           inf,
+                          QueueStrategy,
                           TerminationCondition,
                           _termination_condition_to_int)
 from pybnb.misc import get_gap_labels
@@ -372,7 +373,7 @@ class DispatcherBase(object):
     def initialize(self,
                    best_objective,
                    initialize_queue,
-                   node_priority_strategy,
+                   queue_strategy,
                    converger,
                    node_limit,
                    time_limit,
@@ -386,29 +387,11 @@ class DispatcherBase(object):
             The assumed best objective to start with.
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`
             The initial queue.
-        node_priority_strategy : {"bound", "objective", "breadth", "depth", "fifo", "random", "custom"}, optional
-            Indicates the strategy for ordering nodes in the
-            work queue. The "bound" strategy always selects
-            the node with the worst bound first. The
-            "objective" strategy always selects the node
-            with the best objective first. The "breadth"
-            strategy always selects the node with the
-            smallest tree depth first (i.e., breadth-first
-            search). The "depth" strategy always selects the
-            node with the largest tree depth first (i.e.,
-            depth-first search). The "fifo" strategy selects
-            nodes in first-in, first-out order. The "random"
-            strategy assigns a random priority to each
-            node. The "custom" strategy assumes the
-            :attr:`queue_priority <pybnb.node.Node.queue_priority>`
-            node attribute has been set by the user. For all
-            other strategies, the :attr:`queue_priority
-            <pybnb.node.Node.queue_priority>` node attribute
-            will be set automatically (any existing value
-            will be overwritten). In all cases, the node
-            with the largest priority in the queue is always
-            selected next, with ties being broken by
-            insertion order.
+        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
+            Sets the strategy for prioritizing nodes in the
+            central dispatcher queue. See the
+            :class:`QueueStrategy <pybnb.common.QueueStrategy>`
+            enum for the list of acceptable values.
         converger : :class:`pybnb.convergence_checker.ConvergenceChecker`
             The branch-and-bound convergence checker object.
         node_limit : int or None
@@ -440,31 +423,33 @@ class DispatcherBase(object):
         self.converger = converger
         self.last_global_bound = self.converger.unbounded_objective
         self.best_objective = best_objective
-        if node_priority_strategy == "bound":
+        if queue_strategy == "bound":
             self.queue = WorstBoundFirstPriorityQueue(
                 self.converger.sense)
-        elif node_priority_strategy == "custom":
+        elif queue_strategy == "custom":
             self.queue = CustomPriorityQueue(
                 self.converger.sense)
-        elif node_priority_strategy == "objective":
+        elif queue_strategy == "objective":
             self.queue = BestObjectiveFirstPriorityQueue(
                 self.converger.sense)
-        elif node_priority_strategy == "fifo":
+        elif queue_strategy == "fifo":
             self.queue = FIFOQueue(
                 self.converger.sense)
-        elif node_priority_strategy == "breadth":
+        elif queue_strategy == "breadth":
             self.queue = BreadthFirstPriorityQueue(
                 self.converger.sense)
-        elif node_priority_strategy == "depth":
+        elif queue_strategy == "depth":
             self.queue = DepthFirstPriorityQueue(
                 self.converger.sense)
-        elif node_priority_strategy == "local_gap":
+        elif queue_strategy == "local_gap":
             self.queue = LocalGapPriorityQueue(
                 self.converger.sense)
-        else:
-            assert node_priority_strategy == "random"
+        elif queue_strategy == "random":
             self.queue = RandomPriorityQueue(
                 self.converger.sense)
+        else:
+            raise ValueError("'queue_strategy' must be one of: %s"
+                             % (str([v.value for v in QueueStrategy])))
         self.node_limit = None
         if node_limit is not None:
             self.node_limit = int(node_limit)
@@ -618,7 +603,7 @@ class DispatcherLocal(DispatcherBase):
     def initialize(self,
                    best_objective,
                    initialize_queue,
-                   node_priority_strategy,
+                   queue_strategy,
                    converger,
                    node_limit,
                    time_limit,
@@ -633,7 +618,7 @@ class DispatcherLocal(DispatcherBase):
         super(DispatcherLocal, self).initialize(
             best_objective,
             initialize_queue,
-            node_priority_strategy,
+            queue_strategy,
             converger,
             node_limit,
             time_limit,
@@ -643,10 +628,10 @@ class DispatcherLocal(DispatcherBase):
             self.log_info("Starting branch & bound solve:\n"
                           " - dispatcher pid: %s (%s)\n"
                           " - worker processes: 1\n"
-                          " - node priority strategy: %s"
+                          " - queue strategy: %s"
                           % (os.getpid(),
                              socket.gethostname(),
-                             node_priority_strategy))
+                             queue_strategy))
             self.journalist.tic()
 
     def update(self,
@@ -920,7 +905,7 @@ class DispatcherDistributed(DispatcherBase):
     def initialize(self,
                    best_objective,
                    initialize_queue,
-                   node_priority_strategy,
+                   queue_strategy,
                    converger,
                    node_limit,
                    time_limit,
@@ -943,7 +928,7 @@ class DispatcherDistributed(DispatcherBase):
         super(DispatcherDistributed, self).initialize(
             best_objective,
             initialize_queue,
-            node_priority_strategy,
+            queue_strategy,
             converger,
             node_limit,
             time_limit,
@@ -953,11 +938,11 @@ class DispatcherDistributed(DispatcherBase):
             self.log_info("Starting branch & bound solve:\n"
                           " - dispatcher pid: %s (%s)\n"
                           " - worker processes: %d\n"
-                          " - node priority strategy: %s"
+                          " - queue strategy: %s"
                           % (os.getpid(),
                              socket.gethostname(),
                              len(self.worker_ranks),
-                             node_priority_strategy))
+                             queue_strategy))
             self.journalist.tic()
 
     def update(self,

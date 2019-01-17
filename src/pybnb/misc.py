@@ -406,7 +406,7 @@ def create_command_line_solver(problem, parser=None):
         assert solve_defaults[key] == \
             solve_docs[key]["default"]
         assert "choices" not in solve_docs[key]
-        if key == "node_priority_strategy":
+        if key == "queue_strategy":
             solve_docs[key]["choices"] = \
                 [v_.value for v_ in pybnb.NodePriorityStrategy]
             solve_docs[key]["doc"] = ("Sets the strategy for prioritizing "
@@ -427,9 +427,9 @@ def create_command_line_solver(problem, parser=None):
     parser.add_argument(
         "--node-priority-strategy",
         type=str,
-        choices=solve_docs["node_priority_strategy"]["choices"],
-        default=solve_defaults.pop("node_priority_strategy"),
-        help=solve_docs["node_priority_strategy"]["doc"].\
+        choices=solve_docs["queue_strategy"]["choices"],
+        default=solve_defaults.pop("queue_strategy"),
+        help=solve_docs["queue_strategy"]["doc"].\
            replace(r":attr:`queue_priority "
                    r"<pybnb.node.Node.queue_priority>`",
                    "queue_priority"))

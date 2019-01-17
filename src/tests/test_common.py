@@ -4,9 +4,9 @@ from pybnb.common import (minimize,
                           maximize,
                           inf,
                           nan,
-                          NodePriorityStrategy,
-                          _node_priority_strategy_to_int,
-                          _int_to_node_priority_strategy,
+                          QueueStrategy,
+                          _queue_strategy_to_int,
+                          _int_to_queue_strategy,
                           SolutionStatus,
                           _solution_status_to_int,
                           _int_to_solution_status,
@@ -30,21 +30,21 @@ class Test(object):
         assert math.isnan(nan)
         assert math.isnan(-nan)
 
-    def test_NodePriorityStrategy(self):
-        assert NodePriorityStrategy.bound == "bound"
-        assert NodePriorityStrategy.objective == "objective"
-        assert NodePriorityStrategy.breadth == "breadth"
-        assert NodePriorityStrategy.depth == "depth"
-        assert NodePriorityStrategy.local_gap == "local_gap"
-        assert NodePriorityStrategy.fifo == "fifo"
-        assert NodePriorityStrategy.random == "random"
-        assert NodePriorityStrategy.custom == "custom"
-        assert len(NodePriorityStrategy) == 8
-        assert len(_node_priority_strategy_to_int) == 8
-        assert len(_int_to_node_priority_strategy) == 8
-        for val in NodePriorityStrategy:
-            assert _int_to_node_priority_strategy[
-                _node_priority_strategy_to_int[val]] is val
+    def test_QueueStrategy(self):
+        assert QueueStrategy.bound == "bound"
+        assert QueueStrategy.objective == "objective"
+        assert QueueStrategy.breadth == "breadth"
+        assert QueueStrategy.depth == "depth"
+        assert QueueStrategy.local_gap == "local_gap"
+        assert QueueStrategy.fifo == "fifo"
+        assert QueueStrategy.random == "random"
+        assert QueueStrategy.custom == "custom"
+        assert len(QueueStrategy) == 8
+        assert len(_queue_strategy_to_int) == 8
+        assert len(_int_to_queue_strategy) == 8
+        for val in QueueStrategy:
+            assert _int_to_queue_strategy[
+                _queue_strategy_to_int[val]] is val
 
     def test_SolutionStatus(self):
         assert SolutionStatus.optimal == "optimal"

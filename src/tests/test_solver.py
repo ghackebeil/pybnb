@@ -93,8 +93,8 @@ Average Worker Timing:
             except:                               #pragma:nocover
                 pass
 
-    def test_bad_node_priority_strategy(self):
+    def test_bad_queue_strategy(self):
         with pytest.raises(ValueError):
             solve(DummyProblem(),
                   comm=None,
-                  node_priority_strategy='_not_a_valid_strategy_')
+                  queue_strategy='_not_a_valid_strategy_')
