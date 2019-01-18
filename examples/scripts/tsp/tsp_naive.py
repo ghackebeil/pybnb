@@ -49,8 +49,8 @@ class TSP_Naive(pybnb.Problem):
         self._path = [0]
         # these will be set to the best solution
         # on all processes when the solve completes
-        self.best_tour = None
-        self.best_cost = None
+        self._best_tour = None
+        self._best_cost = None
 
     #
     # Implement Problem abstract methods
@@ -141,8 +141,8 @@ class TSP_Naive(pybnb.Problem):
                             comm,
                             worker_comm,
                             convergence_checker):
-        self.best_tour = None
-        self.best_cost = None
+        self._best_tour = None
+        self._best_cost = None
 
     def notify_new_best_objective_received(self,
                                            objective):
@@ -151,9 +151,9 @@ class TSP_Naive(pybnb.Problem):
     def notify_new_best_objective(self,
                                   objective):
         # convert the path to a tour and save it
-        self.best_tour = list(self._path)
-        self.best_tour.append(self._path[0])
-        self.best_cost = objective
+        self._best_tour = list(self._path)
+        self._best_tour.append(self._path[0])
+        self._best_cost = objective
 
     def notify_solve_finished(self,
                               comm,
@@ -166,16 +166,17 @@ class TSP_Naive(pybnb.Problem):
             import mpi4py.MPI
             cost = self.infeasible_objective()
             tour = None
-            if self.best_cost is not None:
-                cost = self.best_cost
-                tour = self.best_tour
+            if self._best_cost is not None:
+                cost = self._best_cost
+                tour = self._best_tour
             assert self.sense() == pybnb.minimize
             cost, src_rank = comm.allreduce(
                 sendobj=(cost, comm.rank),
                 op=mpi4py.MPI.MINLOC)
             if cost != self.infeasible_objective():
-                self.best_tour = comm.bcast(tour, root=src_rank)
-                self.best_cost = cost
+                self._best_tour = comm.bcast(tour, root=src_rank)
+                self._best_cost = cost
+        results.tour = self._best_tour
 
 if __name__ == "__main__":
     import argparse
@@ -197,23 +198,20 @@ if __name__ == "__main__":
 
     # solve exactly (disable check for relative
     # gap and use absolute gap of zero)
-    result = solver.solve(
+    results = solver.solve(
         problem,
         absolute_gap=0,
         relative_gap=None,
         queue_strategy='depth')
-    assert (problem.best_cost == result.objective) or \
-        result.solution_status == 'infeasible'
-    result.best_tour = problem.best_tour
 
     stats = solver.collect_worker_statistics()
     if solver.is_dispatcher:
         pybnb.solver.summarize_worker_statistics(stats)
         print("")
         print("Solution:")
-        print(" - cost: "+str(result.objective))
-        print(" - tour: "+str(result.best_tour))
+        print(" - cost: "+str(results.objective))
+        print(" - tour: "+str(results.tour))
         # save results to a file
         # (mainly used for testing this example)
         if args.results_filename is not None:
-            result.write(args.results_filename)
+            results.write(args.results_filename)
