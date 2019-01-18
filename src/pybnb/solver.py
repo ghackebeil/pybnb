@@ -672,7 +672,7 @@ class Solver(object):
             enough to be reported. It also control when
             branching should continue on a node by checking
             if the local node bound and objective are
-            sufficently different. It is a good idea to keep
+            sufficiently different. It is a good idea to keep
             this tolerance small relative to the absolute
             gap used for checking optimality. (default: 0)
         objective_stop : float, optional
