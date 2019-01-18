@@ -47,6 +47,11 @@ class TestConvergenceChecker(object):
         assert p.check_termination_criteria(0, 1) is \
             TerminationCondition.objective_limit
         p = ConvergenceChecker(minimize,
+                               objective_stop=inf)
+        assert p.check_termination_criteria(-inf, inf) is None
+        assert p.check_termination_criteria(-inf, 1000000) is \
+            TerminationCondition.objective_limit
+        p = ConvergenceChecker(minimize,
                                bound_stop=0)
         assert p.check_termination_criteria(-0.1, 1) is None
         assert p.check_termination_criteria(0, 1) is \
@@ -62,6 +67,11 @@ class TestConvergenceChecker(object):
                                objective_stop=-1)
         assert p.check_termination_criteria(0, -1.1) is None
         assert p.check_termination_criteria(0, -1) is \
+            TerminationCondition.objective_limit
+        p = ConvergenceChecker(maximize,
+                               objective_stop=-inf)
+        assert p.check_termination_criteria(inf, -inf) is None
+        assert p.check_termination_criteria(inf, -1000000) is \
             TerminationCondition.objective_limit
         p = ConvergenceChecker(maximize,
                                bound_stop=0)

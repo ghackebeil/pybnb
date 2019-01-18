@@ -697,7 +697,7 @@ class TestRandomPriorityQueue(object):
                             key=lambda x_: x_.queue_priority)._data
 
 
-class TestRandomPriorityQueue(object):
+class TestLocalGapPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
         q = LocalGapPriorityQueue(minimize)
