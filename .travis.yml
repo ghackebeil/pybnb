@@ -32,6 +32,12 @@ install:
   - ${DOC} pip --version
   - ${DOC} mpirun --version
   - |
+    if ${DOC} python -c"import __pypy__" &> /dev/null
+    then
+       ${DOC} pip uninstall numpy
+       ${DOC} pip install numpy==1.15.4
+    fi
+  - |
     if [ -z "$PYOMO_RELEASE" ]
     then
         ${DOC} git clone https://github.com/Pyutilib/pyutilib.git
