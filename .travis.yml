@@ -34,7 +34,7 @@ install:
   - |
     if ${DOC} python -c"import __pypy__" &> /dev/null
     then
-       ${DOC} pip uninstall numpy
+       ${DOC} pip uninstall -y numpy
        ${DOC} pip install numpy==1.15.4
     fi
   - |
