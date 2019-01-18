@@ -181,13 +181,6 @@ if __name__ == "__main__":
     import argparse
     import os
 
-    comm = None
-    try:
-        import mpi4py.MPI
-        comm = mpi4py.MPI.COMM_WORLD
-    except ImportError:
-        pass
-
     parser = argparse.ArgumentParser(
         description=("Run parallel branch and bound "
                      "to solve an instance of TSP."))
