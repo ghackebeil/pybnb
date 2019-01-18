@@ -56,6 +56,11 @@ class TestConvergenceChecker(object):
         assert p.check_termination_criteria(-0.1, 1) is None
         assert p.check_termination_criteria(0, 1) is \
             TerminationCondition.objective_limit
+        p = ConvergenceChecker(minimize,
+                               bound_stop=-inf)
+        assert p.check_termination_criteria(-inf, inf) is None
+        assert p.check_termination_criteria(-10000000, inf) is \
+            TerminationCondition.objective_limit
         # max
         p = ConvergenceChecker(maximize)
         assert p.check_termination_criteria(-inf, None) is \
@@ -77,6 +82,11 @@ class TestConvergenceChecker(object):
                                bound_stop=0)
         assert p.check_termination_criteria(0.1, -1) is None
         assert p.check_termination_criteria(0, -1) is \
+            TerminationCondition.objective_limit
+        p = ConvergenceChecker(maximize,
+                               bound_stop=inf)
+        assert p.check_termination_criteria(inf, -inf) is None
+        assert p.check_termination_criteria(1000000, -inf) is \
             TerminationCondition.objective_limit
 
     def test_objective_is_optimal(self):
