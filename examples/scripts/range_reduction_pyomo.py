@@ -154,8 +154,10 @@ if __name__ == "__main__":
     dispatcher_queue = None
     if (comm is None) or (comm.rank == 0):
         opt_obrr = pybnb.Solver(comm=None)
-        results = opt_obrr.solve(obrr, node_limit=7,
-                                 best_objective=best_objective)
+        results = opt_obrr.solve(obrr,
+                                 node_limit=7,
+                                 best_objective=best_objective,
+                                 log_interval_seconds=0)
         dispatcher_queue = opt_obrr.save_dispatcher_queue()
         best_objective = results.objective
     else:
