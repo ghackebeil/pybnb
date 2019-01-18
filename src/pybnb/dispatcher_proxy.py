@@ -10,7 +10,6 @@ from pybnb.common import _int_to_termination_condition
 from pybnb.node import Node
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import (send_nothing,
-                             recv_nothing,
                              recv_data)
 
 import numpy

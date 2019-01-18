@@ -3,13 +3,10 @@ Branch-and-bound solver implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-import array
 import sys
 import time
-import math
 
-from pybnb.common import (nan,
-                          minimize,
+from pybnb.common import (minimize,
                           maximize,
                           QueueStrategy,
                           TerminationCondition,
