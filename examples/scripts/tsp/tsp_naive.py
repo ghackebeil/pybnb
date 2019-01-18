@@ -20,7 +20,7 @@ def parse_dense_adjacency(filename):
     """Extracts a dense adjacency matrix from a file with
     the given name. Assumes columns are separated by
     whitespace and rows are separated by newlines. For
-    consistency, entries that are zero or -inf will be
+    consistency, entries that are zero or inf will be
     converted to `None`."""
     import math
     adj = []
