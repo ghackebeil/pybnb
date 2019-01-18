@@ -53,12 +53,18 @@ def mpi_partition(comm, items, root=0):
                 yield x
         else:
             import mpi4py.MPI
+            # it would be pretty easy to refactor this
+            # code to avoid this limitation
+            assert N <= mpi4py.MPI.COMM_WORLD.Get_attr(
+                mpi4py.MPI.TAG_UB)
             _null = [array.array('b',[]),mpi4py.MPI.CHAR]
             last_tag = {}
             if comm.rank == root:
                 i = 0
                 requests = []
-                for dest in range(1, comm.size):
+                for dest in range(comm.size):
+                    if dest == root:
+                        continue
                     last_tag[dest] = i
                     requests.append(comm.Isend(_null, dest, tag=i))
                     i += 1
@@ -80,12 +86,16 @@ def mpi_partition(comm, items, root=0):
             else:
                 status = mpi4py.MPI.Status()
                 comm.Recv(_null, source=root, status=status)
-                while status.Get_tag() < N:
-                    yield items[status.Get_tag()]
-                    comm.Sendrecv(_null,
-                                  root,
-                                  recvbuf=_null,
-                                  source=root, status=status)
+                if status.Get_tag() >= N:
+                    comm.Send(_null,root)
+                else:
+                    while status.Get_tag() < N:
+                        yield items[status.Get_tag()]
+                        comm.Sendrecv(_null,
+                                      root,
+                                      recvbuf=_null,
+                                      source=root,
+                                      status=status)
 
 def correct_integer_lb(lb,
                        integer_tolerance):
