@@ -68,7 +68,7 @@ class Message(object):
     @property
     def source(self): return self.status.Get_source()
 
-def recv_nothing(comm, status=None):
+def recv_nothing(comm, status):
     """A helper function for receiving an empty
     message. This function is not thread safe.
 
@@ -76,7 +76,7 @@ def recv_nothing(comm, status=None):
     ----------
     comm : :class:`mpi4py.MPI.Comm`
         An MPI communicator.
-    status : :class:`mpi4py.MPI.Status`, optional
+    status : :class:`mpi4py.MPI.Status`
         An MPI status object that has been populated with
         information about the message to be received via a
         probe. If None, a new status object will be created
@@ -95,17 +95,12 @@ def recv_nothing(comm, status=None):
     if recv_nothing._nothing is None:
         recv_nothing._nothing = [array.array("B",[]),
                                  mpi4py.MPI.CHAR]
-    if status is not None:
-        assert not status.Get_error()
-        assert status.Get_count(mpi4py.MPI.CHAR) == 0
-        comm.Recv(recv_nothing._nothing,
-                  source=status.Get_source(),
-                  tag=status.Get_tag(),
-                  status=status)
-    else:
-        status = mpi4py.MPI.Status()
-        comm.Recv(recv_nothing._nothing,
-                  status=status)
+    assert not status.Get_error()
+    assert status.Get_count(mpi4py.MPI.CHAR) == 0
+    comm.Recv(recv_nothing._nothing,
+              source=status.Get_source(),
+              tag=status.Get_tag(),
+              status=status)
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
     return status
