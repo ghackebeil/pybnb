@@ -399,7 +399,7 @@ class Solver(object):
                     problem.notify_new_best_objective(
                         self._best_objective)
                 del updated
-                if (objective != convergence_checker.unbounded_objective) and \
+                if (objective != unbounded_objective) and \
                     convergence_checker.eligible_for_queue(
                         bound,
                         self._best_objective):
@@ -1052,7 +1052,8 @@ def solve(problem,
         An object storing information about the solve.
     """
 
-    opt = Solver(comm=comm)
+    opt = Solver(comm=comm,
+                 dispatcher_rank=dispatcher_rank)
 
     if (opt.is_dispatcher) and \
        ("log" not in kwds) and \
