@@ -388,6 +388,26 @@ def create_command_line_solver(problem, parser=None):
             formatter_class=argparse.\
                 ArgumentDefaultsHelpFormatter)
 
+    solver_init_defaults = get_default_args(
+        pybnb.Solver.__init__)
+    solver_init_docs = get_keyword_docs(
+        pybnb.Solver.__doc__)
+    assert set(solver_init_defaults.keys()) == \
+        set(solver_init_docs.keys())
+    solver_init_defaults.pop("comm")
+    solver_init_docs.pop("comm")
+    assert len(solver_init_defaults) == len(solver_init_docs)
+    for key in solver_init_defaults:
+        assert solver_init_defaults[key] == \
+            solver_init_docs[key]["default"]
+        assert "choices" not in solver_init_docs[key]
+    parser.add_argument(
+        "--dispatcher-rank",
+        type=int,
+        default=solver_init_defaults.pop("dispatcher_rank"),
+        help=solver_init_docs["dispatcher_rank"]["doc"])
+    assert len(solver_init_defaults) == 0, str(solver_init_defaults)
+
     solve_defaults = get_default_args(
         pybnb.Solver.solve)
     solve_docs = get_keyword_docs(
@@ -492,7 +512,9 @@ def create_command_line_solver(problem, parser=None):
     parser.add_argument(
         "--disable-mpi", default=False,
         action="store_true",
-        help=("Do not attempt to import mpi4py.MPI."))
+        help=("Do not attempt to import mpi4py.MPI. "
+              "Enabling this option is equivalent to "
+              "creating a Solver with `comm=None`."))
     if pstats_available:
         parser.add_argument(
             "--profile", dest="profile", type=int, default=0,
