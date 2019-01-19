@@ -98,35 +98,60 @@ class ConvergenceChecker(object):
         The absolute tolerance used when deciding if a node
         is eligible to enter the queue. The difference
         between the node bound and the incumbent objective
-        must be greater than or equal to this value. The
-        default setting of zero means that nodes whose bound
-        is equal to the incumbent objective will remain in
-        the queue. Setting this to larger values can be used
-        to control the queue size, but it should be kept
-        small enough to allow absolute and relative
-        optimality tolerances to be met. (default: 0)
+        must be greater than this value. The default setting
+        of zero means that nodes whose bound is equal to the
+        incumbent objective are not eligible to enter the
+        queue. Setting this to larger values can be used to
+        control the queue size, but it should be kept small
+        enough to allow absolute and relative optimality
+        tolerances to be met. This option can also be set to
+        `None` to allow nodes with a bound equal to (but not
+        greater than) the incumbent objective to enter the
+        queue. (default: 0)
+    branch_tolerance : float, optional
+        The absolute tolerance used when deciding if the
+        computed objective and bound for a node are
+        sufficiently different to branch into the node. The
+        default value of zero means that branching will
+        occur if the bound is not exactly equal to the
+        objective. This option can be set to `None` to
+        enable branching for nodes with a bound and
+        objective that are exactly equal. (default: 0)
     comparison_tolerance : float, optional
         The absolute tolerance used when deciding if two
-        objective or bound values are sufficiently
-        different. This tolerance controls when the solver
-        considers a new incumbent objective to be
-        found. (default: 0)
+        objective or bound values are sufficiently different
+        to be considered improved or worsened. This
+        tolerance controls when the solver considers a new
+        incumbent objective to be found. It also controls
+        when warnings are output about bounds becoming worse
+        on child nodes. Setting this to larger values can be
+        used to avoid the above solver actions due to
+        insignificant numerical differences, but it is
+        better to deal with these numerical issues by
+        rounding numbers to a reliable precison before
+        returning them from the problem methods.
+        (default: 0)
     objective_stop : float, optional
         If provided, the "objective_limit" termination
         criteria is met when a feasible objective is found
-        that is at least as good as the specified
-        value. (default: None)
+        that is at least as good as the specified value. If
+        this value is infinite, the termination criteria is
+        met as soon as a finite objective is found.
+        (default: None)
     bound_stop : float, optional
         If provided, the "objective_limit" termination
         criteria is met when the best bound on the objective
-        is at least as good as the specified
-        value. (default: None)
+        is at least as good as the specified value. If this
+        value is infinite, the termination criteria is met
+        as soon as a finite objective is found.
+        (default: None)
     """
     __slots__ = ("sense",
                  "absolute_gap",
                  "relative_gap",
                  "scale_function",
                  "queue_tolerance",
+                 "branch_tolerance",
                  "comparison_tolerance",
                  "objective_stop",
                  "bound_stop",
@@ -139,6 +164,7 @@ class ConvergenceChecker(object):
                  relative_gap=1e-4,
                  scale_function=_default_scale,
                  queue_tolerance=0,
+                 branch_tolerance=0,
                  comparison_tolerance=0,
                  objective_stop=None,
                  bound_stop=None):
@@ -161,13 +187,22 @@ class ConvergenceChecker(object):
             assert self.relative_gap >= 0 and \
                 (not math.isinf(self.relative_gap))
         self.scale_function = scale_function
-        self.queue_tolerance = queue_tolerance
-        assert self.queue_tolerance >= 0 and \
+        self.queue_tolerance = float(queue_tolerance) \
+            if (queue_tolerance is not None) else queue_tolerance
+        assert (self.queue_tolerance is None) or \
+            ((self.queue_tolerance >= 0) and \
             (not math.isinf(self.queue_tolerance)) and \
-            (not math.isnan(self.queue_tolerance))
+            (not math.isnan(self.queue_tolerance)))
+        self.branch_tolerance = float(branch_tolerance) \
+            if (branch_tolerance is not None) else branch_tolerance
+        assert (self.branch_tolerance is None) or \
+            ((self.branch_tolerance >= 0) and \
+            (not math.isinf(self.branch_tolerance)) and \
+            (not math.isnan(self.branch_tolerance)))
         self.comparison_tolerance = float(comparison_tolerance)
         assert self.comparison_tolerance >= 0 and \
-            (not math.isinf(self.comparison_tolerance))
+            (not math.isinf(self.comparison_tolerance)) and \
+            (not math.isnan(self.comparison_tolerance))
         self.objective_stop = None
         if objective_stop is not None:
             self.objective_stop = float(objective_stop)
@@ -255,22 +290,34 @@ class ConvergenceChecker(object):
         """Returns True when the queue object with the given
         bound is eligible for the queue relative to the
         given objective."""
-        # handles the both equal and infinite case
-        if bound == self.infeasible_objective:
+        if (bound == self.infeasible_objective) or \
+           (objective == self.unbounded_objective):
             return False
         if self.sense == minimize:
-            return objective - bound >= self.queue_tolerance
+            delta = objective - bound
         else:
-            return bound - objective >= self.queue_tolerance
+            delta = bound - objective
+        assert not math.isnan(delta)
+        if self.queue_tolerance is not None:
+            return delta > self.queue_tolerance
+        else:
+            return delta >= 0
 
     def eligible_to_branch(self, bound, objective):
         """Returns True when the bound and objective
         are sufficiently far apart to allow branching."""
-        # handles the both equal and infinite case
+        if (objective == self.unbounded_objective) or \
+           (bound == self.infeasible_objective):
+            return False
         if self.sense == minimize:
-            return objective - bound > self.comparison_tolerance
+            delta = objective - bound
         else:
-            return bound - objective > self.comparison_tolerance
+            delta = bound - objective
+        assert not math.isnan(delta)
+        if self.branch_tolerance is not None:
+            return delta > self.branch_tolerance
+        else:
+            return delta >= 0
 
     def bound_worsened(self, new, old):
         """Returns True when the new bound is worse than the
@@ -280,9 +327,11 @@ class ConvergenceChecker(object):
         if old == new:
             return False
         if self.sense == minimize:
-            return old - new > self.comparison_tolerance
+            delta = old - new
         else:
-            return new - old > self.comparison_tolerance
+            delta = new - old
+        assert not math.isnan(delta)
+        return delta > self.comparison_tolerance
 
     def objective_improved(self, new, old):
         """Returns True when the new objective is better
@@ -292,9 +341,11 @@ class ConvergenceChecker(object):
         if old == new:
             return False
         if self.sense == minimize:
-            return old - new > self.comparison_tolerance
+            delta = old - new
         else:
-            return new - old > self.comparison_tolerance
+            delta = new - old
+        assert not math.isnan(delta)
+        return delta > self.comparison_tolerance
 
     def worst_bound(self, *bounds):
         """Returns the worst bound, as defined by the

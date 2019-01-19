@@ -47,6 +47,7 @@ def _logging_check(comm):
         assert (comm is None) or (comm.rank == 0)
         root = Node()
         p.save_state(root)
+        root.objective = p.infeasible_objective()
         root.bound = p.unbounded_objective()
         assert root.tree_id is None
         Node._insert_tree_id(root._data, 0)

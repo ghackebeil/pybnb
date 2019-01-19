@@ -146,6 +146,46 @@ class TestConvergenceChecker(object):
                         assert p.compute_relative_gap(bound,objective) == \
                             -inf
 
+    def test_eligible_for_queue(self):
+        # min
+        p = ConvergenceChecker(minimize)
+        assert not p.eligible_for_queue(-inf, -inf)
+        assert p.eligible_for_queue(-inf, inf)
+        assert p.eligible_for_queue(-inf, 0.0)
+        assert not p.eligible_for_queue(inf, -inf)
+        assert not p.eligible_for_queue(inf, inf)
+        assert not p.eligible_for_queue(inf, 0.0)
+        assert not p.eligible_for_queue(0.0, -inf)
+        assert p.eligible_for_queue(0.0, inf)
+        assert p.eligible_for_queue(-1e-16, 0.0)
+        assert not p.eligible_for_queue(0.0, 0.0)
+        p = ConvergenceChecker(minimize,
+                               queue_tolerance=0.1)
+        assert not p.eligible_for_queue(-0.1, 0.0)
+        assert p.eligible_for_queue(-0.11, 0.0)
+        p = ConvergenceChecker(minimize,
+                               queue_tolerance=None)
+        assert p.eligible_for_queue(0.0, 0.0)
+        # max
+        p = ConvergenceChecker(maximize)
+        assert not p.eligible_for_queue(-inf, -inf)
+        assert not p.eligible_for_queue(-inf, inf)
+        assert not p.eligible_for_queue(-inf, 0.0)
+        assert p.eligible_for_queue(inf, -inf)
+        assert not p.eligible_for_queue(inf, inf)
+        assert p.eligible_for_queue(inf, 0.0)
+        assert p.eligible_for_queue(0.0, -inf)
+        assert not p.eligible_for_queue(0.0, inf)
+        assert p.eligible_for_queue(1e-16, 0.0)
+        assert not p.eligible_for_queue(0.0, 0.0)
+        p = ConvergenceChecker(maximize,
+                               queue_tolerance=0.1)
+        assert not p.eligible_for_queue(0.1, 0.0)
+        assert p.eligible_for_queue(0.11, 0.0)
+        p = ConvergenceChecker(maximize,
+                               queue_tolerance=None)
+        assert p.eligible_for_queue(0.0, 0.0)
+
     def test_eligible_to_branch(self):
         # min
         p = ConvergenceChecker(minimize)
@@ -159,9 +199,12 @@ class TestConvergenceChecker(object):
         assert p.eligible_to_branch(0.0, inf)
         assert not p.eligible_to_branch(0.0, 0.0)
         p = ConvergenceChecker(minimize,
-                               comparison_tolerance=0.1)
+                               branch_tolerance=0.1)
         assert not p.eligible_to_branch(-0.1, 0.0)
         assert p.eligible_to_branch(-0.11, 0.0)
+        p = ConvergenceChecker(minimize,
+                               branch_tolerance=None)
+        assert p.eligible_to_branch(0.0, 0.0)
         # max
         p = ConvergenceChecker(maximize)
         assert not p.eligible_to_branch(-inf, -inf)
@@ -174,9 +217,12 @@ class TestConvergenceChecker(object):
         assert not p.eligible_to_branch(0.0, inf)
         assert not p.eligible_to_branch(0.0, 0.0)
         p = ConvergenceChecker(maximize,
-                               comparison_tolerance=0.1)
+                               branch_tolerance=0.1)
         assert not p.eligible_to_branch(0.1, 0.0)
         assert p.eligible_to_branch(0.11, 0.0)
+        p = ConvergenceChecker(maximize,
+                               branch_tolerance=None)
+        assert p.eligible_to_branch(0.0, 0.0)
 
     def test_bound_worsened(self):
         # min

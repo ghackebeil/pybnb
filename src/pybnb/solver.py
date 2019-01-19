@@ -591,6 +591,7 @@ class Solver(object):
               relative_gap=1e-4,
               scale_function=_default_scale,
               queue_tolerance=0,
+              branch_tolerance=0,
               comparison_tolerance=0,
               objective_stop=None,
               bound_stop=None,
@@ -663,26 +664,43 @@ class Solver(object):
             **(A)** The absolute tolerance used when
             deciding if a node is eligible to enter the
             queue. The difference between the node bound and
-            the incumbent objective must be greater than or
-            equal to this value. The default setting of zero
-            means that nodes whose bound is equal to the
-            incumbent objective will remain in the
+            the incumbent objective must be greater than
+            this value. The default setting of zero means
+            that nodes whose bound is equal to the incumbent
+            objective are not eligible to enter the
             queue. Setting this to larger values can be used
             to control the queue size, but it should be kept
             small enough to allow absolute and relative
-            optimality tolerances to be met. (default: 0)
+            optimality tolerances to be met. This option can
+            also be set to `None` to allow nodes with a
+            bound equal to (but not greater than) the
+            incumbent objective to enter the queue.
+            (default: 0)
+        branch_tolerance : float, optional
+            **(A)** The absolute tolerance used when
+            deciding if the computed objective and bound for
+            a node are sufficiently different to branch into
+            the node. The default value of zero means that
+            branching will occur if the bound is not exactly
+            equal to the objective. This option can be set
+            to `None` to enable branching for nodes with a
+            bound and objective that are exactly
+            equal. (default: 0)
         comparison_tolerance : float, optional
             **(A)** The absolute tolerance used when
-            deciding if two objective / bound values are
-            sufficiently different. For instance, this
-            tolerance is used when deciding an objective
-            value has improved the incumbent objective
-            enough to be reported. It also control when
-            branching should continue on a node by checking
-            if the local node bound and objective are
-            sufficiently different. It is a good idea to keep
-            this tolerance small relative to the absolute
-            gap used for checking optimality. (default: 0)
+            deciding if two objective or bound values are
+            sufficiently different to be considered improved
+            or worsened. This tolerance controls when the
+            solver considers a new incumbent objective to be
+            found. It also controls when warnings are output
+            about bounds becoming worse on child
+            nodes. Setting this to larger values can be used
+            to avoid the above solver actions due to
+            insignificant numerical differences, but it is
+            better to deal with these numerical issues by
+            rounding numbers to a reliable precison before
+            returning them from the problem methods.
+            (default: 0)
         objective_stop : float, optional
             **(A)** If provided, the solve will terminate
             when a feasible objective is found that is at
@@ -769,6 +787,7 @@ class Solver(object):
             relative_gap=relative_gap,
             scale_function=scale_function,
             queue_tolerance=queue_tolerance,
+            branch_tolerance=branch_tolerance,
             comparison_tolerance=comparison_tolerance,
             objective_stop=objective_stop,
             bound_stop=bound_stop)

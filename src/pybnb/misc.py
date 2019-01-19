@@ -491,6 +491,11 @@ def create_command_line_solver(problem, parser=None):
         default=solve_defaults.pop("queue_tolerance"),
         help=solve_docs["queue_tolerance"]["doc"])
     parser.add_argument(
+        "--branch-tolerance",
+        type=float,
+        default=solve_defaults.pop("branch_tolerance"),
+        help=solve_docs["branch_tolerance"]["doc"])
+    parser.add_argument(
         "--comparison-tolerance",
         type=float,
         default=solve_defaults.pop("comparison_tolerance"),
