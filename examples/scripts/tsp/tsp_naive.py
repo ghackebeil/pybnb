@@ -207,10 +207,6 @@ if __name__ == "__main__":
     stats = solver.collect_worker_statistics()
     if solver.is_dispatcher:
         pybnb.solver.summarize_worker_statistics(stats)
-        print("")
-        print("Solution:")
-        print(" - cost: "+str(results.objective))
-        print(" - tour: "+str(results.tour))
         # save results to a file
         # (mainly used for testing this example)
         if args.results_filename is not None:
