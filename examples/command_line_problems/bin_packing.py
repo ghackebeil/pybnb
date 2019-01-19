@@ -10,6 +10,7 @@
 # example.
 #
 
+import math
 import random
 
 import pybnb
@@ -28,10 +29,13 @@ class BinPacking(pybnb.Problem):
 
     def __init__(self, V, W,
                  pyomo_solver="ipopt",
-                 pyomo_solver_io="nl"):
+                 pyomo_solver_io="nl",
+                 integer_tolerance=1e-4):
         assert V > 0
+        assert integer_tolerance > 0
         self.V = V
         self.W = W
+        self._integer_tolerance = integer_tolerance
         N = range(len(self.W))
         m = self.model = pmo.block()
         x = m.x = pmo.variable_dict()
@@ -70,13 +74,13 @@ class BinPacking(pybnb.Problem):
             pyomo_solver,
             solver_io=pyomo_solver_io)
 
-    def _check_feasible(self, tol=1e-4):
+    def _check_feasible(self):
         """Check if the currently loaded solution
         is feasible for the true (binary) model."""
         for V in (self.model.x, self.model.y):
             for v in V.components():
-                if (abs(v.value) > tol) and \
-                   (abs(v.value - 1) > tol):
+                if (abs(v.value) > self._integer_tolerance) and \
+                   (abs(v.value - 1) > self._integer_tolerance):
                     return False
         return True
 
@@ -263,7 +267,14 @@ class BinPacking(pybnb.Problem):
         if (str(results.solver.status) == "ok") and \
            (str(results.solver.termination_condition) == "optimal"):
             self.model.load_solution(results.solution(0))
-            return round(self.model.objective(), 7)
+            # note that any integer feasible solution will have an
+            # integer objective value, so we can strengthen the bound
+            objective = self.model.objective()
+            if objective - math.floor(objective) > \
+               self._integer_tolerance:
+                return  math.ceil(objective)
+            else:
+                return math.floor(objective)
         elif str(results.solver.termination_condition) == "infeasible":
             assert str(results.solver.status) in ("ok","warning")
             return self.infeasible_objective()
