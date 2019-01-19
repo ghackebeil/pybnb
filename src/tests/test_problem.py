@@ -345,6 +345,7 @@ class Test_SolveInfo(object):
             def save_state(self, node):
                 self.d['save_state'] = True
             def load_state(self, node):
+                time.sleep(0.01)
                 self.d['load_state'] = True
             def branch(self, parent_node):
                 time.sleep(0.01)
