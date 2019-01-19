@@ -128,7 +128,7 @@ class ConvergenceChecker(object):
         used to avoid the above solver actions due to
         insignificant numerical differences, but it is
         better to deal with these numerical issues by
-        rounding numbers to a reliable precison before
+        rounding numbers to a reliable precision before
         returning them from the problem methods.
         (default: 0)
     objective_stop : float, optional
