@@ -10,7 +10,10 @@ def _test_mpi_partition(comm):
     if comm is not None:
         import mpi4py.MPI
         test_ranks = list(range(comm.size))
-    for x in (['a','b','c'],
+    for x in ([],
+              ['a'],
+              ['a','b'],
+              ['a','b','c'],
               ['a','b','c']*2,
               ['a','b','c']*4,
               ['a','b','c']*16,
