@@ -209,7 +209,7 @@ class Problem(object):
 
 class _SolveInfo(object):
     __slots__ = ("data")
-    _data_size = 9
+    _data_size = 11
     def __init__(self):
         self.data = array.array('d',[0]) * \
                     _SolveInfo._data_size
@@ -229,86 +229,105 @@ class _SolveInfo(object):
             self.data[i] += other.data[i]
 
     @property
-    def explored_nodes_count(self):
-        return int(self.data[0])
-    @explored_nodes_count.setter
-    def explored_nodes_count(self, val):
-        self.data[0] = val
-
-    def _increment_explored_nodes_count(self, val):
-        self.data[0] += val
-
-    @property
     def total_queue_time(self):
-        return float(self.data[1])
+        return float(self.data[0])
     @total_queue_time.setter
     def total_queue_time(self, val):
-        self.data[1] = val
+        self.data[0] = val
 
     @property
     def queue_call_count(self):
-        return int(self.data[2])
+        return int(self.data[1])
     @queue_call_count.setter
     def queue_call_count(self, val):
-        self.data[2] = val
+        self.data[1] = val
 
     def _increment_queue_stat(self, time_, count):
-        self.data[1] += time_
-        self.data[2] += count
+        self.data[0] += time_
+        self.data[1] += count
 
     @property
     def total_objective_time(self):
-        return float(self.data[3])
+        return float(self.data[2])
     @total_objective_time.setter
     def total_objective_time(self, val):
-        self.data[3] = val
+        self.data[2] = val
 
     @property
     def objective_call_count(self):
-        return int(self.data[4])
+        return int(self.data[3])
     @objective_call_count.setter
     def objective_call_count(self, val):
-        self.data[4] = val
+        self.data[3] = val
 
     def _increment_objective_stat(self, time_, count):
-        self.data[3] += time_
-        self.data[4] += count
+        self.data[2] += time_
+        self.data[3] += count
 
     @property
     def total_bound_time(self):
-        return float(self.data[5])
+        return float(self.data[4])
     @total_bound_time.setter
     def total_bound_time(self, val):
-        self.data[5] = val
+        self.data[4] = val
 
     @property
     def bound_call_count(self):
-        return int(self.data[6])
+        return int(self.data[5])
     @bound_call_count.setter
     def bound_call_count(self, val):
-        self.data[6] = val
+        self.data[5] = val
 
     def _increment_bound_stat(self, time_, count):
-        self.data[5] += time_
-        self.data[6] += count
+        self.data[4] += time_
+        self.data[5] += count
 
     @property
     def total_branch_time(self):
-        return float(self.data[7])
+        return float(self.data[6])
     @total_branch_time.setter
     def total_branch_time(self, val):
-        self.data[7] = val
+        self.data[6] = val
 
     @property
     def branch_call_count(self):
-        return int(self.data[8])
+        return int(self.data[7])
     @branch_call_count.setter
     def branch_call_count(self, val):
-        self.data[8] = val
+        self.data[7] = val
 
     def _increment_branch_stat(self, time_, count):
-        self.data[7] += time_
-        self.data[8] += count
+        self.data[6] += time_
+        self.data[7] += count
+
+    @property
+    def total_load_state_time(self):
+        return float(self.data[8])
+    @total_load_state_time.setter
+    def total_load_state_time(self, val):
+        self.data[8] = val
+
+    @property
+    def load_state_call_count(self):
+        return int(self.data[9])
+    @load_state_call_count.setter
+    def load_state_call_count(self, val):
+        self.data[9] = val
+
+    def _increment_load_state_stat(self, time_, count):
+        self.data[8] += time_
+        self.data[9] += count
+
+    @property
+    def explored_nodes_count(self):
+        return int(self.data[10])
+    @explored_nodes_count.setter
+    def explored_nodes_count(self, val):
+        self.data[10] = val
+
+    def _increment_explored_nodes_stat(self, count):
+        self.data[10] += count
+
 
 class _ProblemWithSolveInfoCollection(Problem):
     """A Problem objects that keeps track of statistics used
@@ -365,8 +384,10 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         self._problem.save_state(node)
 
     def load_state(self, node):
+        start = self._clock()
         self._problem.load_state(node)
-        self._solve_info._increment_explored_nodes_count(1)
+        stop = self._clock()
+        self._solve_info._increment_load_state_stat(stop-start, 1)
 
     def notify_solve_begins(self,
                             comm,

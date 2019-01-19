@@ -58,6 +58,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.explored_nodes_count += 1
         assert info.explored_nodes_count == 1
         assert info.total_queue_time == 0
@@ -68,7 +70,9 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
-        info._increment_explored_nodes_count(2)
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
+        info._increment_explored_nodes_stat(2)
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -78,6 +82,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.total_queue_time += 1.5
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 1.5
@@ -88,6 +94,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.queue_call_count += 1
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 1.5
@@ -98,6 +106,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info._increment_queue_stat(2.0, 2)
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -108,6 +118,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.total_objective_time += 1.5
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -118,6 +130,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.objective_call_count += 1
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -128,6 +142,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info._increment_objective_stat(2.0, 2)
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -138,6 +154,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.total_bound_time += 1.5
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -148,6 +166,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.bound_call_count += 1
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -158,6 +178,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info._increment_bound_stat(2.0, 2)
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -168,6 +190,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 3
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.total_branch_time += 1.5
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -178,6 +202,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 3
         assert info.total_branch_time == 1.5
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info.branch_call_count += 1
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -188,6 +214,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 3
         assert info.total_branch_time == 1.5
         assert info.branch_call_count == 1
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         info._increment_branch_stat(2.0, 2)
         assert info.explored_nodes_count == 3
         assert info.total_queue_time == 3.5
@@ -198,6 +226,44 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 3
         assert info.total_branch_time == 3.5
         assert info.branch_call_count == 3
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
+        info.total_load_state_time += 1.5
+        assert info.explored_nodes_count == 3
+        assert info.total_queue_time == 3.5
+        assert info.queue_call_count == 3
+        assert info.total_objective_time == 3.5
+        assert info.objective_call_count == 3
+        assert info.total_bound_time == 3.5
+        assert info.bound_call_count == 3
+        assert info.total_branch_time == 3.5
+        assert info.branch_call_count == 3
+        assert info.total_load_state_time == 1.5
+        assert info.load_state_call_count == 0
+        info.load_state_call_count += 1
+        assert info.explored_nodes_count == 3
+        assert info.total_queue_time == 3.5
+        assert info.queue_call_count == 3
+        assert info.total_objective_time == 3.5
+        assert info.objective_call_count == 3
+        assert info.total_bound_time == 3.5
+        assert info.bound_call_count == 3
+        assert info.total_branch_time == 3.5
+        assert info.branch_call_count == 3
+        assert info.total_load_state_time == 1.5
+        assert info.load_state_call_count == 1
+        info._increment_load_state_stat(2.0, 2)
+        assert info.explored_nodes_count == 3
+        assert info.total_queue_time == 3.5
+        assert info.queue_call_count == 3
+        assert info.total_objective_time == 3.5
+        assert info.objective_call_count == 3
+        assert info.total_bound_time == 3.5
+        assert info.bound_call_count == 3
+        assert info.total_branch_time == 3.5
+        assert info.branch_call_count == 3
+        assert info.total_load_state_time == 3.5
+        assert info.load_state_call_count == 3
         info.reset()
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
@@ -208,6 +274,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
 
     def test_add_from(self):
         info = _SolveInfo()
@@ -220,6 +288,8 @@ class Test_SolveInfo(object):
         info.bound_call_count = 7
         info.total_branch_time = 8
         info.branch_call_count = 9
+        info.total_load_state_time = 10
+        info.load_state_call_count = 11
         info1 = _SolveInfo()
         info1.explored_nodes_count = -2
         info1.total_queue_time = -3
@@ -230,6 +300,8 @@ class Test_SolveInfo(object):
         info1.bound_call_count = -8
         info1.total_branch_time = -9
         info1.branch_call_count = -10
+        info1.total_load_state_time = -11
+        info1.load_state_call_count = -12
         info.add_from(info1)
         assert info.explored_nodes_count  == -1
         assert info.total_queue_time  == -1
@@ -240,6 +312,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count  == -1
         assert info.total_branch_time  == -1
         assert info.branch_call_count  == -1
+        assert info.total_load_state_time  == -1
+        assert info.load_state_call_count  == -1
         with pytest.raises(TypeError):
             info.add_from(1)
 
@@ -335,6 +409,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         p.sense()
         assert j.d['sense'] == True
         assert j.d['objective'] == False
@@ -355,6 +431,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         p.objective()
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -375,6 +453,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 0
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         p.bound()
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -395,6 +475,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         p.save_state(None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -415,6 +497,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time == 0
+        assert info.load_state_call_count == 0
         p.load_state(None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -426,7 +510,7 @@ class Test_SolveInfo(object):
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
-        assert info.explored_nodes_count == 1
+        assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
         assert info.total_objective_time > 0
@@ -435,6 +519,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
+        assert info.total_load_state_time > 0
+        assert info.load_state_call_count == 1
         list(p.branch(None))
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -446,7 +532,7 @@ class Test_SolveInfo(object):
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
-        assert info.explored_nodes_count == 1
+        assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
         assert info.total_objective_time > 0
@@ -455,6 +541,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time > 0
         assert info.branch_call_count == 1
+        assert info.total_load_state_time > 0
+        assert info.load_state_call_count == 1
         p.notify_solve_begins(None, None, None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -466,7 +554,7 @@ class Test_SolveInfo(object):
         assert j.d['notify_new_best_objective_received'] == False
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
-        assert info.explored_nodes_count == 1
+        assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
         assert info.total_objective_time > 0
@@ -475,6 +563,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time > 0
         assert info.branch_call_count == 1
+        assert info.total_load_state_time > 0
+        assert info.load_state_call_count == 1
         p.notify_new_best_objective_received(None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -486,7 +576,7 @@ class Test_SolveInfo(object):
         assert j.d['notify_new_best_objective_received'] == True
         assert j.d['notify_new_best_objective'] == False
         assert j.d['notify_solve_finished'] == False
-        assert info.explored_nodes_count == 1
+        assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
         assert info.total_objective_time > 0
@@ -495,6 +585,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time > 0
         assert info.branch_call_count == 1
+        assert info.total_load_state_time > 0
+        assert info.load_state_call_count == 1
         p.notify_new_best_objective(None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -506,7 +598,7 @@ class Test_SolveInfo(object):
         assert j.d['notify_new_best_objective_received'] == True
         assert j.d['notify_new_best_objective'] == True
         assert j.d['notify_solve_finished'] == False
-        assert info.explored_nodes_count == 1
+        assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
         assert info.total_objective_time > 0
@@ -515,6 +607,8 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time > 0
         assert info.branch_call_count == 1
+        assert info.total_load_state_time > 0
+        assert info.load_state_call_count == 1
         p.notify_solve_finished(None, None, None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
@@ -526,7 +620,7 @@ class Test_SolveInfo(object):
         assert j.d['notify_new_best_objective_received'] == True
         assert j.d['notify_new_best_objective'] == True
         assert j.d['notify_solve_finished'] == True
-        assert info.explored_nodes_count == 1
+        assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
         assert info.total_objective_time > 0
@@ -535,3 +629,5 @@ class Test_SolveInfo(object):
         assert info.bound_call_count == 1
         assert info.total_branch_time > 0
         assert info.branch_call_count == 1
+        assert info.total_load_state_time > 0
+        assert info.load_state_call_count == 1

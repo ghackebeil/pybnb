@@ -53,7 +53,7 @@ class TestSolverSimple(object):
         assert b.worker_count == 1
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()
-        assert len(stats) == 10
+        assert len(stats) == 12
         assert stats['wall_time'] == [0]
         assert stats['queue_time'] == [0]
         assert stats['queue_call_count'] == [0]
@@ -63,12 +63,15 @@ class TestSolverSimple(object):
         assert stats['bound_call_count'] == [0]
         assert stats['branch_time'] == [0]
         assert stats['branch_call_count'] == [0]
+        assert stats['load_state_time'] == [0]
+        assert stats['load_state_call_count'] == [0]
         assert stats['explored_nodes_count'] == [0]
         out = \
 """Number of Workers:        1
 Load Imbalance:       0.00%
 Average Worker Timing:
  - queue:       0.00% [avg time:   0.0 s , count: 0]
+ - load_state:  0.00% [avg time:   0.0 s , count: 0]
  - bound:       0.00% [avg time:   0.0 s , count: 0]
  - objective:   0.00% [avg time:   0.0 s , count: 0]
  - branch:      0.00% [avg time:   0.0 s , count: 0]

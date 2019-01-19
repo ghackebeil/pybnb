@@ -331,9 +331,8 @@ class Solver(object):
                     self._local_solve_info,
                     children)
             update_stop = self._time()
-            self._local_solve_info.total_queue_time += \
-                update_stop-update_start
-            self._local_solve_info.queue_call_count += 1
+            self._local_solve_info._increment_queue_stat(
+                update_stop-update_start, 1)
 
             updated = self._check_update_best_objective(
                 convergence_checker,
@@ -355,6 +354,7 @@ class Solver(object):
             working_node._set_data(data)
             del new_objective
             del data
+            self._local_solve_info._increment_explored_nodes_stat(1)
 
             bound = working_node.bound
             current_tree_id = working_node.tree_id
@@ -489,7 +489,7 @@ class Solver(object):
         stats = {}
         if (self.comm is not None) and \
            (self.comm.size > 1):
-            gathered = numpy.empty((self.worker_count, 10),
+            gathered = numpy.empty((self.worker_count, 12),
                                    dtype=float)
             if self.is_worker:
                 assert self.worker_comm is not None
@@ -505,6 +505,8 @@ class Solver(object):
                      solve_info.bound_call_count,
                      solve_info.total_branch_time,
                      solve_info.branch_call_count,
+                     solve_info.total_load_state_time,
+                     solve_info.load_state_call_count,
                      solve_info.explored_nodes_count],
                     dtype=float)
                 assert len(mine) == gathered.shape[1]
@@ -529,7 +531,9 @@ class Solver(object):
             stats['bound_call_count'] = gathered[6]
             stats['branch_time'] = gathered[7]
             stats['branch_call_count'] = gathered[8]
-            stats['explored_nodes_count'] = gathered[9]
+            stats['load_state_time'] = gathered[9]
+            stats['load_state_call_count'] = gathered[10]
+            stats['explored_nodes_count'] = gathered[11]
         else:
             assert self.is_worker
             assert self.is_dispatcher
@@ -549,6 +553,10 @@ class Solver(object):
                 [solve_info.total_branch_time]
             stats['branch_call_count'] = \
                 [solve_info.branch_call_count]
+            stats['load_state_time'] = \
+                [solve_info.total_load_state_time]
+            stats['load_state_call_count'] = \
+                [solve_info.load_state_call_count]
             stats['explored_nodes_count'] = \
                 [solve_info.explored_nodes_count]
 
@@ -899,26 +907,30 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         should be written to. (default: ``sys.stdout``)
     """
     import numpy
-    explored_nodes_count = numpy.array(stats['explored_nodes_count'],
-                                       dtype=int)
     wall_time = numpy.array(stats['wall_time'],
                             dtype=float)
     queue_time = numpy.array(stats['queue_time'],
-                              dtype=float)
-    queue_call_count = numpy.array(stats['queue_call_count'],
-                               dtype=int)
+                             dtype=float)
+    queue_count = numpy.array(stats['queue_call_count'],
+                              dtype=int)
     objective_time = numpy.array(stats['objective_time'],
                                  dtype=float)
-    objective_call_count = numpy.array(stats['objective_call_count'],
+    objective_count = numpy.array(stats['objective_call_count'],
                                   dtype=int)
     bound_time = numpy.array(stats['bound_time'],
                              dtype=float)
-    bound_call_count = numpy.array(stats['bound_call_count'],
+    bound_count = numpy.array(stats['bound_call_count'],
                               dtype=int)
     branch_time = numpy.array(stats['branch_time'],
                               dtype=float)
-    branch_call_count = numpy.array(stats['branch_call_count'],
+    branch_count = numpy.array(stats['branch_call_count'],
                                dtype=int)
+    load_state_time = numpy.array(stats['load_state_time'],
+                                  dtype=float)
+    load_state_count = numpy.array(stats['load_state_call_count'],
+                                   dtype=int)
+    explored_nodes_count = numpy.array(stats['explored_nodes_count'],
+                                       dtype=int)
     work_time = wall_time - queue_time
 
     with as_stream(stream) as stream:
@@ -936,49 +948,57 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
             stream.write(" - min: %d\n" % (numpy.min(explored_nodes_count)))
             stream.write(" - max: %d\n" % (numpy.max(explored_nodes_count)))
         stream.write("Average Worker Timing:\n")
-        queue_call_count_str = "%d" % queue_call_count.sum()
-        tmp = "%"+str(len(queue_call_count_str))+"d"
-        bound_call_count_str = tmp % bound_call_count.sum()
-        objective_call_count_str = tmp % objective_call_count.sum()
-        branch_call_count_str = tmp % branch_call_count.sum()
+        queue_count_str = "%d" % queue_count.sum()
+        tmp = "%"+str(len(queue_count_str))+"d"
+        bound_count_str = tmp % bound_count.sum()
+        objective_count_str = tmp % objective_count.sum()
+        branch_count_str = tmp % branch_count.sum()
+        load_state_count_str = tmp % load_state_count.sum()
         div1 = numpy.copy(wall_time)
         div1[div1 == 0] = 1
-        div2 = numpy.copy(queue_call_count)
+        div2 = numpy.copy(queue_count)
         div2[div2 == 0] = 1
         stream.write(" - queue:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean(queue_time/div1)*100.0,
                         time_format(numpy.mean(queue_time/div2),
                                     align_unit=True),
-                        queue_call_count_str))
-        div2 = numpy.copy(bound_call_count)
+                        queue_count_str))
+        div2 = numpy.copy(load_state_count)
+        div2[div2==0] = 1
+        stream.write(" - load_state:%6.2f%% [avg time: %8s, count: %s]\n"
+                     % (numpy.mean((load_state_time/div1))*100.0,
+                        time_format(numpy.mean(load_state_time/div2),
+                                    align_unit=True),
+                        load_state_count_str))
+        div2 = numpy.copy(bound_count)
         div2[div2==0] = 1
         stream.write(" - bound:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((bound_time/div1))*100.0,
                         time_format(numpy.mean(bound_time/div2),
                                     align_unit=True),
-                        bound_call_count_str))
-        div2 = numpy.copy(objective_call_count)
+                        bound_count_str))
+        div2 = numpy.copy(objective_count)
         div2[div2==0] = 1
         stream.write(" - objective: %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((objective_time/div1))*100.0,
                         time_format(numpy.mean(objective_time/div2),
                                     align_unit=True),
-                        objective_call_count_str))
-        div2 = numpy.copy(branch_call_count)
+                        objective_count_str))
+        div2 = numpy.copy(branch_count)
         div2[div2==0] = 1
         stream.write(" - branch:    %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean((branch_time/div1))*100.0,
                         time_format(numpy.mean(branch_time/div2),
                                     align_unit=True),
-                        branch_call_count_str))
-        other_time = work_time - objective_time - bound_time - branch_time
-        div2 = numpy.copy(queue_call_count)
+                        branch_count_str))
+        other_time = work_time - objective_time - bound_time - branch_time - load_state_time
+        div2 = numpy.copy(queue_count)
         div2[div2 == 0] = 1
         stream.write(" - other:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (numpy.mean(other_time/div1)*100.0,
                         time_format(numpy.mean(other_time/div2),
                                     align_unit=True),
-                        queue_call_count_str))
+                        queue_count_str))
 
 
 def solve(problem,
