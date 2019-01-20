@@ -33,14 +33,14 @@ class Simple(pybnb.Problem):
     def load_state(self, node):
         self._xL = float(node.state[0])
         self._xU = float(node.state[1])
-    def branch(self, parent_node):
+    def branch(self, node):
         xL, xU = self._xL, self._xU
         xM = 0.5 * (xL + xU)
         self._xL, self._xU = xL, xM
-        left = parent_node.new_child()
+        left = node.new_child()
         self.save_state(left)
         self._xL, self._xU = xM, xU
-        right = parent_node.new_child()
+        right = node.new_child()
         self.save_state(right)
         self._xL, self._xU = xL, xU
         return left, right

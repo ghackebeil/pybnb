@@ -159,8 +159,9 @@ class TSP_Naive(pybnb.Problem):
                               comm,
                               worker_comm,
                               results):
-        # determine who is storing the best solution, and if
-        # there is one, then broadcast it to everyone
+        # determine who is storing the best solution and, if
+        # there is one, broadcast it to everyone and place
+        # it on the results object
         if (comm is not None) and \
            (comm.size > 1):
             import mpi4py.MPI
