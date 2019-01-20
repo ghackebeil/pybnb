@@ -779,6 +779,9 @@ class Solver(object):
         self._reset_local_solve_stats()
         self._solve_start = self._time()
 
+        assert (initialize_queue is None) or \
+            (self.is_dispatcher)
+
         if best_objective is None:
             best_objective = problem.infeasible_objective()
 
