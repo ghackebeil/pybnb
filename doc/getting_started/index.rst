@@ -353,7 +353,7 @@ object.
         assert solver.is_dispatcher and \
             solver.is_worker
     else:
-        if solver.comm.rank == 0:
+        if solver.comm.rank == <dispatcher_rank>:
             assert solver.is_dispatcher and \
                 (not solver.is_worker)
         else:
