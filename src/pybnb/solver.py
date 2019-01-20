@@ -402,22 +402,24 @@ class Solver(object):
                 if (objective != unbounded_objective) and \
                     convergence_checker.eligible_for_queue(
                         bound,
-                        self._best_objective):
-                    if convergence_checker.eligible_to_branch(bound, objective):
-                        clist = problem.branch(working_node)
-                        for child in clist:
-                            assert child.parent_tree_id == current_tree_id
-                            assert child.tree_id is None
-                            assert child.tree_depth >= current_tree_depth + 1
-                            assert child.objective == working_node.objective
-                            children.append(child._data)
-                            if convergence_checker.bound_worsened(child.bound, bound):    #pragma:nocover
-                                self._disp.log_warning(
-                                    "WARNING: Bound on child node "
-                                    "returned from branch method "
-                                    "is worse than parent node "
-                                    "(child=%r, parent=%r)"
-                                    % (child.bound, bound))
+                        self._best_objective) and \
+                    convergence_checker.eligible_to_branch(
+                        bound,
+                        objective):
+                    clist = problem.branch(working_node)
+                    for child in clist:
+                        assert child.parent_tree_id == current_tree_id
+                        assert child.tree_id is None
+                        assert child.tree_depth >= current_tree_depth + 1
+                        assert child.objective == working_node.objective
+                        children.append(child._data)
+                        if convergence_checker.bound_worsened(child.bound, bound):    #pragma:nocover
+                            self._disp.log_warning(
+                                "WARNING: Bound on child node "
+                                "returned from branch method "
+                                "is worse than parent node "
+                                "(child=%r, parent=%r)"
+                                % (child.bound, bound))
 
         assert len(data) == 3
         global_bound = data[0]
