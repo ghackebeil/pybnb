@@ -22,7 +22,10 @@ try:
                           unbounded_max,
                           unbounded_min,
                           zero_objective_max,
-                          zero_objective_min)
+                          zero_objective_min,
+                          delayed_unbounded_max,
+                          delayed_unbounded_min)
+
 finally:
     sys.path.remove(thisdir)
 
@@ -722,6 +725,50 @@ def _test_zero_objective_min(comm):
             absolute_gap=0.01,
             queue_strategy=queue_strategy)
 
+def _test_delayed_unbounded_max(comm):
+    solver = Solver(comm=comm)
+    baseline = SolverResults()
+    baseline.solution_status = "unbounded"
+    baseline.termination_condition = "no_nodes"
+    baseline.objective = inf
+    baseline.bound = inf
+    baseline.nodes = _ignore_value_
+    baseline.wall_time = _ignore_value_
+    problem = delayed_unbounded_max.DelayedUnboundedMax()
+    _execute_single_test(problem,
+                         baseline,
+                         solver=solver)
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
+            continue
+        _execute_single_test(
+            problem,
+            baseline,
+            solver=solver,
+            queue_strategy=queue_strategy)
+
+def _test_delayed_unbounded_min(comm):
+    solver = Solver(comm=comm)
+    baseline = SolverResults()
+    baseline.solution_status = "unbounded"
+    baseline.termination_condition = "no_nodes"
+    baseline.objective = -inf
+    baseline.bound = -inf
+    baseline.nodes = _ignore_value_
+    baseline.wall_time = _ignore_value_
+    problem = delayed_unbounded_min.DelayedUnboundedMin()
+    _execute_single_test(problem,
+                         baseline,
+                         solver=solver)
+    for queue_strategy in sorted(pybnb.QueueStrategy):
+        if queue_strategy == "custom":
+            continue
+        _execute_single_test(
+            problem,
+            baseline,
+            solver=solver,
+            queue_strategy=queue_strategy)
+
 def test_infeasible_max_nocomm():
     _test_infeasible_max(None)
 
@@ -745,6 +792,12 @@ def test_zero_objective_max_nocomm():
 
 def test_zero_objective_min_nocomm():
     _test_zero_objective_min(None)
+
+def test_delayed_unbounded_max_nocomm():
+    _test_delayed_unbounded_max(None)
+
+def test_delayed_unbounded_min_nocomm():
+    _test_delayed_unbounded_min(None)
 
 if mpi_available:
 
@@ -779,3 +832,11 @@ if mpi_available:
     @MPITest(commsize=[1, 2, 4])
     def test_zero_objective_min(comm):
         _test_zero_objective_min(comm)
+
+    @MPITest(commsize=[1, 2, 4])
+    def test_delayed_unbounded_max(comm):
+        _test_delayed_unbounded_max(comm)
+
+    @MPITest(commsize=[1, 2, 4])
+    def test_delayed_unbounded_min(comm):
+        _test_delayed_unbounded_min(comm)

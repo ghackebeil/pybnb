@@ -11,4 +11,4 @@ class UnboundedMin(pybnb.Problem):
     def bound(self): return self.unbounded_objective()
     def save_state(self, node): pass
     def load_state(self, node): pass
-    def branch(self): raise NotImplementedError()
+    def branch(self, node): raise NotImplementedError()
