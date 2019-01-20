@@ -1,9 +1,15 @@
 Changelog
 =========
 
-0.3.0 - `master`_
+0.3.1 - `master`_
 ~~~~~~~~~~~~~~~~~
 
+* TODO
+
+0.3.0 - 2019-01-20
+~~~~~~~~~~~~~~~~~~
+
+* Adding new sections to the online docs.
 * Fix to pybnb.solve helper function. The dispatcher_rank
   keyword was not being used to initialized the solver.
 * Adding 'log_new_incumbent' solver option that can be set
