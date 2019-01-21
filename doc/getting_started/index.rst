@@ -304,14 +304,15 @@ and the second is to create a :class:`Solver
 Both approaches can solve a problem in serial or
 parallel. The difference between the two approaches is that
 the :func:`solve <pybnb.solver.solve>` convenience function
-automatically creates a :class:`Solver <pybnb.solver.Solver>`
-object and provides a few additional keywords that simplify
-the process of saving solver output and results to a
-file. Additionally, this function collects and reports
-workload and timing statistics for the solve, which can add
-some overhead. These statistics are not collected by the
-:func:`Solver.solve <pybnb.solver.Solver.solve>` method,
-thus, the second approach of directly using a :class:`Solver
+automatically creates a :class:`Solver
+<pybnb.solver.Solver>` object and provides a few additional
+keywords that simplify the process of saving solver output
+and results to a file. Additionally, this function collects
+and reports workload and timing statistics at the end of the
+solve, which can add some overhead. These statistics are not
+collected by the :func:`Solver.solve
+<pybnb.solver.Solver.solve>` method; thus, the second
+approach of directly using a :class:`Solver
 <pybnb.solver.Solver>` can be more efficient.
 
 Creating a Solver
@@ -363,7 +364,7 @@ object.
 Terminating a Solve Early
 -------------------------
 
-A solve that is launched without the use `mpiexec` can be
+A solve that is launched without the use of `mpiexec` can be
 terminated at any point by entering `Ctrl-C` (sending the
 process a `SIGINT` signal). If the signal is successfully
 received, the solver will attempt to gracefully stop the

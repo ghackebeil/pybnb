@@ -741,7 +741,7 @@ class Solver(object):
             after the solve). If left as None, the queue
             will be initialized with a single root node
             created by calling :func:`problem.save_state
-            <pybnb.problem.Problem.save_state`.
+            <pybnb.problem.Problem.save_state>`.
             (default: None)
         queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
             **(D)** Sets the strategy for prioritizing nodes

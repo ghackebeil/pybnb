@@ -6,7 +6,7 @@ Python. It designed to run on distributed computing
 architectures, using ``mpi4py`` and ``numpy`` for fast
 inter-process communication.
 
-This package is designed to serve as a backend for
+This package is meant to serve as a back-end for
 problem-specific solution strategies that utilize a
 branch-and-bound algorithm. The following core functionality
 is included:
