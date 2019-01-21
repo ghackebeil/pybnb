@@ -254,7 +254,7 @@ Note from the above that, during the main solve loop
 starting on line 13, it is safe to assume that the six
 highlighted problem methods between line 13 and line 25 will
 be called in the relative order shown. The conditions under
-a subset of the methods will be called are briefly discussed
+which these methods will be called are briefly discussed
 below:
 
  - **<conditional_1>** (line 15): This condition is met when
