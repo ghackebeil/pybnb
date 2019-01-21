@@ -178,19 +178,19 @@ description of each of the required methods.
  - :func:`Problem.branch(node) <pybnb.problem.Problem.branch>`
 
    This method should partition the problem domain defined
-   within the user state on the `node` object into
-   zero or more child states and return them as new node
-   objects. A child node should be created by calling
+   within the user state on the `node` object into zero or
+   more child states and return them as new node objects. A
+   child node should be created by calling
    :func:`node.new_child()
    <pybnb.node.Node.new_child>`. Note that for the branching
    process to make sense in the context of a
    branch-and-bound solve, the bound computed from the child
    node states should improve (or not be worse than) the
    bound for the parent node. Once the child bound is
-   computed, if it is found to be worse than the bound from
-   the parent node then the branch-and-bound solver will
-   issue a warning, as this is likely indicative of a
-   programming error or other numerical issues.
+   computed, the solver will issue a warning if it is found
+   to be worse than the bound from the parent node, as this
+   is indicative of a programming error or other numerical
+   issues.
 
    When this method is called, the :attr:`node.bound
    <pybnb.node.Node.bound>` and :attr:`node.objective

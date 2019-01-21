@@ -22,6 +22,7 @@ Modules
 -------
 
 .. toctree::
+    :maxdepth: 1
 
     common
     problem
@@ -33,4 +34,4 @@ Modules
     dispatcher_proxy
     mpi_utils
     misc
-    pyomo
+    pyomo/index.rst

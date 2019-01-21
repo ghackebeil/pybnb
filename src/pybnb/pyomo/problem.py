@@ -44,11 +44,23 @@ class PyomoProblem(Problem):
 
     @property
     def pyomo_model(self):
-        """Returns the pyomo model for this problem."""
+        """Returns the pyomo model for this problem.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
+        """
         raise NotImplementedError()               #pragma:nocover
 
     @property
     def pyomo_model_objective(self):
         """Returns the pyomo model objective for this
-        problem."""
+        problem.
+
+        Note
+        ----
+        This method is abstract and must be defined by the
+        user.
+        """
         raise NotImplementedError()               #pragma:nocover

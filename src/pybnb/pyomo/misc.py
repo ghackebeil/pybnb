@@ -28,21 +28,21 @@ def hash_joblist(jobs):
 
 def add_tmp_component(model, name, obj):
     """Add a temporary component to a model, adjusting the
-    name as need to make sure it is unique."""
+    name as needed to make sure it is unique."""
     while hasattr(model, name):
         name = "."+name+"."
     setattr(model, name, obj)
     return name
 
 def mpi_partition(comm, items, root=0):
-    """Creates an iterator that partitions the list of items
-    across processes in the communicator. If the
-    communicator size is greater than 1, the root process
-    iterates over no items, but rather serves them
-    dynamically after receiving requests from workers. This
-    function assumes each process has an identical copy of
-    the items list. Therefore, items in the list are not
-    transferred (only indices)."""
+    """A generator that partitions the list of items across
+    processes in the communicator. If the communicator size
+    is greater than 1, the root process iterates over no
+    items, but rather serves them dynamically after
+    receiving requests from workers. This function assumes
+    each process has an identical copy of the items
+    list. Therefore, items in the list are not transferred
+    (only indices)."""
     assert root >= 0
     N = len(items)
     if N > 0:
@@ -100,7 +100,7 @@ def mpi_partition(comm, items, root=0):
 def correct_integer_lb(lb,
                        integer_tolerance):
     """Converts a lower bound for an integer optimization
-    variable to an integer equal to ceil(ub), taking care
+    variable to an integer equal to `ceil(ub)`, taking care
     not to move a non-integer bound away from an integer
     point already within a given tolerance."""
     assert 0 <= integer_tolerance < 0.5
@@ -112,7 +112,7 @@ def correct_integer_lb(lb,
 def correct_integer_ub(ub,
                        integer_tolerance):
     """Converts an upper bound for an integer optimization
-    variable to an integer equal to floor(ub), taking care
+    variable to an integer equal to `floor(ub)`, taking care
     not to move a non-integer bound away from an integer
     point already within a given tolerance."""
     assert 0 <= integer_tolerance < 0.5
