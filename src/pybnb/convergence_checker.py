@@ -286,10 +286,7 @@ class ConvergenceChecker(object):
                                     objective,
                                     scale=self.scale_function)
 
-    def eligible_for_queue(self, bound, objective):
-        """Returns True when the queue object with the given
-        bound is eligible for the queue relative to the
-        given objective."""
+    def _check_eligible(self, bound, objective, tolerance):
         if (bound == self.infeasible_objective) or \
            (objective == self.unbounded_objective):
             return False
@@ -298,54 +295,48 @@ class ConvergenceChecker(object):
         else:
             delta = bound - objective
         assert not math.isnan(delta)
-        if self.queue_tolerance is not None:
-            return delta > self.queue_tolerance
+        if tolerance is not None:
+            return delta > tolerance
         else:
             return delta >= 0
+
+    def eligible_for_queue(self, bound, objective):
+        """Returns True when the queue object with the given
+        bound is eligible for the queue relative to the
+        given objective."""
+        return self._check_eligible(bound,
+                                    objective,
+                                    self.queue_tolerance)
 
     def eligible_to_branch(self, bound, objective):
         """Returns True when the bound and objective
         are sufficiently far apart to allow branching."""
-        if (objective == self.unbounded_objective) or \
-           (bound == self.infeasible_objective):
+        return self._check_eligible(bound,
+                                    objective,
+                                    self.branch_tolerance)
+
+    def _check_delta(self, new, old):
+        # handles the both equal and infinite case
+        if old == new:
             return False
         if self.sense == minimize:
-            delta = objective - bound
+            delta = old - new
         else:
-            delta = bound - objective
+            delta = new - old
         assert not math.isnan(delta)
-        if self.branch_tolerance is not None:
-            return delta > self.branch_tolerance
-        else:
-            return delta >= 0
+        return delta > self.comparison_tolerance
 
     def bound_worsened(self, new, old):
         """Returns True when the new bound is worse than the
         old bound by greater than the comparison
         tolerance."""
-        # handles the both equal and infinite case
-        if old == new:
-            return False
-        if self.sense == minimize:
-            delta = old - new
-        else:
-            delta = new - old
-        assert not math.isnan(delta)
-        return delta > self.comparison_tolerance
+        return self._check_delta(new, old)
 
     def objective_improved(self, new, old):
         """Returns True when the new objective is better
         than the old objective by greater than the
         comparison tolerance."""
-        # handles the both equal and infinite case
-        if old == new:
-            return False
-        if self.sense == minimize:
-            delta = old - new
-        else:
-            delta = new - old
-        assert not math.isnan(delta)
-        return delta > self.comparison_tolerance
+        return self._check_delta(new, old)
 
     def worst_bound(self, *bounds):
         """Returns the worst bound, as defined by the
