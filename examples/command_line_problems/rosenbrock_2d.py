@@ -1,3 +1,15 @@
+#
+# This example minimizes the 2d Rosenbrock function. It uses
+# a spatial decomposition to refine convex relaxations to
+# the problem to obtain a lower bound, and uses a locally
+# optimal solver to obtain an upper bound. Note that the 2d
+# Rosenbrock function is already convex. This problem is
+# simply meant to show how these techniques can be applied.
+#
+# Pyomo version 5.4.3 or later is required to run this
+# example.
+#
+
 import pybnb
 
 from pybnb.pyomo.problem import PyomoProblem
