@@ -3,8 +3,8 @@ Welcome to ``PyBnB``
 
 ``pybnb`` is a parallel branch-and-bound engine written in
 Python. It designed to run on distributed computing
-architectures, using ``mpi4py`` and ``numpy`` for fast
-inter-process communication.
+architectures, using ``mpi4py`` for inter-process
+communication.
 
 This package is meant to serve as a back-end for
 problem-specific solution strategies that utilize a

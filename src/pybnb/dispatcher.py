@@ -10,8 +10,7 @@ import collections
 import os
 import socket
 import logging
-
-import numpy
+import marshal
 
 from pybnb.common import (maximize,
                           inf,
@@ -23,7 +22,7 @@ from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     DispatcherResponse,
                                     DispatcherProxy)
-from pybnb.node import Node
+from pybnb.node import Node, _SerializedNode
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import Message
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
@@ -32,6 +31,7 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   BreadthFirstPriorityQueue,
                                   DepthFirstPriorityQueue,
                                   FIFOQueue,
+                                  LIFOQueue,
                                   RandomPriorityQueue,
                                   LocalGapPriorityQueue)
 
@@ -41,6 +41,8 @@ except ImportError:                               #pragma:nocover
     pass
 
 from sortedcontainers import SortedList
+
+import six
 
 class DispatcherQueueData(
         collections.namedtuple("DispatcherQueueData",
@@ -149,7 +151,7 @@ class StatusPrinter(object):
         assert unexplored == 0
         self._last_explored_nodes_count = 0
         self._last_rgap = None
-        self._smoothing = 0.7
+        self._smoothing = 0.95
         self._avg_time_per_node = None
         self._print_count = 0
         self._new_objective = False
@@ -296,19 +298,19 @@ class DispatcherBase(object):
         self.next_tree_id = None
         self.clock = None
 
-    def _add_work_to_queue(self, node_data, set_tree_id=True):
+    def _add_work_to_queue(self, node, set_tree_id=True):
         if set_tree_id:
-            assert not Node._has_tree_id(node_data)
-            Node._insert_tree_id(node_data,
-                                 self.next_tree_id)
+            assert node.tree_id is None
+            node.tree_id = self.next_tree_id
             self.next_tree_id += 1
         else:
-            assert Node._has_tree_id(node_data)
-            assert Node._extract_tree_id(node_data) < self.next_tree_id
-        bound = Node._extract_bound(node_data)
+            tree_id = node.tree_id
+            assert tree_id is not None
+            assert tree_id < self.next_tree_id
+        bound = node.bound
         if self.converger.eligible_for_queue(bound,
                                              self.best_objective):
-            self.queue.put(node_data)
+            self.queue.put(node)
             return True
         else:
             self._check_update_worst_terminal_bound(bound)
@@ -330,14 +332,12 @@ class DispatcherBase(object):
                     report=self.log_new_incumbent)
             self.best_objective = objective
             eligible_for_queue_ = self.converger.eligible_for_queue
-            extract_bound_ = Node._extract_bound
             removed = self.queue.filter(
-                lambda node_data_: eligible_for_queue_(
-                    extract_bound_(node_data_),
+                lambda node_: eligible_for_queue_(
+                    node_.bound,
                     objective))
-            for node_data in removed:
-                self._check_update_worst_terminal_bound(
-                    Node._extract_bound(node_data))
+            for node in removed:
+                self._check_update_worst_terminal_bound(node.bound)
         return updated
 
     def _check_convergence(self):
@@ -360,13 +360,10 @@ class DispatcherBase(object):
                             TerminationCondition.time_limit
 
     def _get_work_item(self):
-        node_data = self.queue.get()
-        assert node_data is not None
-        Node._insert_best_objective(
-            node_data,
-            self.best_objective)
+        node = self.queue.get()
+        assert node is not None
         self.served_nodes_count += 1
-        return node_data
+        return node
 
     #
     # Interface
@@ -446,6 +443,9 @@ class DispatcherBase(object):
         elif queue_strategy == "fifo":
             self.queue = FIFOQueue(
                 self.converger.sense)
+        elif queue_strategy == "lifo":
+            self.queue = LIFOQueue(
+                self.converger.sense)
         elif queue_strategy == "breadth":
             self.queue = BreadthFirstPriorityQueue(
                 self.converger.sense)
@@ -482,7 +482,7 @@ class DispatcherBase(object):
                     node.objective for node in initialize_queue.nodes))
             for node in initialize_queue.nodes:
                 assert node.tree_id is not None
-                self._add_work_to_queue(node._data,
+                self._add_work_to_queue(node,
                                         set_tree_id=False)
 
     def log_info(self, msg):
@@ -517,8 +517,7 @@ class DispatcherBase(object):
             current state.
         """
         return DispatcherQueueData(
-            nodes=[Node(data_=numpy.array(data, dtype=float))
-                   for data in self.queue.items()],
+            nodes=list(self.queue.items()),
             next_tree_id=self.next_tree_id)
 
     #
@@ -652,7 +651,7 @@ class DispatcherLocal(DispatcherBase):
                best_objective,
                previous_bound,
                solve_info,
-               node_data_list):
+               node_list):
         """Update local worker information.
 
         Parameters
@@ -665,8 +664,8 @@ class DispatcherLocal(DispatcherBase):
             that was processed by the worker.
         solve_info : :class:`_SolveInfo`
             The most up-to-date worker solve information.
-        node_data_list : list
-            A list of node data arrays to add to the queue.
+        node_list : list
+            A list of nodes to add to the queue.
 
         Returns
         -------
@@ -674,21 +673,20 @@ class DispatcherLocal(DispatcherBase):
             Indicates if the dispatcher has terminated the solve.
         new_objective : float
             The best objective value known to the dispatcher.
-        data : ``array.array`` or None
-            If solve_finished is false, a data array
-            representing a new node for the worker to
-            process. Otherwise, a tuple containing the
-            global bound, the termination condition string,
-            and the number of explored nodes.
+        data : :class:`Node <pybnb.node.Node>` or None
+            If solve_finished is false, a new node for the
+            worker to process. Otherwise, a tuple containing
+            the global bound, the termination condition
+            string, and the number of explored nodes.
         """
         assert self.initialized
         self._check_update_best_objective(best_objective)
         self.solve_info.data[:] = solve_info.data
         self.external_bound = None
         self.active_nodes = 0
-        if len(node_data_list):
-            for node_data in node_data_list:
-                self._add_work_to_queue(node_data,
+        if len(node_list):
+            for node in node_list:
+                self._add_work_to_queue(node,
                                         set_tree_id=True)
         else:
             if not self.first_update:
@@ -701,16 +699,16 @@ class DispatcherLocal(DispatcherBase):
            (self.termination_condition is None):
             self.termination_condition = TerminationCondition.no_nodes
         if self.termination_condition is None:
-            node_data = self._get_work_item()
+            node = self._get_work_item()
             self.active_nodes = 1
-            self.external_bound = Node._extract_bound(node_data)
+            self.external_bound = node.bound
             if self.journalist is not None:
                 force = (last_global_bound == \
                          self.converger.unbounded_objective) and \
                          (last_global_bound != \
                           self.last_global_bound)
                 self.journalist.tic(force=force)
-            return (False, self.best_objective, node_data)
+            return (False, self.best_objective, node)
         else:
             if self.journalist is not None:
                 self.journalist.tic(force=True)
@@ -763,17 +761,21 @@ class DispatcherDistributed(DispatcherBase):
         self.explored_nodes_count = 0
 
     def _compute_load_imbalance(self):
-        node_counts = numpy.array(
-            [info.explored_nodes_count for info in
-             self._solve_info_by_source.values()],
-            dtype=int)
-        imbalance = 0.0
-        if sum(node_counts) > 0:
-            pmax = float(node_counts.max())
-            pmin = float(node_counts.min())
-            pavg = float(numpy.mean(node_counts))
-            imbalance = (pmax-pmin)/pavg*100.0
-        return imbalance
+        pmin = inf
+        pmax = -inf
+        psum = 0
+        for solve_info in self._solve_info_by_source.values():
+            count = solve_info.explored_nodes_count
+            if count < pmin:
+                pmin = count
+            if count > pmax:
+                pmax = count
+            psum += count
+        if psum > 0:
+            pavg = psum/float(len(self._solve_info_by_source))
+            return (pmax-pmin)/pavg*100.0
+        else:
+            return 0.0
 
     def _get_current_bound(self):
         """Get the current global bound"""
@@ -843,12 +845,12 @@ class DispatcherDistributed(DispatcherBase):
                         self_external_bounds.islice(0, i+1))
 
     def _get_work_to_send(self, dest):
-        node_data = self._get_work_item()
-        bound = Node._extract_bound(node_data)
+        node = self._get_work_item()
+        bound = node.bound
         self.last_known_bound[dest] = bound
         self.external_bounds.add(bound)
         self.has_work.add(dest)
-        return node_data
+        return node
 
     def _send_work(self):
         stop = False
@@ -862,11 +864,15 @@ class DispatcherDistributed(DispatcherBase):
                       (len(self.needs_work_queue) > 0):
                     stop = False
                     dest = self.needs_work_queue.popleft()
-                    node_data = self._get_work_to_send(dest)
+                    node = self._get_work_to_send(dest)
+                    send_ = marshal.dumps((self.best_objective,
+                                           node.tree_id,
+                                           node.queue_priority,
+                                           node.data))
                     if self._send_requests[dest] is not None:
                         self._send_requests[dest].Wait()
                     self._send_requests[dest] = \
-                        self.comm.Isend([node_data,mpi4py.MPI.DOUBLE],
+                        self.comm.Isend([send_,mpi4py.MPI.BYTE],
                                         dest,
                                         tag=DispatcherResponse.work)
                     # a shortcut to check if we should keep sending nodes
@@ -887,18 +893,17 @@ class DispatcherDistributed(DispatcherBase):
                 data = (self._get_current_bound(),
                         self.termination_condition,
                         self._get_final_solve_info())
-                send_ = numpy.empty(3+_SolveInfo._data_size,
-                                    dtype=float)
-                send_[0] = self.best_objective
-                send_[1] = data[0]
-                send_[2] = _termination_condition_to_int[data[1]]
-                send_[3:] = data[2].data
+                send_ = marshal.dumps(
+                    (self.best_objective,
+                     data[0],
+                     _termination_condition_to_int[data[1]],
+                     data[2].data))
                 # everyone needs work, so we must be done
                 requests = []
                 while len(self.needs_work_queue) > 0:
                     dest = self.needs_work_queue.popleft()
                     requests.append(
-                        self.comm.Isend([send_,mpi4py.MPI.DOUBLE],
+                        self.comm.Isend([send_,mpi4py.MPI.BYTE],
                                         dest,
                                         DispatcherResponse.nowork))
                 mpi4py.MPI.Request.Waitall(requests)
@@ -939,9 +944,14 @@ class DispatcherDistributed(DispatcherBase):
         self.has_work.clear()
         self._send_requests = None
         self.explored_nodes_count = 0
+        initialize_queue_ = DispatcherQueueData(
+            next_tree_id=initialize_queue.next_tree_id,
+            nodes=[_SerializedNode.from_node(node) \
+                   if (type(node) is not _SerializedNode) else node
+                   for node in initialize_queue.nodes])
         super(DispatcherDistributed, self).initialize(
             best_objective,
-            initialize_queue,
+            initialize_queue_,
             queue_strategy,
             converger,
             node_limit,
@@ -964,7 +974,7 @@ class DispatcherDistributed(DispatcherBase):
                best_objective,
                previous_bound,
                solve_info,
-               node_data_list,
+               node_list,
                source):
         """Update local worker information.
 
@@ -978,8 +988,8 @@ class DispatcherDistributed(DispatcherBase):
             that was processed by the worker.
         solve_info : :class:`_SolveInfo`
             The most up-to-date worker solve information.
-        node_data_list : list
-            A list of node data arrays to add to the queue.
+        node_list : list
+            A list of nodes to add to the queue.
         source : int
             The worker process rank that the update came from.
 
@@ -1012,9 +1022,9 @@ class DispatcherDistributed(DispatcherBase):
                 # the external_bounds list
                 pass
         self._check_update_best_objective(best_objective)
-        if len(node_data_list):
-            for node_data in node_data_list:
-                self._add_work_to_queue(node_data,
+        if len(node_list):
+            for node in node_list:
+                self._add_work_to_queue(node,
                                         set_tree_id=True)
         else:
             if not self.first_update[source]:
@@ -1051,12 +1061,7 @@ class DispatcherDistributed(DispatcherBase):
 
         def rebuild_update_requests(size):
             update_requests = {}
-            # Note: The code below relies on the fact that
-            #       this is an array.array type and _not_ a
-            #       numpy.array type. It issumes a copy of
-            #       the data is made when a slice is
-            #       created.
-            update_data = array.array('d',[0])*size
+            update_data = bytearray(size)
             for i in self.worker_ranks:
                 update_requests[i] = self.comm.Recv_init(
                     update_data,
@@ -1065,15 +1070,15 @@ class DispatcherDistributed(DispatcherBase):
             return update_requests, update_data
 
         update_requests = None
-        data = None
         solve_info_ = _SolveInfo()
+        data = None
         msg = Message(self.comm)
         while (1):
             msg.probe()
             tag = msg.tag
             source = msg.source
             if tag == DispatcherAction.update:
-                size = msg.status.Get_count(datatype=mpi4py.MPI.DOUBLE)
+                size = msg.status.Get_count(datatype=mpi4py.MPI.BYTE)
                 if (data is None) or \
                    (len(data) < size):
                     update_requests, data = \
@@ -1081,26 +1086,20 @@ class DispatcherDistributed(DispatcherBase):
                 req = update_requests[msg.status.Get_source()]
                 req.Start()
                 req.Wait()
-                best_objective = float(data[0])
-                previous_bound = float(data[1])
-                assert int(data[2]) == data[2]
-                nodes_receiving_count = int(data[2])
-                solve_info_.data[:] = data[3:(_SolveInfo._data_size+3)]
-                if nodes_receiving_count > 0:
-                    pos = 3+_SolveInfo._data_size
-                    node_data_list = []
-                    for i in range(nodes_receiving_count):
-                        assert int(data[pos]) == data[pos]
-                        data_size = int(data[pos])
-                        pos += 1
-                        node_data_list.append(data[pos:pos+data_size])
-                        pos += data_size
+                if six.PY2:
+                    data_ = str(data)
                 else:
-                    node_data_list = ()
+                    data_ = data
+                (best_objective,
+                 previous_bound,
+                 solve_info_data,
+                 node_list) = marshal.loads(data_)
+                solve_info_.data = array.array('d',solve_info_data)
+                node_list = [_SerializedNode(state) for state in node_list]
                 ret = self.update(best_objective,
                                   previous_bound,
                                   solve_info_,
-                                  node_data_list,
+                                  node_list,
                                   source)
                 stop = ret[0]
                 if stop:
@@ -1128,3 +1127,24 @@ class DispatcherDistributed(DispatcherBase):
                 raise RuntimeError("Dispatcher received invalid "
                                    "message tag '%s' from rank '%s'"
                                    % (tag, source))
+
+    def save_dispatcher_queue(self):
+        """Saves the current dispatcher queue. The result can
+        be used to re-initialize a solve.
+
+        Returns
+        -------
+        queue_data : :class:`pybnb.dispatcher.DispatcherQueueData`
+            An object storing information that can be used
+            to re-initialize the dispatcher queue to its
+            current state.
+        """
+        nodes = []
+        for node in self.queue.items():
+            node_ = node.restore_node(node.data)
+            node_.tree_id = node.tree_id
+            node_.queue_priority = node.queue_priority
+            nodes.append(node_)
+        return DispatcherQueueData(
+            nodes=nodes,
+            next_tree_id=self.next_tree_id)

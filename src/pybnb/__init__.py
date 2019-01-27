@@ -6,6 +6,7 @@ from pybnb.common import (minimize,
                           QueueStrategy,
                           SolutionStatus,
                           TerminationCondition)
+from pybnb.node import Node
 from pybnb.problem import Problem
 from pybnb.solver import (SolverResults,
                           Solver,

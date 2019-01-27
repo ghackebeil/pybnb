@@ -26,8 +26,8 @@ class TestDispatcherSimple(object):
         log_new_incumbent = True
         convergence_checker = ConvergenceChecker(minimize)
 
-        root = Node(size=0)
-        Node._insert_tree_id(root._data, 0)
+        root = Node()
+        root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective
         queue = DispatcherQueueData(
@@ -132,8 +132,8 @@ class TestDispatcherSimple(object):
         log_new_incumbent = True
         convergence_checker = ConvergenceChecker(minimize)
 
-        root = Node(size=0)
-        Node._insert_tree_id(root._data, 0)
+        root = Node()
+        root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective
         queue = DispatcherQueueData(

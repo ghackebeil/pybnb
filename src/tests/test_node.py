@@ -1,138 +1,90 @@
 import pytest
 
-from pybnb.node import Node
+from pybnb.node import Node, _SerializedNode
 
 class TestNode(object):
 
-    def test_best_objective_storage(self):
+    def test_init(self):
         node = Node()
-        node._insert_best_objective(node._data, 10.5)
-        assert node._extract_best_objective(node._data) == 10.5
-
-    def test_assign_None(self):
-        node = Node()
-        assert node.queue_priority is None
+        assert node.objective is None
+        assert node.bound is None
         assert node.tree_id is None
         assert node.parent_tree_id is None
         assert node.tree_depth == 0
-        assert len(node.state) == 0
-        node.queue_priority = 1
-        with pytest.raises(AttributeError):
-            node.tree_id = 2
-        with pytest.raises(AttributeError):
-            node.parent_tree_id = 3
-        with pytest.raises(AttributeError):
-            node.tree_depth = 4
-        assert node.queue_priority == 1
+        assert node.queue_priority is None
+        assert node.state is None
+
+    def test_new_child(self):
+        node = Node()
+        assert node.objective is None
+        assert node.bound is None
         assert node.tree_id is None
         assert node.parent_tree_id is None
         assert node.tree_depth == 0
-        assert len(node.state) == 0
-        node.queue_priority = None
         assert node.queue_priority is None
+        assert node.state is None
+        node = node.new_child()
+        assert node.objective is None
+        assert node.bound is None
+        assert node.tree_id is None
+        assert node.parent_tree_id is None
+        assert node.tree_depth == 1
+        assert node.queue_priority is None
+        assert node.state is None
+        node.objective = 1
+        node.bound = -1
+        node.tree_id = 0
+        node.queue_priority = 5
+        node.state = 'a'
+        node = node.new_child()
+        assert node.objective == 1
+        assert node.bound == -1
+        assert node.tree_id is None
+        assert node.parent_tree_id == 0
+        assert node.tree_depth == 2
+        assert node.queue_priority is None
+        assert node.state is None
 
-    def test_children(self):
-        parent = Node()
-        assert parent.queue_priority is None
-        assert parent.tree_id is None
-        assert parent.parent_tree_id is None
-        assert parent.tree_depth == 0
-        assert len(parent.state) == 0
-        parent.queue_priority = 10
-        assert parent.queue_priority == 10
-        assert parent.tree_id is None
-        assert parent.parent_tree_id is None
-        assert parent.tree_depth == 0
-        assert len(parent.state) == 0
-        parent.bound = -1
-        assert parent.queue_priority == 10
-        assert parent.tree_id is None
-        assert parent.parent_tree_id is None
-        assert parent.tree_depth == 0
-        assert parent.bound == -1
-        parent.objective = -2
-        assert parent.queue_priority == 10
-        assert parent.tree_id is None
-        assert parent.parent_tree_id is None
-        assert parent.tree_depth == 0
-        assert parent.bound == -1
-        assert parent.objective == -2
-        assert len(parent.state) == 0
-        parent.resize(5)
-        assert parent.queue_priority == 10
-        assert parent.tree_id is None
-        assert parent.parent_tree_id is None
-        assert parent.tree_depth == 0
-        assert parent.bound == -1
-        assert parent.objective == -2
-        assert len(parent.state) == 5
-        children = [parent.new_child()
-                    for i in range(3)]
-        assert len(children) == 3
-        for child in children:
-            assert child.queue_priority is None
-            assert child.tree_id is None
-            assert child.parent_tree_id is None
-            assert child.tree_depth == 1
-            assert child.bound == -1
-            assert child.objective == -2
-            assert len(child.state) == 5
-        Node._insert_tree_id(parent._data, 0)
-        assert parent.tree_id == 0
-        children = [parent.new_child()
-                    for i in range(3)]
-        assert len(children) == 3
-        for child in children:
-            assert child.queue_priority is None
-            assert child.tree_id is None
-            assert child.parent_tree_id == 0
-            assert child.tree_depth == 1
-            assert child.bound == -1
-            assert child.objective == -2
-            assert len(child.state) == 5
-        children = [parent.new_child(size=10)
-                    for i in range(4)]
-        assert len(children) == 4
-        for child in children:
-            assert child.queue_priority is None
-            assert child.tree_id is None
-            assert child.parent_tree_id == 0
-            assert child.tree_depth == 1
-            assert child.bound == -1
-            assert child.objective == -2
-            assert len(child.state) == 10
-
-    def test_state_update(self):
-        node = Node(size=3)
-        node.state[0] = 1.1
-        node.state[1] = 0.0
-        node.state[2] = 0.0
-        assert node.state[0] == 1.1
-        assert node.state[1] == 0
-        assert node.state[2] == 0
-        node.state[1:3] = [-1.0, 5.3]
-        assert node.state[0] == 1.1
-        assert node.state[1] == -1.0
-        assert node.state[2] == 5.3
-
-        state = node.state
-        node.resize(4)
-        with pytest.raises(ValueError):
-            state[0] = 1
-
-    def test_tree_id(self):
+    def test_str(self):
         node = Node()
-        assert node.tree_id is None
-        assert node.parent_tree_id is None
-        Node._insert_tree_id(node._data, 1)
-        assert node.tree_id == 1
-        assert node.parent_tree_id is None
-        Node._insert_parent_tree_id(node._data, 2)
-        assert node.tree_id == 1
-        assert node.parent_tree_id == 2
-        Node._clear_tree_id(node._data)
-        assert node.tree_id is None
-        assert node.parent_tree_id == 2
-        Node._clear_parent_tree_id(node._data)
-        assert node.tree_id is None
-        assert node.parent_tree_id is None
+        node.objective = -1
+        node.bound = -2
+        node.tree_id = 1
+        node.parent_tree_id = 0
+        node.tree_depth = 3
+        node.queue_priority = (1,2,3)
+        node.state = 'a'
+        assert str(node) == \
+            """\
+Node(objective=-1,
+     bound=-2,
+     tree_id=1,
+     parent_tree_id=0,
+     tree_depth=3,
+     queue_priority=(1, 2, 3))"""
+
+    def test_serialization(self):
+        node = Node()
+        node.objective = 0.0
+        node.bound = 1.0
+        node.tree_id = 1
+        node.parent_tree_id = 0
+        node.tree_depth = -1
+        node.queue_priority = (1,2,3)
+        node.state = 'a'
+        s = _SerializedNode.from_node(node)
+        assert s.objective == node.objective
+        assert s.bound == node.bound
+        assert s.tree_id == node.tree_id
+        assert s.parent_tree_id == node.parent_tree_id
+        assert s.tree_depth == node.tree_depth
+        assert s.queue_priority == node.queue_priority
+        assert s.data is not None
+        node_ = s.restore_node(s.data)
+        assert node_.objective == node.objective
+        assert node_.bound == node.bound
+        assert node_.tree_id == node.tree_id
+        assert node_.parent_tree_id == node.parent_tree_id
+        assert node_.tree_depth == node.tree_depth
+        assert node_.queue_priority == node.queue_priority
+        assert node_.state == node.state

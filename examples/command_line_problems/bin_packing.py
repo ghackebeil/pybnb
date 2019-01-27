@@ -286,38 +286,19 @@ class BinPacking(pybnb.Problem):
             return self.infeasible_objective()
 
     def save_state(self, node):
-        state_size = len(self.model.x)*2 + len(self.model.y)*2
-        node.resize(state_size)
-        state = node.state
-        ndx = 0
-        for xij in self.model.x.components():
-            state[ndx] = xij.lb
-            ndx += 1
-        for xij in self.model.x.components():
-            state[ndx] = xij.ub
-            ndx += 1
-        for yi in self.model.y.components():
-            state[ndx] = yi.lb
-            ndx += 1
-        for yi in self.model.y.components():
-            state[ndx] = yi.ub
-            ndx += 1
+        node.state = []
+        for v in (self.model.x,
+                  self.model.y):
+            for vi in v.components():
+                node.state.append(vi.bounds)
 
     def load_state(self, node):
-        state = node.state
-        ndx = 0
-        for xij in self.model.x.components():
-            xij.lb = state[ndx]
-            ndx += 1
-        for xij in self.model.x.components():
-            xij.ub = state[ndx]
-            ndx += 1
-        for yi in self.model.y.components():
-            yi.lb = state[ndx]
-            ndx += 1
-        for yi in self.model.y.components():
-            yi.ub = state[ndx]
-            ndx += 1
+        k = 0
+        for v in (self.model.x,
+                  self.model.y):
+            for vi in v.components():
+                vi.bounds = node.state[k]
+                k += 1
 
     def branch(self, parent):
         # try to branch on y

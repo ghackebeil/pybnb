@@ -16,8 +16,6 @@ from pybnb.misc import (MPI_InterruptHandler,
 
 from six import StringIO
 
-import numpy
-
 class Test(object):
 
     def test_MPI_InterruptHandler(self):

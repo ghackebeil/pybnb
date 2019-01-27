@@ -50,7 +50,7 @@ def _logging_check(comm):
         root.objective = p.infeasible_objective()
         root.bound = p.unbounded_objective()
         assert root.tree_id is None
-        Node._insert_tree_id(root._data, 0)
+        root.tree_id = 0
         initialize_queue = DispatcherQueueData(
             nodes=[root],
             next_tree_id=1)

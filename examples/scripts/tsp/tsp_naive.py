@@ -106,17 +106,10 @@ class TSP_Naive(pybnb.Problem):
         return bound
 
     def save_state(self, node):
-        node.resize(self._N)
-        node.state.fill(-1)
-        node.state[:len(self._path)] = self._path
+        node.state = self._path
 
     def load_state(self, node):
-        assert len(node.state) == self._N
-        self._path = []
-        for u in node.state:
-            if u == -1:
-                break
-            self._path.append(int(u))
+        self._path = node.state
         assert len(self._path) <= self._N
 
     def branch(self, node):
@@ -132,9 +125,7 @@ class TSP_Naive(pybnb.Problem):
             if (self._adj[u][v] is not None) and \
                (v not in visited):
                 child = node.new_child()
-                assert len(child.state) == len(node.state)
-                child.state[:] = node.state[:]
-                child.state[len(self._path)] = v
+                child.state = self._path + [v]
                 yield child
 
     def notify_solve_begins(self,
@@ -203,7 +194,8 @@ if __name__ == "__main__":
         problem,
         absolute_gap=0,
         relative_gap=None,
-        queue_strategy='depth')
+        queue_strategy='depth',
+        log_new_incumbent=False)
 
     stats = solver.collect_worker_statistics()
     if solver.is_dispatcher:

@@ -15,7 +15,6 @@ from pybnb.pyomo.misc import (hash_joblist,
 from pybnb.pyomo.problem import PyomoProblem
 
 import pyomo.kernel as pmo
-import numpy
 
 try:
     import mpi4py
@@ -45,28 +44,20 @@ class RangeReductionProblem(Problem):
     def _notify_continue_listen(self, node):
         assert (self._comm is not None) and \
             (self._comm.size > 1)
-        data = numpy.array([True,
-                            self._best_objective,
-                            len(node.state)],
-                           dtype=float)
-        assert data[0] == True
-        assert data[1] == self._best_objective
-        assert data[2] == len(node.state)
+        data = array.array('d', [True,
+                                 self._best_objective,
+                                 len(node.state)])
         self._comm.Bcast([data, mpi4py.MPI.DOUBLE],
                          root=self._comm.rank)
-        self._comm.Bcast([node.state, mpi4py.MPI.DOUBLE],
-                         root=self._comm.rank)
+        node.state = self._comm.bcast(node.state,
+                                      root=self._comm.rank)
 
     def _notify_stop_listen(self):
         assert (self._comm is not None) and \
             (self._comm.size > 1)
-        data = numpy.array([False,
-                            self._best_objective,
-                            0],
-                           dtype=float)
-        assert data[0] == False
-        assert data[1] == self._best_objective
-        assert data[2] == 0
+        data = array.array('d',[False,
+                                self._best_objective,
+                                0])
         self._comm.Bcast([data, mpi4py.MPI.DOUBLE],
                          root=self._comm.rank)
 
@@ -208,16 +199,15 @@ class RangeReductionProblem(Problem):
         self.save_state(orig)
         node = Node()
         try:
-            data = numpy.empty(3,dtype=float)
+            data = array.array('d',[0])*3
             self._comm.Bcast([data,mpi4py.MPI.DOUBLE],
                              root=root)
             again = bool(data[0])
             self._best_objective = float(data[1])
             node_size = int(data[2])
             while again:
-                node.resize(node_size)
-                self._comm.Bcast([node.state,mpi4py.MPI.DOUBLE],
-                                 root=root)
+                node.state = self._comm.bcast(node.state,
+                                              root=root)
                 self.load_state(node)
                 self._tighten_bounds()
                 self._comm.Bcast([data,mpi4py.MPI.DOUBLE],

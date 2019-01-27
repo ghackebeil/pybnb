@@ -53,9 +53,7 @@ def _execute_single_test(problem,
 
     current = pybnb.node.Node()
     problem.save_state(current)
-    assert len(current.state) == len(orig.state)
-    for i in range(len(current.state)):
-        assert current.state[i] == orig.state[i]
+    assert current.state == orig.state
     assert len(vars(results)) > 0
     assert len(vars(results)) == len(vars(baseline))
     for name in sorted(sorted(list(vars(results).keys()))):
@@ -604,7 +602,7 @@ def _test_zero_objective_max(comm):
     for queue_strategy in sorted(pybnb.QueueStrategy):
         if queue_strategy == "custom":
             continue
-        if queue_strategy == "depth":
+        if queue_strategy in ("depth","lifo"):
             baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
@@ -711,7 +709,7 @@ def _test_zero_objective_min(comm):
     for queue_strategy in sorted(pybnb.QueueStrategy):
         if queue_strategy == "custom":
             continue
-        if queue_strategy == "depth":
+        if queue_strategy in ("depth","lifo"):
             baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_

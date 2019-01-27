@@ -49,7 +49,7 @@ class Lipschitz1D(pybnb.Problem):
         return pybnb.maximize
 
     def objective(self):
-        if math.isnan(self._fmid_cached):
+        if self._fmid_cached is None:
             mid = 0.5 * (self._xL + self._xU)
             self._fmid_cached = self._f(mid)
         return self._fmid_cached
@@ -60,22 +60,18 @@ class Lipschitz1D(pybnb.Problem):
                0.5*self._LC*(self._xU-self._xL)
 
     def save_state(self, node):
-        node.resize(5)
-        state = node.state
-        state[0] = self._xL
-        state[1] = self._xU
-        state[2] = self._fL_cached
-        state[3] = self._fU_cached
-        state[4] = self._fmid_cached
+        node.state = (self._xL,
+                      self._xU,
+                      self._fL_cached,
+                      self._fU_cached,
+                      self._fmid_cached)
 
     def load_state(self, node):
-        state = node.state
-        assert len(state) == 5
-        self._xL = float(state[0])
-        self._xU = float(state[1])
-        self._fL_cached = float(state[2])
-        self._fU_cached = float(state[3])
-        self._fmid_cached = float(state[4])
+        (self._xL,
+         self._xU,
+         self._fL_cached,
+         self._fU_cached,
+         self._fmid_cached) = node.state
 
     def branch(self, node):
         dist = float(self._xU - self._xL)
@@ -98,7 +94,7 @@ class Lipschitz1D(pybnb.Problem):
         self._xU = mid
         self._fL_cached = fL
         self._fU_cached = fmid
-        self._fmid_cached = pybnb.nan
+        self._fmid_cached = None
         self.save_state(children[0])
 
         # right child
@@ -106,7 +102,7 @@ class Lipschitz1D(pybnb.Problem):
         self._xU = xU
         self._fL_cached = fmid
         self._fU_cached = fU
-        self._fmid_cached = pybnb.nan
+        self._fmid_cached = None
         self.save_state(children[1])
 
         # reset the current state

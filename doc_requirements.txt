@@ -1,5 +1,4 @@
 six
-numpy
 sortedcontainers
 pyomo
 sphinx
