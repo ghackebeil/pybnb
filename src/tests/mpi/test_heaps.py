@@ -118,7 +118,6 @@ class Discrete(pybnb.Problem):
         assert i >= 0
         assert i < len(self._bound_bheap)
         left_idx =  2*i + 1
-        children = []
         if (left_idx < len(self._bound_bheap)) and \
            (self._bound_bheap[left_idx] is not None):
             child = node.new_child()

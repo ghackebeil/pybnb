@@ -1,5 +1,3 @@
-import pytest
-
 from pybnb.node import Node, _SerializedNode
 
 class TestNode(object):
