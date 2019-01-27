@@ -329,8 +329,6 @@ class Solver(object):
                     self._local_solve_info,
                     children)
             update_stop = self._time()
-            self._local_solve_info._increment_queue_stat(
-                update_stop-update_start, 1)
 
             updated = self._check_update_best_objective(
                 convergence_checker,
@@ -351,6 +349,8 @@ class Solver(object):
             # load the new data into the working_node
             del new_objective
             self._local_solve_info._increment_explored_nodes_stat(1)
+            self._local_solve_info._increment_queue_stat(
+                update_stop-update_start, 1)
 
             bound = working_node.bound
             current_tree_id = working_node.tree_id
