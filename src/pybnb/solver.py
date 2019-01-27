@@ -54,9 +54,9 @@ class SolverResults(object):
         >>> import pybnb
         >>> results = pybnb.SolverResults()
         >>> results.solution_status = pybnb.SolutionStatus.optimal
-        >>> assert results.solution_status == "optimal"
+        >>> assert results.solution_status == 'optimal'
         >>> assert results.solution_status == pybnb.SolutionStatus.optimal
-        >>> assert results.solution_status.value == "optimal"
+        >>> assert results.solution_status.value == 'optimal'
 
     termination_condition : :class:`TerminationCondition <pybnb.common.TerminationCondition>`
         The solve termination condition, as
@@ -71,9 +71,9 @@ class SolverResults(object):
         >>> import pybnb
         >>> results = pybnb.SolverResults()
         >>> results.termination_condition = pybnb.TerminationCondition.optimality
-        >>> assert results.termination_condition == "optimality"
+        >>> assert results.termination_condition == 'optimality'
         >>> assert results.termination_condition == pybnb.TerminationCondition.optimality
-        >>> assert results.termination_condition.value == "optimality"
+        >>> assert results.termination_condition.value == 'optimality'
 
     objective : float
         The best objective found.
@@ -713,7 +713,7 @@ class Solver(object):
             when a feasible objective is found that is at
             least as good as the specified value, and the
             termination_condition flag on the results object
-            will be set to "objective_limit". If this value
+            will be set to 'objective_limit'. If this value
             is infinite, the solve will terminate as soon as
             a finite objective is found. (default: None)
         bound_stop : float, optional
@@ -721,7 +721,7 @@ class Solver(object):
             when the global bound on the objective is at
             least as good as the specified value, and the
             termination_condition flag on the results object
-            will be set to "objective_limit". If this value
+            will be set to 'objective_limit'. If this value
             is infinite, the solve will terminate as soon as
             a finite bound is found. (default: None)
         node_limit : int, optional
@@ -729,12 +729,12 @@ class Solver(object):
             terminate once this many nodes have been served
             from the dispatcher queue, and the
             termination_condition flag on the results object
-            will be set to "node_limit". (default: None)
+            will be set to 'node_limit'. (default: None)
         time_limit : float, optional
             **(D)** If provided, the solve will begin to
             terminate once this amount of time has passed,
             and the termination_condition flag on the
-            results object will be set to "time_limit". Note
+            results object will be set to 'time_limit'. Note
             that the solve may run for an arbitrarily longer
             amount of time, depending how long worker
             processes spend completing their final
@@ -748,14 +748,17 @@ class Solver(object):
             created by calling :func:`problem.save_state
             <pybnb.problem.Problem.save_state>`.
             (default: None)
-        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
+        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>` or tuple
             **(D)** Sets the strategy for prioritizing nodes
             in the central dispatcher queue. See the
             :class:`QueueStrategy
             <pybnb.common.QueueStrategy>` enum for the list
             of acceptable values. This keyword can be
             assigned one of the enumeration attributes or an
-            equivalent string name. (default: "bound")
+            equivalent string name. This keyword can also be
+            assigned a tuple of choices to define a
+            lexicographic sorting strategy.
+            (default: 'bound')
         log_interval_seconds : float, optional
             **(D)** The approximate time (in seconds)
             between solver log updates. More time may pass

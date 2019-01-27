@@ -25,15 +25,7 @@ from pybnb.dispatcher_proxy import (ProcessType,
 from pybnb.node import _SerializedNode
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import Message
-from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
-                                  CustomPriorityQueue,
-                                  BestObjectiveFirstPriorityQueue,
-                                  BreadthFirstPriorityQueue,
-                                  DepthFirstPriorityQueue,
-                                  FIFOQueue,
-                                  LIFOQueue,
-                                  RandomPriorityQueue,
-                                  LocalGapPriorityQueue)
+from pybnb.priority_queue import PriorityQueueFactory
 
 try:
     import mpi4py
@@ -431,36 +423,8 @@ class DispatcherBase(object):
         self.converger = converger
         self.last_global_bound = self.converger.unbounded_objective
         self.best_objective = best_objective
-        if queue_strategy == "bound":
-            self.queue = WorstBoundFirstPriorityQueue(
-                self.converger.sense)
-        elif queue_strategy == "custom":
-            self.queue = CustomPriorityQueue(
-                self.converger.sense)
-        elif queue_strategy == "objective":
-            self.queue = BestObjectiveFirstPriorityQueue(
-                self.converger.sense)
-        elif queue_strategy == "fifo":
-            self.queue = FIFOQueue(
-                self.converger.sense)
-        elif queue_strategy == "lifo":
-            self.queue = LIFOQueue(
-                self.converger.sense)
-        elif queue_strategy == "breadth":
-            self.queue = BreadthFirstPriorityQueue(
-                self.converger.sense)
-        elif queue_strategy == "depth":
-            self.queue = DepthFirstPriorityQueue(
-                self.converger.sense)
-        elif queue_strategy == "local_gap":
-            self.queue = LocalGapPriorityQueue(
-                self.converger.sense)
-        elif queue_strategy == "random":
-            self.queue = RandomPriorityQueue(
-                self.converger.sense)
-        else:
-            raise ValueError("'queue_strategy' must be one of: %s"
-                             % (str([v.value for v in QueueStrategy])))
+        self.queue = PriorityQueueFactory(queue_strategy,
+                                          self.converger.sense)
         self.node_limit = None
         if node_limit is not None:
             self.node_limit = int(node_limit)

@@ -14,6 +14,7 @@ from pybnb.common import (minimize,
                           maximize)
 
 from sortedcontainers import SortedList
+import six
 
 class _NoThreadingMaxPriorityFirstQueue(object):
     """A simple priority queue implementation that is not
@@ -28,6 +29,12 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         self._count = 0
         self._heap = []
 
+    def _negate(self, priority):
+        if hasattr(priority, '__neg__'):
+            return -priority
+        else:
+            return tuple(-v for v in priority)
+
     def size(self):
         """Returns the size of the queue."""
         return len(self._heap)
@@ -38,10 +45,9 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         None. This method returns a unique counter associated
         with each put."""
         assert item is not None
-        assert not math.isnan(priority)
         cnt = self._count
         self._count += 1
-        _push_(self._heap, (-priority, cnt, item))
+        _push_(self._heap, (self._negate(priority), cnt, item))
         return cnt
 
     def get(self, _pop_=heapq.heappop):
@@ -60,11 +66,12 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         calls. Returns a tuple containing the put and get
         return values."""
         assert item is not None
-        assert not math.isnan(priority)
         cnt = self._count
         self._count += 1
         if len(self._heap) > 0:
-            return cnt, _push_pop_(self._heap, (-priority, cnt, item))[2]
+            item_ = _push_pop_(self._heap,
+                               (self._negate(priority), cnt, item))[2]
+            return cnt, item_
         else:
             return cnt, item
 
@@ -351,8 +358,9 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
         self._queue = _NoThreadingMaxPriorityFirstQueue()
 
     @staticmethod
-    def generate_priority(node, sense):
+    def generate_priority(node, sense, queue):
         bound = node.bound
+        assert not math.isnan(bound)
         if sense == minimize:
             return -bound
         else:
@@ -363,14 +371,18 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
         return self._queue.size()
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     self._sense,
+                                                     None)
         return self._queue.put(node, node.queue_priority)
 
     def get(self):
         return self._queue.get()
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     self._sense,
+                                                     None)
         return self._queue.put_get(node, node.queue_priority)
 
     def bound(self):
@@ -503,9 +515,9 @@ class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
     """
 
     @staticmethod
-    def generate_priority(node, sense):
-        assert sense in (minimize, maximize)
+    def generate_priority(node, sense, queue):
         objective = node.objective
+        assert not math.isnan(objective)
         if sense == minimize:
             return -objective
         else:
@@ -513,11 +525,15 @@ class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
             return objective
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     self._sense,
+                                                     None)
         return super(BestObjectiveFirstPriorityQueue, self).put(node)
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     self._sense,
+                                                     None)
         return super(BestObjectiveFirstPriorityQueue, self).put_get(node)
 
 class BreadthFirstPriorityQueue(CustomPriorityQueue):
@@ -529,17 +545,20 @@ class BreadthFirstPriorityQueue(CustomPriorityQueue):
     """
 
     @staticmethod
-    def generate_priority(node, sense):
-        assert sense in (minimize, maximize)
+    def generate_priority(node, sense, queue):
         assert node.tree_depth >= 0
         return -node.tree_depth
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     None,
+                                                     None)
         return super(BreadthFirstPriorityQueue, self).put(node)
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     None,
+                                                     None)
         return super(BreadthFirstPriorityQueue, self).put_get(node)
 
 class DepthFirstPriorityQueue(CustomPriorityQueue):
@@ -551,17 +570,20 @@ class DepthFirstPriorityQueue(CustomPriorityQueue):
     """
 
     @staticmethod
-    def generate_priority(node, sense):
-        assert sense in (minimize, maximize)
+    def generate_priority(node, sense, queue):
         assert node.tree_depth >= 0
         return node.tree_depth
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     None,
+                                                     None)
         return super(DepthFirstPriorityQueue, self).put(node)
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     None,
+                                                     None)
         return super(DepthFirstPriorityQueue, self).put_get(node)
 
 class FIFOQueue(CustomPriorityQueue):
@@ -579,20 +601,19 @@ class FIFOQueue(CustomPriorityQueue):
 
     @staticmethod
     def generate_priority(node, sense, queue):
-        assert sense in (minimize, maximize)
         return -queue._count
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     self._sense,
+        node.queue_priority = self.generate_priority(None,
+                                                     None,
                                                      self._queue)
         cnt = super(FIFOQueue, self).put(node)
         assert node.queue_priority == -cnt
         return cnt
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     self._sense,
+        node.queue_priority = self.generate_priority(None,
+                                                     None,
                                                      self._queue)
         cnt, node_ = super(FIFOQueue, self).put_get(node)
         assert node.queue_priority == -cnt
@@ -613,20 +634,19 @@ class LIFOQueue(CustomPriorityQueue):
 
     @staticmethod
     def generate_priority(node, sense, queue):
-        assert sense in (minimize, maximize)
         return queue._count
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     self._sense,
+        node.queue_priority = self.generate_priority(None,
+                                                     None,
                                                      self._queue)
         cnt = super(LIFOQueue, self).put(node)
         assert node.queue_priority == cnt
         return cnt
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     self._sense,
+        node.queue_priority = self.generate_priority(None,
+                                                     None,
                                                      self._queue)
         cnt, node_ = super(LIFOQueue, self).put_get(node)
         assert node.queue_priority == cnt
@@ -641,16 +661,15 @@ class RandomPriorityQueue(CustomPriorityQueue):
     """
 
     @staticmethod
-    def generate_priority(node, sense):
-        assert sense in (minimize, maximize)
+    def generate_priority(node, sense, queue):
         return random.random()
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(None,None,None)
         return super(RandomPriorityQueue, self).put(node)
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(None,None,None)
         return super(RandomPriorityQueue, self).put_get(node)
 
 class LocalGapPriorityQueue(CustomPriorityQueue):
@@ -663,7 +682,7 @@ class LocalGapPriorityQueue(CustomPriorityQueue):
     """
 
     @staticmethod
-    def generate_priority(node, sense):
+    def generate_priority(node, sense, queue):
         objective = node.objective
         bound = node.bound
         if sense == minimize:
@@ -675,9 +694,99 @@ class LocalGapPriorityQueue(CustomPriorityQueue):
         return gap
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     self._sense,
+                                                     None)
         return super(LocalGapPriorityQueue, self).put(node)
 
     def put_get(self, node):
-        node.queue_priority = self.generate_priority(node, self._sense)
+        node.queue_priority = self.generate_priority(node,
+                                                     self._sense,
+                                                     None)
         return super(LocalGapPriorityQueue, self).put_get(node)
+
+
+class LexicographicPriorityQueue(CustomPriorityQueue):
+    """A priority queue implementation that serves nodes
+    with the largest gap between the local objective and
+    bound first.
+
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
+        The objective sense for the problem.
+    """
+
+    def __init__(self, queue_types, sense):
+        self._queue_types = tuple(queue_types)
+        assert len(self._queue_types)
+        super(LexicographicPriorityQueue, self).__init__(sense)
+
+    def _generate_priority(self, node):
+        return tuple(qt.generate_priority(node,
+                                          self._sense,
+                                          self._queue)
+                     for qt in self._queue_types)
+
+    def put(self, node):
+        node.queue_priority = self._generate_priority(node)
+        return super(LexicographicPriorityQueue, self).put(node)
+
+    def put_get(self, node):
+        node.queue_priority = self._generate_priority(node)
+        return super(LexicographicQueue, self).put_get(node)
+
+def PriorityQueueFactory(name, *args, **kwds):
+    """Returns a new instance of the priority queue type
+    registered under the given name."""
+    if isinstance(name, six.string_types):
+        if name not in PriorityQueueFactory._types:
+            raise ValueError("invalid queue type: %s"
+                             % (name))
+        return PriorityQueueFactory._types[name](*args,
+                                                 **kwds)
+    else:
+        names = []
+        for n_ in name:
+            print(n_)
+            if n_ not in PriorityQueueFactory._types:
+                raise ValueError("invalid queue type: %s"
+                                 % (n_))
+            if n_ == 'custom':
+                raise ValueError("'custom' queue type not "
+                                 "allowed when defining a "
+                                 "lexicographic queue strategy")
+            names.append(PriorityQueueFactory._types[n_])
+        if len(names) == 0:
+            raise ValueError("Can not define lexicographic queue "
+                             "strategy with empty list")
+        return LexicographicPriorityQueue(names, *args, **kwds)
+PriorityQueueFactory._types = {}
+
+def register_queue_type(name, cls):
+    """Registers a new priority queue class with the
+    PriorityQueueFactory."""
+    if (name in PriorityQueueFactory._types) and \
+       (PriorityQueueFactory._types[name] is not cls):
+        raise ValueError(
+            "The name '%s' has already been registered"
+            "for priority queue type '%s'"
+            % (name, cls))
+    PriorityQueueFactory._types[name] = cls
+
+register_queue_type('bound',
+                    WorstBoundFirstPriorityQueue)
+register_queue_type('custom',
+                    CustomPriorityQueue)
+register_queue_type('objective',
+                    BestObjectiveFirstPriorityQueue)
+register_queue_type('breadth',
+                    BreadthFirstPriorityQueue)
+register_queue_type('depth',
+                    DepthFirstPriorityQueue)
+register_queue_type('fifo',
+                    FIFOQueue)
+register_queue_type('lifo',
+                    LIFOQueue)
+register_queue_type('random',
+                    RandomPriorityQueue)
+register_queue_type('local_gap',
+                    LocalGapPriorityQueue)

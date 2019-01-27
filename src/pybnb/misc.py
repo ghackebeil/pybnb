@@ -431,8 +431,46 @@ def create_command_line_solver(problem, parser=None):
         if key == "queue_strategy":
             solve_docs[key]["choices"] = \
                 [v_.value for v_ in pybnb.QueueStrategy]
-            solve_docs[key]["doc"] = ("Sets the strategy for prioritizing "
-                                      "nodes in the central dispatcher queue.")
+            assert "**(D)**" in solve_docs[key]["doc"]
+            solve_docs[key]["doc"] = \
+                ("**(D)** Sets the strategy for prioritizing "
+                 "nodes in the central dispatcher queue. Can "
+                 "also be set to a comma-separated list of "
+                 "choices to define a lexicographic sorting "
+                 "strategy.")
+    class _QueueStrategyJoin(argparse.Action):    #pragma:nocover
+        def __init__(self, option_strings, dest, nargs=None, **kwargs):
+            if nargs is not None:
+                raise ValueError("nargs not allowed")
+            super(_QueueStrategyJoin, self).__init__(option_strings,
+                                                     dest,
+                                                     **kwargs)
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values in solve_docs["queue_strategy"]["choices"]:
+                namespace.queue_strategy = values
+            else:
+                assert "," in values
+                vals = tuple(v.strip() for v in values.split(',') if v.strip())
+                assert len(vals) > 0
+                assert all(v in solve_docs["queue_strategy"]["choices"]
+                           for v in vals)
+                if len(vals) == 1:
+                    namespace.queue_strategy = vals[0]
+                else:
+                    namespace.queue_strategy = vals
+    class _QueueStrategyChoices(object):          #pragma:nocover
+        def __contains__(self, val):
+            if val in solve_docs["queue_strategy"]["choices"]:
+                return True
+            if "," not in val:
+                return False
+            vals = [v.strip() for v in val.split(',') if v.strip()]
+            if len(vals) == 0:
+                return False
+            return all(v in solve_docs["queue_strategy"]["choices"]
+                       for v in vals)
+        def __iter__(self):
+            return solve_docs["queue_strategy"]["choices"].__iter__()
     parser.add_argument(
         "--best-objective",
         type=float,
@@ -449,12 +487,10 @@ def create_command_line_solver(problem, parser=None):
     parser.add_argument(
         "--queue-strategy",
         type=str,
-        choices=solve_docs["queue_strategy"]["choices"],
+        choices=_QueueStrategyChoices(),
+        action=_QueueStrategyJoin,
         default=solve_defaults.pop("queue_strategy"),
-        help=solve_docs["queue_strategy"]["doc"].\
-           replace(r":attr:`queue_priority "
-                   r"<pybnb.node.Node.queue_priority>`",
-                   "queue_priority"))
+        help=solve_docs["queue_strategy"]["doc"])
     parser.add_argument(
         "--absolute-gap",
         type=float,

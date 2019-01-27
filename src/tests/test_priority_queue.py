@@ -18,7 +18,10 @@ from pybnb.priority_queue import \
      FIFOQueue,
      LIFOQueue,
      RandomPriorityQueue,
-     LocalGapPriorityQueue)
+     LocalGapPriorityQueue,
+     LexicographicPriorityQueue,
+     PriorityQueueFactory,
+     register_queue_type)
 
 def assert_isheap(x):
     for k in range(len(x)):
@@ -26,6 +29,62 @@ def assert_isheap(x):
             assert x[k] <= x[2*k+1]
         if ((2*k) + 2) < len(x):
             assert x[k] <= x[2*k+2]
+
+class TestFactory(object):
+
+    def test_factory(self):
+        assert type(PriorityQueueFactory('bound', minimize)) is \
+            WorstBoundFirstPriorityQueue
+        assert type(PriorityQueueFactory('custom', minimize)) is \
+            CustomPriorityQueue
+        assert type(PriorityQueueFactory('objective', minimize)) is \
+            BestObjectiveFirstPriorityQueue
+        assert type(PriorityQueueFactory('breadth', minimize)) is \
+            BreadthFirstPriorityQueue
+        assert type(PriorityQueueFactory('depth', minimize)) is \
+            DepthFirstPriorityQueue
+        assert type(PriorityQueueFactory('fifo', minimize)) is \
+            FIFOQueue
+        assert type(PriorityQueueFactory('lifo', minimize)) is \
+            LIFOQueue
+        assert type(PriorityQueueFactory('random', minimize)) is \
+            RandomPriorityQueue
+        assert type(PriorityQueueFactory('local_gap', minimize)) is \
+            LocalGapPriorityQueue
+        with pytest.raises(ValueError):
+            PriorityQueueFactory('_not_a_type_', minimize)
+        # test LexicographicPriorityQueue creation
+        assert type(PriorityQueueFactory(('bound','objective'), minimize)) is \
+            LexicographicPriorityQueue
+        with pytest.raises(ValueError):
+            PriorityQueueFactory(('_not_a_type_',), minimize)
+        with pytest.raises(ValueError):
+            PriorityQueueFactory(('custom',), minimize)
+        with pytest.raises(ValueError):
+            PriorityQueueFactory(('fifo','custom'), minimize)
+        with pytest.raises(ValueError):
+            PriorityQueueFactory(('custom','fifo'), minimize)
+        with pytest.raises(ValueError):
+            PriorityQueueFactory((), minimize)
+
+    def test_register_queue_type(self):
+        assert PriorityQueueFactory._types['bound'] is \
+            WorstBoundFirstPriorityQueue
+        # its okay to re-register the exact same thing
+        register_queue_type('bound',
+                            WorstBoundFirstPriorityQueue)
+        assert PriorityQueueFactory._types['bound'] is \
+            WorstBoundFirstPriorityQueue
+        with pytest.raises(ValueError):
+            register_queue_type('bound', None)
+        assert PriorityQueueFactory._types['bound'] is \
+            WorstBoundFirstPriorityQueue
+        assert '_not_a_type_' not in PriorityQueueFactory._types
+        try:
+            register_queue_type('_not_a_type_', None)
+            assert PriorityQueueFactory._types['_not_a_type_'] is None
+        finally:
+            PriorityQueueFactory._types.pop('_not_a_type_',None)
 
 class Test_NoThreadingMaxPriorityFirstQueue(object):
 
@@ -827,7 +886,6 @@ class TestRandomPriorityQueue(object):
         assert node_ is max([l2, l3],
                             key=lambda x_: x_.queue_priority)
 
-
 class TestLocalGapPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
@@ -924,3 +982,94 @@ class TestLocalGapPriorityQueue(object):
         assert l3.queue_priority is not None
         assert l3.queue_priority == 5
         assert node_ is l3
+
+class TestLexicographicPriorityQueue(object):
+
+    def test_overwrites_queue_priority(self):
+        # min
+        q = LexicographicPriorityQueue(
+            (WorstBoundFirstPriorityQueue,
+             BestObjectiveFirstPriorityQueue),
+            minimize)
+        node = Node()
+        node.bound = 0
+        node.objective = 2
+        assert node.queue_priority is None
+        assert q.put(node) == 0
+        assert node.queue_priority is not None
+        assert node.queue_priority == (0,-2)
+        c1 = child = node.new_child()
+        assert child.bound == 0
+        assert child.objective == 2
+        child.objective = 1
+        assert child.queue_priority is None
+        assert q.put(child) == 1
+        assert child.queue_priority is not None
+        assert child.queue_priority == (0,-1)
+        c2 = child = child.new_child()
+        assert child.bound == 0
+        assert child.objective == 1
+        child.bound = -1
+        child.objective = 2
+        assert child.queue_priority is None
+        assert q.put(child) == 2
+        assert child.queue_priority is not None
+        assert child.queue_priority == (1,-2)
+        c3 = child = child.new_child()
+        assert child.bound == -1
+        assert child.objective == 2
+        child.bound = 1
+        child.objective = -100
+        assert child.queue_priority is None
+        assert q.put(child) == 3
+        assert child.queue_priority is not None
+        assert child.queue_priority == (-1,100)
+        assert q.get() is c2
+        assert q.get() is c1
+        assert q.get() is node
+        assert q.get() is c3
+        assert q.get() is None
+
+        # max
+        q = LexicographicPriorityQueue(
+            (WorstBoundFirstPriorityQueue,
+             BestObjectiveFirstPriorityQueue),
+            maximize)
+        node = Node()
+        node.bound = 0
+        node.objective = -2
+        assert node.queue_priority is None
+        assert q.put(node) == 0
+        assert node.queue_priority is not None
+        assert node.queue_priority == (0,-2)
+        c1 = child = node.new_child()
+        assert child.bound == 0
+        assert child.objective == -2
+        child.objective = -1
+        assert child.queue_priority is None
+        assert q.put(child) == 1
+        assert child.queue_priority is not None
+        assert child.queue_priority == (0,-1)
+        c2 = child = child.new_child()
+        assert child.bound == 0
+        assert child.objective == -1
+        child.bound = 1
+        child.objective = -2
+        assert child.queue_priority is None
+        assert q.put(child) == 2
+        assert child.queue_priority is not None
+        assert child.queue_priority == (1,-2)
+        c3 = child = child.new_child()
+        assert child.bound == 1
+        assert child.objective == -2
+        child.bound = -1
+        child.objective = 100
+        assert child.queue_priority is None
+        assert q.put(child) == 3
+        assert child.queue_priority is not None
+        assert child.queue_priority == (-1,100)
+        assert q.get() is c2
+        assert q.get() is c1
+        assert q.get() is node
+        assert q.get() is c3
+        assert q.get() is None
