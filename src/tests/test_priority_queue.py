@@ -448,7 +448,8 @@ class TestWorstBoundFirstPriorityQueue(object):
         node = Node()
         node.bound = -1
         assert node.queue_priority is None
-        cnt_, node_ = q.put_get(node)
+        cnt_ = q.put(node)
+        node_ = q.get()
         assert cnt_ == 10
         assert node_ is node
         assert node.queue_priority == 1
@@ -459,12 +460,14 @@ class TestWorstBoundFirstPriorityQueue(object):
         node2 = Node()
         node2.bound = -3
         assert node2.queue_priority is None
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert cnt_ == 12
         assert node_ is node2
         assert node2.queue_priority == 3
         node2.bound = -1
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert node2.queue_priority == 1
         assert cnt_ == 13
         assert node_ is node
@@ -508,7 +511,8 @@ class TestWorstBoundFirstPriorityQueue(object):
         node = Node()
         node.bound = 1
         assert node.queue_priority is None
-        cnt_, node_ = q.put_get(node)
+        cnt_ = q.put(node)
+        node_ = q.get()
         assert cnt_ == 10
         assert node_ is node
         assert node.queue_priority == 1
@@ -519,12 +523,14 @@ class TestWorstBoundFirstPriorityQueue(object):
         node2 = Node()
         node2.bound = 3
         assert node2.queue_priority is None
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert cnt_ == 12
         assert node_ is node2
         assert node2.queue_priority == 3
         node2.bound = 1
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert node2.queue_priority == 1
         assert cnt_ == 13
         assert node_ is node
@@ -539,16 +545,12 @@ class TestCustomPriorityQueue(object):
         assert node.queue_priority is None
         with pytest.raises(ValueError):
             q.put(node)
-        with pytest.raises(ValueError):
-            q.put_get(node)
         node.queue_priority = 1
         q.put(node)
         child = node.new_child()
         assert child.queue_priority is None
         with pytest.raises(ValueError):
             q.put(child)
-        with pytest.raises(ValueError):
-            q.put_get(child)
 
     def test_usage_minimize(self):
         q = CustomPriorityQueue(minimize)
@@ -587,7 +589,8 @@ class TestCustomPriorityQueue(object):
         node = Node()
         node.bound = 0
         node.queue_priority = 1
-        cnt_, node_ = q.put_get(node)
+        cnt_ = q.put(node)
+        node_ = q.get()
         assert cnt_ == 10
         assert node_ is node
         assert node.queue_priority == 1
@@ -600,13 +603,15 @@ class TestCustomPriorityQueue(object):
         node2 = Node()
         node2.bound = 1
         node2.queue_priority = 3
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert cnt_ == 12
         assert node_ is node2
         assert node2.queue_priority == 3
         assert q.bound() == 0
         node2.queue_priority = 1
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert node2.queue_priority == 1
         assert cnt_ == 13
         assert node_ is node
@@ -650,7 +655,8 @@ class TestCustomPriorityQueue(object):
         node = Node()
         node.bound = 0
         node.queue_priority = 1
-        cnt_, node_ = q.put_get(node)
+        cnt_ = q.put(node)
+        node_ = q.get()
         assert cnt_ == 10
         assert node_ is node
         assert node.queue_priority == 1
@@ -663,13 +669,15 @@ class TestCustomPriorityQueue(object):
         node2 = Node()
         node2.bound = 1
         node2.queue_priority = 3
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert cnt_ == 12
         assert node_ is node2
         assert node2.queue_priority == 3
         assert q.bound() == 0
         node2.queue_priority = 1
-        cnt_, node_ = q.put_get(node2)
+        cnt_ = q.put(node2)
+        node_ = q.get()
         assert node2.queue_priority == 1
         assert cnt_ == 13
         assert node_ is node
@@ -691,12 +699,14 @@ class TestBestObjectiveFirstPriorityQueue(object):
         assert child.objective == 1
         child.objective = 0
         assert child.queue_priority is None
-        cnt, node_ = q.put_get(child)
+        cnt = q.put(child)
+        node_ = q.get()
         assert child.queue_priority == 0
         assert cnt == 1
         assert node_ is child
         child.objective = 2
-        cnt, node_ = q.put_get(child)
+        cnt = q.put(child)
+        node_ = q.get()
         assert child.queue_priority == -2
         assert cnt == 2
         assert node_ is node
@@ -714,12 +724,14 @@ class TestBestObjectiveFirstPriorityQueue(object):
         assert child.objective == 1
         child.objective = 2
         assert child.queue_priority is None
-        cnt, node_ = q.put_get(child)
+        cnt = q.put(child)
+        node_ = q.get()
         assert child.queue_priority == 2
         assert cnt == 1
         assert node_ is child
         child.objective = 0
-        cnt, node_ = q.put_get(child)
+        cnt = q.put(child)
+        node_ = q.get()
         assert child.queue_priority == 0
         assert cnt == 2
         assert node_ is node
@@ -747,10 +759,12 @@ class TestBreadthFirstPriorityQueue(object):
         l3 = l2.new_child()
         q = BreadthFirstPriorityQueue(minimize)
         q.put(l2)
-        cnt, node_ = q.put_get(l1)
+        cnt = q.put(l1)
+        node_ = q.get()
         assert cnt == 1
         assert node_ is l1
-        cnt, node_ = q.put_get(l3)
+        cnt = q.put(l3)
+        node_ = q.get()
         assert cnt == 2
         assert node_ is l2
         assert q.bound() == 1
@@ -777,10 +791,12 @@ class TestDepthFirstPriorityQueue(object):
         l3 = l2.new_child()
         q = DepthFirstPriorityQueue(minimize)
         q.put(l2)
-        cnt, node_ = q.put_get(l3)
+        cnt = q.put(l3)
+        node_ = q.get()
         assert cnt == 1
         assert node_ is l3
-        cnt, node_ = q.put_get(l2)
+        cnt = q.put(l2)
+        node_ = q.get()
         assert cnt == 2
         assert node_ is l2
         assert q.bound() == 1
@@ -804,15 +820,18 @@ class TestFIFOQueue(object):
         l2 = l1.new_child()
         l3 = l2.new_child()
         q = FIFOQueue(minimize)
-        cnt, node_ = q.put_get(l2)
+        cnt = q.put(l2)
+        node_ = q.get()
         assert cnt == 0
         assert node_ is l2
         cnt = q.put(l2)
         assert cnt == 1
-        cnt, node_ = q.put_get(l3)
+        cnt = q.put(l3)
+        node_ = q.get()
         assert cnt == 2
         assert node_ is l2
-        cnt, node_ = q.put_get(l1)
+        cnt = q.put(l1)
+        node_ = q.get()
         assert cnt == 3
         assert node_ is l3
         assert q.bound() == 1
@@ -836,13 +855,15 @@ class TestLIFOQueue(object):
         l2 = l1.new_child()
         l3 = l2.new_child()
         q = LIFOQueue(minimize)
-        cnt, node_ = q.put_get(l2)
+        cnt = q.put(l2)
+        node_ = q.get()
         assert cnt == 0
         assert node_ is l2
         cnt = q.put(l2)
         assert q.bound() == 1
         assert cnt == 1
-        cnt, node_ = q.put_get(l3)
+        cnt = q.put(l3)
+        node_ = q.get()
         assert cnt == 2
         assert node_ is l3
         node_ = q.get()
@@ -871,7 +892,8 @@ class TestRandomPriorityQueue(object):
         l3 = l2.new_child()
         q = RandomPriorityQueue(minimize)
         assert l2.queue_priority is None
-        cnt, node_ = q.put_get(l2)
+        cnt = q.put(l2)
+        node_ = q.get()
         assert node_ is l2
         assert l2.queue_priority is not None
         assert 0 <= l2.queue_priority <= 1
@@ -879,7 +901,8 @@ class TestRandomPriorityQueue(object):
         cnt = q.put(l2)
         assert cnt == 1
         assert l3.queue_priority is None
-        cnt, node_ = q.put_get(l3)
+        cnt = q.put(l3)
+        node_ = q.get()
         assert cnt == 2
         assert l3.queue_priority is not None
         assert 0 <= l3.queue_priority <= 1
@@ -921,7 +944,8 @@ class TestLocalGapPriorityQueue(object):
         l3 = l2.new_child()
         q = LocalGapPriorityQueue(minimize)
         assert l2.queue_priority is None
-        cnt, node_ = q.put_get(l2)
+        cnt = q.put(l2)
+        node_ = q.get()
         assert node_ is l2
         assert l2.queue_priority is not None
         assert l2.queue_priority == 4
@@ -930,7 +954,8 @@ class TestLocalGapPriorityQueue(object):
         assert cnt == 1
         assert l3.queue_priority is None
         l3.objective = 6
-        cnt, node_ = q.put_get(l3)
+        cnt = q.put(l3)
+        node_ = q.get()
         assert cnt == 2
         assert l3.queue_priority is not None
         assert l3.queue_priority == 5
@@ -968,7 +993,8 @@ class TestLocalGapPriorityQueue(object):
         l3 = l2.new_child()
         q = LocalGapPriorityQueue(maximize)
         assert l2.queue_priority is None
-        cnt, node_ = q.put_get(l2)
+        cnt = q.put(l2)
+        node_ = q.get()
         assert node_ is l2
         assert l2.queue_priority is not None
         assert l2.queue_priority == 4
@@ -977,7 +1003,8 @@ class TestLocalGapPriorityQueue(object):
         assert cnt == 1
         assert l3.queue_priority is None
         l3.objective = -6
-        cnt, node_ = q.put_get(l3)
+        cnt = q.put(l3)
+        node_ = q.get()
         assert cnt == 2
         assert l3.queue_priority is not None
         assert l3.queue_priority == 5
