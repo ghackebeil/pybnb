@@ -450,7 +450,7 @@ example can be found `here
 
 .. literalinclude:: ../../examples/scripts/tsp/tsp_naive.py
    :language: python
-   :lines: 140-180
+   :lines: 131-171
    :dedent: 4
 
 The code shown above saves the path loaded by the most
