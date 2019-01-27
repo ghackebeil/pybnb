@@ -14,7 +14,6 @@ import marshal
 
 from pybnb.common import (maximize,
                           inf,
-                          QueueStrategy,
                           TerminationCondition,
                           _termination_condition_to_int)
 from pybnb.misc import get_gap_labels
