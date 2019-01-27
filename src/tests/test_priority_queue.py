@@ -5,7 +5,6 @@ import pytest
 from pybnb.common import (minimize,
                           maximize,
                           inf)
-from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.node import Node
 from pybnb.priority_queue import \
     (_NoThreadingMaxPriorityFirstQueue,

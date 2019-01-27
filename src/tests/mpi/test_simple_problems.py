@@ -1,7 +1,6 @@
 import os
 import sys
 
-import pytest
 from runtests.mpi import MPITest
 
 import pybnb

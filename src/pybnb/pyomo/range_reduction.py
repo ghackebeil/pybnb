@@ -204,7 +204,6 @@ class RangeReductionProblem(Problem):
                              root=root)
             again = bool(data[0])
             self._best_objective = float(data[1])
-            node_size = int(data[2])
             while again:
                 node.state = self._comm.bcast(node.state,
                                               root=root)
@@ -214,7 +213,6 @@ class RangeReductionProblem(Problem):
                                  root=root)
                 again = bool(data[0])
                 self._best_objective = float(data[1])
-                node_size = int(data[2])
         finally:
             self.load_state(orig)
 

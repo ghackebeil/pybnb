@@ -1,7 +1,5 @@
 import sys
 
-import pytest
-
 import pybnb
 
 is_pypy = False

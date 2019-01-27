@@ -1,9 +1,7 @@
 import os
 import tempfile
 import logging
-import subprocess
 import signal
-import time
 
 from pybnb.misc import (MPI_InterruptHandler,
                         metric_format,

@@ -22,7 +22,7 @@ from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     DispatcherResponse,
                                     DispatcherProxy)
-from pybnb.node import Node, _SerializedNode
+from pybnb.node import _SerializedNode
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import Message
 from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
@@ -479,7 +479,8 @@ class DispatcherBase(object):
         if len(initialize_queue.nodes):
             self._check_update_best_objective(
                 self.converger.best_objective(
-                    node.objective for node in initialize_queue.nodes))
+                    node.objective for node in
+                    initialize_queue.nodes))
             for node in initialize_queue.nodes:
                 assert node.tree_id is not None
                 self._add_work_to_queue(node,

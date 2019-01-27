@@ -1,5 +1,3 @@
-import pytest
-
 from pybnb.common import (minimize,
                           inf)
 from pybnb.misc import get_simple_logger

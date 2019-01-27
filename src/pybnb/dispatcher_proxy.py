@@ -116,8 +116,6 @@ class DispatcherProxy(object):
                solve_info,
                node_list):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.update`."""
-        import pybnb.misc
-        size = 3 + _SolveInfo._data_size
         node_list = [_SerializedNode.to_slots(node_)
                      for node_ in node_list]
         data = marshal.dumps((best_objective,

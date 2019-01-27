@@ -46,8 +46,8 @@ class TestSolverSimple(object):
 
     def test_no_mpi(self):
         b = Solver(comm=None)
-        assert b.comm == None
-        assert b.worker_comm == None
+        assert b.comm is None
+        assert b.worker_comm is None
         assert b.is_worker == True
         assert b.is_dispatcher == True
         assert b.worker_count == 1

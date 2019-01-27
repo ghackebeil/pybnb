@@ -527,6 +527,9 @@ def create_command_line_solver(problem, parser=None):
                   "option to a positive integer (the "
                   "maximum number of functions to "
                   "profile)."))
+    parser.add_argument('--version',
+                        action='version',
+                        version='pybnb '+str(pybnb.__version__))
     args = parser.parse_args()
 
     try:
