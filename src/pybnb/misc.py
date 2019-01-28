@@ -454,10 +454,7 @@ def create_command_line_solver(problem, parser=None):
                 assert len(vals) > 0
                 assert all(v in solve_docs["queue_strategy"]["choices"]
                            for v in vals)
-                if len(vals) == 1:
-                    namespace.queue_strategy = vals[0]
-                else:
-                    namespace.queue_strategy = vals
+                namespace.queue_strategy = vals
     class _QueueStrategyChoices(object):          #pragma:nocover
         def __contains__(self, val):
             if val in solve_docs["queue_strategy"]["choices"]:

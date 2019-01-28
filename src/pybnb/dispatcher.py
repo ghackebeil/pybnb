@@ -604,11 +604,9 @@ class DispatcherLocal(DispatcherBase):
         if self.journalist is not None:
             self.log_info("Starting branch & bound solve:\n"
                           " - dispatcher pid: %s (%s)\n"
-                          " - worker processes: 1\n"
-                          " - queue strategy: %s"
+                          " - worker processes: 1"
                           % (os.getpid(),
-                             socket.gethostname(),
-                             queue_strategy))
+                             socket.gethostname()))
             self.journalist.tic()
 
     def update(self,
@@ -926,12 +924,10 @@ class DispatcherDistributed(DispatcherBase):
         if self.journalist is not None:
             self.log_info("Starting branch & bound solve:\n"
                           " - dispatcher pid: %s (%s)\n"
-                          " - worker processes: %d\n"
-                          " - queue strategy: %s"
+                          " - worker processes: %d"
                           % (os.getpid(),
                              socket.gethostname(),
-                             len(self.worker_ranks),
-                             queue_strategy))
+                             len(self.worker_ranks)))
             self.journalist.tic()
 
     def update(self,

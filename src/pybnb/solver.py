@@ -18,7 +18,8 @@ from pybnb.problem import (_SolveInfo,
 from pybnb.misc import (MPI_InterruptHandler,
                         time_format,
                         as_stream,
-                        get_simple_logger)
+                        get_simple_logger,
+                        get_default_args)
 from pybnb.node import Node
 from pybnb.convergence_checker import (_default_scale,
                                        ConvergenceChecker)
@@ -36,6 +37,9 @@ import six
 
 class _notset(object):
     pass
+
+# this is defined at the bottom of this file
+_solve_defaults = None
 
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve.
@@ -824,10 +828,37 @@ class Solver(object):
                         next_tree_id=1)
                 if log is _notset:
                     log = get_simple_logger()
-                if type(queue_strategy) is \
-                   QueueStrategy:
+                if not isinstance(queue_strategy,
+                                  (six.string_types,
+                                   QueueStrategy)):
+                    for qs in queue_strategy:
+                        print(qs, isinstance(qs, QueueStrategy))
+                    queue_strategy = tuple(qs.value \
+                        if isinstance(qs, QueueStrategy) else qs
+                        for qs in queue_strategy)
+                elif isinstance(queue_strategy,
+                                QueueStrategy):
                     queue_strategy = \
                         queue_strategy.value
+                if log is not None:
+                    changed = False
+                    locals_ = locals()
+                    for key_ in sorted(_solve_defaults):
+                        if key_ == 'log':
+                            continue
+                        elif key_ == 'best_objective':
+                            continue
+                        elif key_ == 'initialize_queue':
+                            continue
+                        val_ = _solve_defaults[key_]
+                        if locals_[key_] != val_:
+                            if not changed:
+                                log.info('\nUsing non-default solver options:')
+                            changed = True
+                            log.info(' - %s: %s (default: %s)'
+                                     % (key_, locals_[key_], val_))
+                    if changed:
+                        log.info('')
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
@@ -1115,3 +1146,5 @@ def solve(problem,
         results.write(results_filename)
 
     return results
+
+_solve_defaults = get_default_args(Solver.solve)
