@@ -4,7 +4,21 @@ Changelog
 0.3.1 - `master`_
 ~~~~~~~~~~~~~~~~~
 
-* TODO
+* Major redesign of node serialization, allowing for much
+  faster serial performance (especially with PyPy): The
+  `node.state` attribute can now be assigned anything
+  pickle-able. The `node.resize(...)` method should no
+  longer be called. (#5)
+* Adding `pybnb.config` to allow customizing serialization
+  of node state (e.g., use `dill` instead of `pickle`). See
+  online docs for more information.
+* Allowing for lexicographic queue strategies: The
+  `queue_strategy` solve option can now be assigned a tuple
+  of existing strategies (e.g., `('bound','objective')`) to
+  define a lexicographic queue strategy. Equivalently, when
+  the 'custom' queue strategy is selected, users can assign
+  a tuple to the `node.queue_priority` attribute.
+* Adding a last-in, first-out queue strategy ('lifo').
 
 0.3.0 - 2019-01-20
 ~~~~~~~~~~~~~~~~~~
