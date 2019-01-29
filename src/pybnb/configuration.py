@@ -15,11 +15,12 @@ class Configuration(object):
     Attributes
     ----------
     SERIALIZER : str, {'pickle', 'dill'}
-        The serializer used to transmit node
-        state. (default: "pickle")
+        The name of serialization module used to transmit
+        node state. (default: "pickle")
     SERIALIZER_PROTOCOL_VERSION : int
-        Refer to the serializer module for more
-        information. (default: pickle.HIGHEST_PROTOCOL)
+        The protocol argument passed to the `dumps` function
+        of the selected serialization module.
+        (default: pickle.HIGHEST_PROTOCOL)
     MARSHAL_PROTOCOL_VERSION : int
         The version argument passed to the
         :func:`marshal.dumps` function. (default: 2)
