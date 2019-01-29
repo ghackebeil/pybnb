@@ -419,8 +419,6 @@ def create_command_line_solver(problem, parser=None):
     solve_docs.pop("initialize_queue")
     solve_defaults.pop("scale_function")
     solve_docs.pop("scale_function")
-    solve_defaults.pop("log_new_incumbent")
-    solve_docs.pop("log_new_incumbent")
     solve_defaults.pop("log")
     solve_docs.pop("log")
     assert len(solve_defaults) == len(solve_docs)
@@ -538,6 +536,14 @@ def create_command_line_solver(problem, parser=None):
         type=float,
         default=solve_defaults.pop("log_interval_seconds"),
         help=solve_docs["log_interval_seconds"]["doc"])
+    val = solve_defaults.pop("log_new_incumbent")
+    assert val
+    parser.add_argument(
+        "--disable-log-new-incumbent",
+        action="store_false",
+        dest="log_new_incumbent",
+        default=True,
+        help=solve_docs["log_new_incumbent"]["doc"])
     assert len(solve_defaults) == 0, str(solve_defaults)
 
     parser.add_argument(
