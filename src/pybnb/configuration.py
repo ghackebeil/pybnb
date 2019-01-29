@@ -70,8 +70,5 @@ class Configuration(object):
 
 config = Configuration()
 
-def main():
+if __name__ == "__main__":                        #pragma:nocover
     print(config)
-
-if __name__ == "__main__":
-    main()
