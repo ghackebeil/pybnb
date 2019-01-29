@@ -35,11 +35,11 @@ Quick Start
           node.state = self.bounds
       def load_state(self, node):
           self.bounds = node.state
-      def branch(self, parent):
+      def branch(self, node):
           L, U = self.bounds
           mid = 0.5 * (L + U)
           for l,u in [(L,mid), (mid,U)]:
-              child = parent.new_child()
+              child = node.new_child()
               child.state = (l,u)
               yield child
 

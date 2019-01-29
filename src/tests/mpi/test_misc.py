@@ -36,7 +36,7 @@ class DummyProblem(Problem):
     def bound(self): return 0.0
     def save_state(self, node): pass
     def load_state(self, node): pass
-    def branch(self, parent): return ()
+    def branch(self, node): return ()
 
 def _logging_check(comm):
     opt = Solver(comm=comm)

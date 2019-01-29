@@ -232,7 +232,7 @@ class Rosenbrock2D(PyomoProblem):
         self.rebuild_convex_envelopes()
         self._last_bound_was_feasible = False
 
-    def branch(self, parent):
+    def branch(self, node):
         if self._last_bound_was_feasible:
             return ()
         xL, xU = self._model.x.bounds
@@ -254,10 +254,10 @@ class Rosenbrock2D(PyomoProblem):
             return ()
         # branch
         mid = 0.5*(L + U)
-        left = parent.new_child()
+        left = node.new_child()
         branch_var.bounds = (L, mid)
         self.save_state(left)
-        right = parent.new_child()
+        right = node.new_child()
         branch_var.bounds = (mid, U)
         self.save_state(right)
         # reset the variable bounds
