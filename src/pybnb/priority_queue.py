@@ -4,7 +4,6 @@ used by the dispatcher.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
 import random
 import collections
 import heapq
