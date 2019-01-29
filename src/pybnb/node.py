@@ -120,6 +120,14 @@ class Node(object):
         self.queue_priority = None
         self.state = None
 
+    def resize(self, *args, **kwds):
+        raise NotImplementedError(
+            "It is no longer necessary to call "
+            "node.resize(...). Simply assign any "
+            "pickle-able object to the node.state "
+            "attribute. It no longer needs to be "
+            "a numpy array.")
+
     def __str__(self):
         out = \
             ("Node(objective=%s,\n"

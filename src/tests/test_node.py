@@ -20,6 +20,11 @@ class TestNode(object):
             config.SERIALIZER = orig
         print(config)
 
+    def test_resize(self):
+        node = Node()
+        with pytest.raises(NotImplementedError):
+            node.resize(1)
+
     def test_init(self):
         node = Node()
         assert node.objective is None
