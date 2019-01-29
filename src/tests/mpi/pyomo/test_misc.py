@@ -1,9 +1,9 @@
+import array
+
 from pybnb.pyomo.misc import mpi_partition
 
 from ..common import mpi_available
 from runtests.mpi import MPITest
-
-import numpy
 
 def _test_mpi_partition(comm):
     test_ranks = [0]
@@ -19,15 +19,13 @@ def _test_mpi_partition(comm):
               ['a','b','c']*16,
               ['a','b','c']*32):
         for root in test_ranks:
-            x_accessed_local = numpy.zeros(len(x),
-                                           dtype=int)
+            x_accessed_local = array.array('i',[0])*len(x)
             for i, xi in mpi_partition(comm,
                                        list(enumerate(x)),
                                        root=root):
                 assert x[i] == xi
                 x_accessed_local[i] += 1
-            x_accessed = numpy.zeros(len(x),
-                                     dtype=int)
+            x_accessed = array.array('i',[0])*len(x)
             if comm is not None:
                 comm.Allreduce([x_accessed_local,
                                 mpi4py.MPI.INT],
@@ -37,7 +35,8 @@ def _test_mpi_partition(comm):
                 comm.Barrier()
             else:
                 x_accessed[:] = x_accessed_local[:]
-            assert (x_accessed == 1).all()
+            for xi in x_accessed:
+                assert xi == 1
 
 def test_mpi_partition_no_comm():
     _test_mpi_partition(None)

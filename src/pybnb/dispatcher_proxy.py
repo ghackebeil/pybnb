@@ -4,20 +4,23 @@ branch-and-bound workers.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+import array
 import collections
+import marshal
 
+from pybnb.configuration import config
 from pybnb.common import _int_to_termination_condition
-from pybnb.node import Node
+from pybnb.node import _SerializedNode
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import (send_nothing,
                              recv_data)
-
-import numpy
 
 try:
     import mpi4py
 except ImportError:                               #pragma:nocover
     pass
+
+import six
 
 _ProcessType = collections.namedtuple(
     "_ProcessType",
@@ -100,7 +103,6 @@ class DispatcherProxy(object):
         self.comm = comm
         self.worker_comm = None
         self._status = mpi4py.MPI.Status()
-        self._update_buffer = None
         (self.dispatcher_rank,
          self.worker_comm) = self._init(comm, ProcessType.worker)
 
@@ -108,80 +110,63 @@ class DispatcherProxy(object):
         if self.worker_comm is not None:
             self.worker_comm.Free()
             self.worker_comm = None
-        self.clear_cache()
-
-    def clear_cache(self):
-        self._update_buffer = None
 
     def update(self,
                best_objective,
                previous_bound,
                solve_info,
-               node_data_list):
+               node_list):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.update`."""
-        size = 3 + _SolveInfo._data_size
-        node_count = len(node_data_list)
-        if node_count > 0:
-            for node_data_ in node_data_list:
-                size += 1
-                size += len(node_data_)
-        if (self._update_buffer is None) or \
-           len(self._update_buffer) < size:
-            self._update_buffer = numpy.empty(size, dtype=float)
-        data = self._update_buffer
-        data[0] = best_objective
-        assert float(data[0]) == best_objective
-        data[1] = previous_bound
-        assert float(data[1]) == previous_bound
-        data[2] = node_count
-        assert data[2] == node_count
-        assert int(data[2]) == int(node_count)
-        data[3:(_SolveInfo._data_size)+3] = solve_info.data
-        if node_count > 0:
-            pos = _SolveInfo._data_size+3
-            for node_data in node_data_list:
-                data[pos] = len(node_data)
-                pos += 1
-                data[pos:pos+len(node_data)] = node_data
-                pos += len(node_data)
-
-        self.comm.Send([data,mpi4py.MPI.DOUBLE],
+        node_list = [_SerializedNode.to_slots(node_)
+                     for node_ in node_list]
+        data = marshal.dumps((best_objective,
+                              previous_bound,
+                              solve_info.data,
+                              node_list),
+                             config.MARSHAL_PROTOCOL_VERSION)
+        self.comm.Send([data,mpi4py.MPI.BYTE],
                        self.dispatcher_rank,
                        tag=DispatcherAction.update)
         self.comm.Probe(status=self._status)
         assert not self._status.Get_error()
         tag = self._status.Get_tag()
+        recv_size = self._status.Get_count(mpi4py.MPI.BYTE)
+        data = bytearray(recv_size)
+        recv_data(self.comm,
+                  self._status,
+                  datatype=mpi4py.MPI.BYTE,
+                  out=data)
         if tag == DispatcherResponse.nowork:
-            data = recv_data(self.comm, self._status)
-            best_objective = float(data[0])
-            global_bound = float(data[1])
-            termination_condition = \
-                _int_to_termination_condition[int(data[2])]
+            if six.PY2:
+                data_ = str(data)
+            else:
+                data_ = data
+            (best_objective,
+             global_bound,
+             termination_condition_int,
+             solve_info_data) = marshal.loads(data_)
             solve_info = _SolveInfo()
-            solve_info.data[:] = data[3:]
+            solve_info.data = array.array('d',solve_info_data)
             return (True,
                     best_objective,
                     (global_bound,
-                     termination_condition,
+                     _int_to_termination_condition[
+                         termination_condition_int],
                      solve_info))
         else:
             assert tag == DispatcherResponse.work
-            recv_size = self._status.Get_count(mpi4py.MPI.DOUBLE)
-            if len(self._update_buffer) < recv_size:
-                self._update_buffer = numpy.empty(recv_size, dtype=float)
-            # Note that this function returns a node data
-            # array that is a view on its own update
-            # buffer. Thus, it assumes that the caller is no
-            # longer using the node data view that was
-            # returned when the next update is called
-            # (because it will be corrupted).
-            data = self._update_buffer[:recv_size]
-            recv_data(self.comm,
-                      self._status,
-                      datatype=mpi4py.MPI.DOUBLE,
-                      out=data)
-            best_objective = Node._extract_best_objective(data)
-            return False, best_objective, data
+            if six.PY2:
+                data_ = str(data)
+            else:
+                data_ = data
+            (best_objective,
+             node_tree_id,
+             node_queue_priority,
+             node_data) = marshal.loads(data_)
+            node = _SerializedNode.restore_node(node_data)
+            node.tree_id = node_tree_id
+            node.queue_priority = node_queue_priority
+            return False, best_objective, node
 
     def log_info(self, msg):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""

@@ -5,6 +5,7 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import sys
 import time
+import array
 
 from pybnb.common import (minimize,
                           maximize,
@@ -17,7 +18,8 @@ from pybnb.problem import (_SolveInfo,
 from pybnb.misc import (MPI_InterruptHandler,
                         time_format,
                         as_stream,
-                        get_simple_logger)
+                        get_simple_logger,
+                        get_default_args)
 from pybnb.node import Node
 from pybnb.convergence_checker import (_default_scale,
                                        ConvergenceChecker)
@@ -36,6 +38,9 @@ import six
 class _notset(object):
     pass
 
+# this is defined at the bottom of this file
+_solve_defaults = None
+
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve.
 
@@ -53,9 +58,9 @@ class SolverResults(object):
         >>> import pybnb
         >>> results = pybnb.SolverResults()
         >>> results.solution_status = pybnb.SolutionStatus.optimal
-        >>> assert results.solution_status == "optimal"
+        >>> assert results.solution_status == 'optimal'
         >>> assert results.solution_status == pybnb.SolutionStatus.optimal
-        >>> assert results.solution_status.value == "optimal"
+        >>> assert results.solution_status.value == 'optimal'
 
     termination_condition : :class:`TerminationCondition <pybnb.common.TerminationCondition>`
         The solve termination condition, as
@@ -70,9 +75,9 @@ class SolverResults(object):
         >>> import pybnb
         >>> results = pybnb.SolverResults()
         >>> results.termination_condition = pybnb.TerminationCondition.optimality
-        >>> assert results.termination_condition == "optimality"
+        >>> assert results.termination_condition == 'optimality'
         >>> assert results.termination_condition == pybnb.TerminationCondition.optimality
-        >>> assert results.termination_condition.value == "optimality"
+        >>> assert results.termination_condition.value == 'optimality'
 
     objective : float
         The best objective found.
@@ -319,20 +324,15 @@ class Solver(object):
             problem.set_clock(self._time)
         problem.set_solve_info_object(self._local_solve_info)
 
-        working_node = Node()
-        assert working_node.tree_id is None
-        # start the work loop
         while (1):
             update_start = self._time()
-            stop, new_objective, data = \
+            stop, new_objective, working_node = \
                 self._disp.update(
                     self._best_objective,
                     bound,
                     self._local_solve_info,
                     children)
             update_stop = self._time()
-            self._local_solve_info._increment_queue_stat(
-                update_stop-update_start, 1)
 
             updated = self._check_update_best_objective(
                 convergence_checker,
@@ -351,10 +351,10 @@ class Solver(object):
                 self._best_objective = new_objective
                 break
             # load the new data into the working_node
-            working_node._set_data(data)
             del new_objective
-            del data
             self._local_solve_info._increment_explored_nodes_stat(1)
+            self._local_solve_info._increment_queue_stat(
+                update_stop-update_start, 1)
 
             bound = working_node.bound
             current_tree_id = working_node.tree_id
@@ -408,23 +408,27 @@ class Solver(object):
                         objective):
                     clist = problem.branch(working_node)
                     for child in clist:
+                        children.append(child)
                         assert child.parent_tree_id == current_tree_id
                         assert child.tree_id is None
-                        assert child.tree_depth >= current_tree_depth + 1
+                        assert child.tree_depth == current_tree_depth + 1
                         assert child.objective == working_node.objective
-                        children.append(child._data)
-                        if convergence_checker.bound_worsened(child.bound, bound):    #pragma:nocover
+                        assert child.bound is not None
+                        if convergence_checker.bound_worsened(
+                                child.bound,
+                                working_node.bound):    #pragma:nocover
                             self._disp.log_warning(
                                 "WARNING: Bound on child node "
                                 "returned from branch method "
                                 "is worse than parent node "
                                 "(child=%r, parent=%r)"
-                                % (child.bound, bound))
+                                % (child.bound,
+                                   working_node.bound))
 
-        assert len(data) == 3
-        global_bound = data[0]
-        termination_condition = data[1]
-        global_solve_info = data[2]
+        assert len(working_node) == 3
+        global_bound = working_node[0]
+        termination_condition = working_node[1]
+        global_solve_info = working_node[2]
         return (self._best_objective,
                 global_bound,
                 termination_condition,
@@ -487,17 +491,16 @@ class Solver(object):
             statistics collected, where each entry is a list
             storing a value for each worker.
         """
-        import numpy
         stats = {}
         if (self.comm is not None) and \
            (self.comm.size > 1):
-            gathered = numpy.empty((self.worker_count, 12),
-                                   dtype=float)
+            num_stats = 12
+            gathered = array.array('d',[0]) * (self.worker_count*num_stats)
             if self.is_worker:
                 assert self.worker_comm is not None
                 assert not self.is_dispatcher
                 solve_info = self._local_solve_info
-                mine = numpy.array(
+                mine = array.array('d',
                     [self._wall_time,
                      solve_info.total_queue_time,
                      solve_info.queue_call_count,
@@ -509,9 +512,9 @@ class Solver(object):
                      solve_info.branch_call_count,
                      solve_info.total_load_state_time,
                      solve_info.load_state_call_count,
-                     solve_info.explored_nodes_count],
-                    dtype=float)
-                assert len(mine) == gathered.shape[1]
+                     solve_info.explored_nodes_count])
+                assert len(mine) == num_stats
+                assert len(mine) == len(gathered)//self.worker_count
                 self.worker_comm.Allgather([mine, mpi4py.MPI.DOUBLE],
                                            [gathered, mpi4py.MPI.DOUBLE])
                 if self.worker_comm.rank == 0:
@@ -523,19 +526,22 @@ class Solver(object):
                 assert self.is_dispatcher
                 self.comm.Recv([gathered, mpi4py.MPI.DOUBLE],
                                tag=11112111)
-            gathered = gathered.T.tolist()
-            stats['wall_time'] = gathered[0]
-            stats['queue_time'] = gathered[1]
-            stats['queue_call_count'] = gathered[2]
-            stats['objective_time'] = gathered[3]
-            stats['objective_call_count'] = gathered[4]
-            stats['bound_time'] = gathered[5]
-            stats['bound_call_count'] = gathered[6]
-            stats['branch_time'] = gathered[7]
-            stats['branch_call_count'] = gathered[8]
-            stats['load_state_time'] = gathered[9]
-            stats['load_state_call_count'] = gathered[10]
-            stats['explored_nodes_count'] = gathered[11]
+            for i, key in enumerate(('wall_time',
+                                     'queue_time',
+                                     'queue_call_count',
+                                     'objective_time',
+                                     'objective_call_count',
+                                     'bound_time',
+                                     'bound_call_count',
+                                     'branch_time',
+                                     'branch_call_count',
+                                     'load_state_time',
+                                     'load_state_call_count',
+                                     'explored_nodes_count')):
+                items = []
+                for k in range(self.worker_count):
+                    items.append(gathered[k*num_stats + i])
+                stats[key] = items
         else:
             assert self.is_worker
             assert self.is_dispatcher
@@ -708,7 +714,7 @@ class Solver(object):
             when a feasible objective is found that is at
             least as good as the specified value, and the
             termination_condition flag on the results object
-            will be set to "objective_limit". If this value
+            will be set to 'objective_limit'. If this value
             is infinite, the solve will terminate as soon as
             a finite objective is found. (default: None)
         bound_stop : float, optional
@@ -716,7 +722,7 @@ class Solver(object):
             when the global bound on the objective is at
             least as good as the specified value, and the
             termination_condition flag on the results object
-            will be set to "objective_limit". If this value
+            will be set to 'objective_limit'. If this value
             is infinite, the solve will terminate as soon as
             a finite bound is found. (default: None)
         node_limit : int, optional
@@ -724,12 +730,12 @@ class Solver(object):
             terminate once this many nodes have been served
             from the dispatcher queue, and the
             termination_condition flag on the results object
-            will be set to "node_limit". (default: None)
+            will be set to 'node_limit'. (default: None)
         time_limit : float, optional
             **(D)** If provided, the solve will begin to
             terminate once this amount of time has passed,
             and the termination_condition flag on the
-            results object will be set to "time_limit". Note
+            results object will be set to 'time_limit'. Note
             that the solve may run for an arbitrarily longer
             amount of time, depending how long worker
             processes spend completing their final
@@ -743,14 +749,17 @@ class Solver(object):
             created by calling :func:`problem.save_state
             <pybnb.problem.Problem.save_state>`.
             (default: None)
-        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
+        queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>` or tuple
             **(D)** Sets the strategy for prioritizing nodes
             in the central dispatcher queue. See the
             :class:`QueueStrategy
             <pybnb.common.QueueStrategy>` enum for the list
             of acceptable values. This keyword can be
             assigned one of the enumeration attributes or an
-            equivalent string name. (default: "bound")
+            equivalent string name. This keyword can also be
+            assigned a tuple of choices to define a
+            lexicographic sorting strategy.
+            (default: 'bound')
         log_interval_seconds : float, optional
             **(D)** The approximate time (in seconds)
             between solver log updates. More time may pass
@@ -758,7 +767,7 @@ class Solver(object):
             received from worker processes, and less time
             may pass if a new incumbent objective is
             found. (default: 1.0)
-        log_new_incumbent : bool
+        log_new_incumbent : bool, optional
             **(D)** Controls whether updates to the best
             objective are logged immediately (overriding the
             log interval). Setting this to false can be
@@ -800,24 +809,53 @@ class Solver(object):
                                     self.worker_comm,
                                     convergence_checker)
         root = Node()
-        root.queue_priority = 0
         problem.save_state(root)
         try:
             if self.is_dispatcher:
                 if initialize_queue is None:
-                    root.bound = problem.unbounded_objective()
-                    root.objective = best_objective
-                    assert root.tree_id is None
-                    Node._insert_tree_id(root._data, 0)
+                    root_ = Node()
+                    root_.tree_depth = 0
+                    root_.queue_priority = 0
+                    root_.bound = problem.unbounded_objective()
+                    root_.objective = best_objective
+                    root_.tree_id = 0
+                    root_.state = root.state
                     initialize_queue = DispatcherQueueData(
-                        nodes=[Node(data_=root._data.copy())],
+                        nodes=[root_],
                         next_tree_id=1)
                 if log is _notset:
                     log = get_simple_logger()
-                if type(queue_strategy) is \
-                   QueueStrategy:
+                if not isinstance(queue_strategy,
+                                  (six.string_types,
+                                   QueueStrategy)):
+                    for qs in queue_strategy:
+                        print(qs, isinstance(qs, QueueStrategy))
+                    queue_strategy = tuple(qs.value \
+                        if isinstance(qs, QueueStrategy) else qs
+                        for qs in queue_strategy)
+                elif isinstance(queue_strategy,
+                                QueueStrategy):
                     queue_strategy = \
                         queue_strategy.value
+                if log is not None:
+                    changed = False
+                    locals_ = locals()
+                    for key_ in sorted(_solve_defaults):
+                        if key_ == 'log':
+                            continue
+                        elif key_ == 'best_objective':
+                            continue
+                        elif key_ == 'initialize_queue':
+                            continue
+                        val_ = _solve_defaults[key_]
+                        if locals_[key_] != val_:
+                            if not changed:
+                                log.info('\nUsing non-default solver options:')
+                            changed = True
+                            log.info(' - %s: %s (default: %s)'
+                                     % (key_, locals_[key_], val_))
+                    if changed:
+                        log.info('')
                 self._disp.initialize(
                     best_objective,
                     initialize_queue,
@@ -855,8 +893,6 @@ class Solver(object):
                                       disable_objective_call,
                                       convergence_checker,
                                       results)
-                if not self.is_dispatcher:
-                    self._disp.clear_cache()
             (results.objective,
              results.bound,
              results.termination_condition,
@@ -917,6 +953,25 @@ class Solver(object):
 
         return results
 
+def _nonzero_avg(items, div=None):
+    """Returns the average of a list of items, excluding
+    zeros. The optional div argument can be set to a list of
+    values to divide each item by when computing the
+    average."""
+    assert (div is None) or \
+        (len(items) == len(div))
+    s = 0.0
+    c = 0
+    for i, val in enumerate(items):
+        assert val >= 0
+        if val != 0:
+            div_i = 1 if (div is None) else div[i]
+            s += val/float(div_i)
+            c += 1
+    if c == 0:
+        return 0
+    return s/float(c)
+
 def summarize_worker_statistics(stats, stream=sys.stdout):
     """Writes a summary of workers statistics to an
     output stream.
@@ -930,100 +985,93 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         A file-like object or a filename where results
         should be written to. (default: ``sys.stdout``)
     """
-    import numpy
-    wall_time = numpy.array(stats['wall_time'],
-                            dtype=float)
-    queue_time = numpy.array(stats['queue_time'],
-                             dtype=float)
-    queue_count = numpy.array(stats['queue_call_count'],
-                              dtype=int)
-    objective_time = numpy.array(stats['objective_time'],
-                                 dtype=float)
-    objective_count = numpy.array(stats['objective_call_count'],
-                                  dtype=int)
-    bound_time = numpy.array(stats['bound_time'],
-                             dtype=float)
-    bound_count = numpy.array(stats['bound_call_count'],
-                              dtype=int)
-    branch_time = numpy.array(stats['branch_time'],
-                              dtype=float)
-    branch_count = numpy.array(stats['branch_call_count'],
-                               dtype=int)
-    load_state_time = numpy.array(stats['load_state_time'],
-                                  dtype=float)
-    load_state_count = numpy.array(stats['load_state_call_count'],
-                                   dtype=int)
-    explored_nodes_count = numpy.array(stats['explored_nodes_count'],
-                                       dtype=int)
-    work_time = wall_time - queue_time
-
+    assert all(len(stats[key]) == len(stats['wall_time'])
+               for key in stats)
+    wall_time = stats['wall_time']
+    queue_time = stats['queue_time']
+    queue_count = stats['queue_call_count']
+    objective_time = stats['objective_time']
+    objective_count = stats['objective_call_count']
+    bound_time = stats['bound_time']
+    bound_count = stats['bound_call_count']
+    branch_time = stats['branch_time']
+    branch_count = stats['branch_call_count']
+    load_state_time = stats['load_state_time']
+    load_state_count = stats['load_state_call_count']
+    explored_nodes_count = stats['explored_nodes_count']
+    work_time = [wt-qt for wt,qt in zip(wall_time,queue_time)]
+    sum_enc = sum(explored_nodes_count)
     with as_stream(stream) as stream:
         stream.write("Number of Workers:   %6d\n"
                      % (len(wall_time)))
-        div = max(1.0,numpy.mean(explored_nodes_count))
-        numerator = numpy.max(explored_nodes_count) - \
-            numpy.min(explored_nodes_count)
-        if explored_nodes_count.sum() == 0:
+        if sum_enc == 0:
             stream.write("Load Imbalance:     %6.2f%%\n"
                          % (0.0))
         else:
+            max_enc = max(explored_nodes_count)
+            min_enc = min(explored_nodes_count)
+            avg_enc = sum_enc/float(len(explored_nodes_count))
             stream.write("Load Imbalance:     %6.2f%%\n"
-                         % (numerator/div*100.0))
-            stream.write(" - min: %d\n" % (numpy.min(explored_nodes_count)))
-            stream.write(" - max: %d\n" % (numpy.max(explored_nodes_count)))
+                         % ((max_enc-min_enc)/avg_enc*100.0))
+            stream.write(" - min: %d\n" % (min_enc))
+            stream.write(" - max: %d\n" % (max_enc))
         stream.write("Average Worker Timing:\n")
-        queue_count_str = "%d" % queue_count.sum()
+        queue_count_str = "%d" % sum(queue_count)
         tmp = "%"+str(len(queue_count_str))+"d"
-        bound_count_str = tmp % bound_count.sum()
-        objective_count_str = tmp % objective_count.sum()
-        branch_count_str = tmp % branch_count.sum()
-        load_state_count_str = tmp % load_state_count.sum()
-        div1 = numpy.copy(wall_time)
-        div1[div1 == 0] = 1
-        div2 = numpy.copy(queue_count)
-        div2[div2 == 0] = 1
+        bound_count_str = tmp % sum(bound_count)
+        objective_count_str = tmp % sum(objective_count)
+        branch_count_str = tmp % sum(branch_count)
+        load_state_count_str = tmp % sum(load_state_count)
         stream.write(" - queue:     %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (numpy.mean(queue_time/div1)*100.0,
-                        time_format(numpy.mean(queue_time/div2),
+                     % (_nonzero_avg(queue_time,
+                                     div=wall_time)*100.0,
+                        time_format(_nonzero_avg(queue_time,
+                                                 div=queue_count),
                                     align_unit=True),
                         queue_count_str))
-        div2 = numpy.copy(load_state_count)
-        div2[div2==0] = 1
         stream.write(" - load_state:%6.2f%% [avg time: %8s, count: %s]\n"
-                     % (numpy.mean((load_state_time/div1))*100.0,
-                        time_format(numpy.mean(load_state_time/div2),
+                     % (_nonzero_avg(load_state_time,
+                                     div=wall_time)*100.0,
+                        time_format(_nonzero_avg(load_state_time,
+                                                 div=load_state_count),
                                     align_unit=True),
                         load_state_count_str))
-        div2 = numpy.copy(bound_count)
-        div2[div2==0] = 1
         stream.write(" - bound:     %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (numpy.mean((bound_time/div1))*100.0,
-                        time_format(numpy.mean(bound_time/div2),
+                     % (_nonzero_avg(bound_time,
+                                     div=wall_time)*100.0,
+                        time_format(_nonzero_avg(bound_time,
+                                                 div=bound_count),
                                     align_unit=True),
                         bound_count_str))
-        div2 = numpy.copy(objective_count)
-        div2[div2==0] = 1
         stream.write(" - objective: %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (numpy.mean((objective_time/div1))*100.0,
-                        time_format(numpy.mean(objective_time/div2),
+                     % (_nonzero_avg(objective_time,
+                                     div=wall_time)*100.0,
+                        time_format(_nonzero_avg(objective_time,
+                                                 div=objective_count),
                                     align_unit=True),
                         objective_count_str))
-        div2 = numpy.copy(branch_count)
-        div2[div2==0] = 1
         stream.write(" - branch:    %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (numpy.mean((branch_time/div1))*100.0,
-                        time_format(numpy.mean(branch_time/div2),
+                     % (_nonzero_avg(branch_time,
+                                     div=wall_time)*100.0,
+                        time_format(_nonzero_avg(branch_time,
+                                                 div=branch_count),
                                     align_unit=True),
                         branch_count_str))
-        other_time = work_time - objective_time - bound_time - branch_time - load_state_time
-        div2 = numpy.copy(queue_count)
-        div2[div2 == 0] = 1
+        other_time = [wt-ot-bt-brt-lst if qc != 0 else 0
+                      for wt,ot,bt,brt,lst,qc in
+                      zip(work_time,
+                          objective_time,
+                          bound_time,
+                          branch_time,
+                          load_state_time,
+                          queue_count)]
         stream.write(" - other:     %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (numpy.mean(other_time/div1)*100.0,
-                        time_format(numpy.mean(other_time/div2),
+                     % (_nonzero_avg(other_time,
+                                     div=wall_time)*100.0,
+                        time_format(_nonzero_avg(other_time,
+                                                 div=queue_count),
                                     align_unit=True),
                         queue_count_str))
-
 
 def solve(problem,
           comm=_notset,
@@ -1097,3 +1145,5 @@ def solve(problem,
         results.write(results_filename)
 
     return results
+
+_solve_defaults = get_default_args(Solver.solve)

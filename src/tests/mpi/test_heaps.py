@@ -1,10 +1,6 @@
 import itertools
 
-import pytest
 from runtests.mpi import MPITest
-
-import six
-from six.moves import zip
 
 import pybnb
 
@@ -112,31 +108,27 @@ class Discrete(pybnb.Problem):
         return self._bound_bheap[self._heap_idx]
 
     def save_state(self, node):
-        node.resize(1)
-        node.state[0] = self._heap_idx
+        node.state = self._heap_idx
 
     def load_state(self, node):
-        assert len(node.state) == 1
-        self._heap_idx = int(node.state[0])
+        self._heap_idx = node.state
 
-    def branch(self, parent):
+    def branch(self, node):
         i = self._heap_idx
         assert i >= 0
         assert i < len(self._bound_bheap)
         left_idx =  2*i + 1
-        children = []
         if (left_idx < len(self._bound_bheap)) and \
            (self._bound_bheap[left_idx] is not None):
-            child = parent.new_child(size=1)
-            child.state[0] = left_idx
-            children.append(child)
+            child = node.new_child()
+            child.state = left_idx
+            yield child
         right_idx = 2*i + 2
         if (right_idx < len(self._bound_bheap)) and \
            (self._bound_bheap[right_idx] is not None):
-            child = parent.new_child(size=1)
-            child.state[0] = right_idx
-            children.append(child)
-        return children
+            child = node.new_child()
+            child.state = right_idx
+            yield child
 
 def _test_heaps(comm):
     solver = pybnb.Solver(comm=comm)
@@ -152,47 +144,48 @@ def _test_heaps(comm):
         node_list = [None, len(heap)] + [i for i in range(len(heap))
                                          if heap[i] is not None]
         # min
-        for default_objective in [None, 2]:
-            for objective_node in node_list:
-                if objective_node is not None:
-                    problem = Discrete(pybnb.minimize,
-                                       {objective_node: 1},
-                                       heap,
-                                       default_objective=2)
-                else:
-                    problem = Discrete(pybnb.minimize,
-                                       {},
-                                       heap,
-                                       default_objective=1)
-                results = solver.solve(problem, log=None)
-                if objective_node == len(heap):
-                    assert results.objective == 2
-                else:
-                    assert results.objective == 1
-                assert results.bound == heap_bound
+        for objective_node in node_list:
+            if objective_node is not None:
+                problem = Discrete(
+                    pybnb.minimize,
+                    {objective_node: 1},
+                    heap,
+                    default_objective=2)
+            else:
+                problem = Discrete(
+                    pybnb.minimize,
+                    {},
+                    heap,
+                    default_objective=1)
+            results = solver.solve(problem, log=None)
+            if objective_node == len(heap):
+                assert results.objective == 2
+            else:
+                assert results.objective == 1
+            assert results.bound == heap_bound
         # max
         heap_bound = -heap_bound
         heap = [-b_ if (b_ is not None) else None
                 for b_ in heap]
-        for default_objective in [None, 2]:
-            for objective_node in node_list:
-                if objective_node is not None:
-                    problem = Discrete(pybnb.maximize,
-                                       {objective_node: -1},
-                                       heap,
-                                       default_objective=-2)
-                else:
-                    problem = Discrete(pybnb.maximize,
-                                       {},
-                                       heap,
-                                       default_objective=-1)
-                results = solver.solve(problem, log=None)
-                if objective_node == len(heap):
-                    assert results.objective == -2
-                else:
-                    assert results.objective == -1
-                assert results.bound == heap_bound
-
+        for objective_node in node_list:
+            if objective_node is not None:
+                problem = Discrete(
+                    pybnb.maximize,
+                    {objective_node: -1},
+                    heap,
+                    default_objective=-2)
+            else:
+                problem = Discrete(
+                    pybnb.maximize,
+                    {},
+                    heap,
+                    default_objective=-1)
+            results = solver.solve(problem, log=None)
+            if objective_node == len(heap):
+                assert results.objective == -2
+            else:
+                assert results.objective == -1
+            assert results.bound == heap_bound
 
 def test_heaps_nocomm():
     _test_heaps(None)

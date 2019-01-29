@@ -37,11 +37,12 @@ class Test(object):
         assert QueueStrategy.depth == "depth"
         assert QueueStrategy.local_gap == "local_gap"
         assert QueueStrategy.fifo == "fifo"
+        assert QueueStrategy.lifo == "lifo"
         assert QueueStrategy.random == "random"
         assert QueueStrategy.custom == "custom"
-        assert len(QueueStrategy) == 8
-        assert len(_queue_strategy_to_int) == 8
-        assert len(_int_to_queue_strategy) == 8
+        assert len(QueueStrategy) == 9
+        assert len(_queue_strategy_to_int) == 9
+        assert len(_int_to_queue_strategy) == 9
         for val in QueueStrategy:
             assert _int_to_queue_strategy[
                 _queue_strategy_to_int[val]] is val

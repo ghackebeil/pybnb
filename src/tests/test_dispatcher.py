@@ -1,5 +1,3 @@
-import pytest
-
 from pybnb.common import (minimize,
                           inf)
 from pybnb.misc import get_simple_logger
@@ -13,6 +11,7 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   BreadthFirstPriorityQueue,
                                   DepthFirstPriorityQueue,
                                   FIFOQueue,
+                                  LIFOQueue,
                                   RandomPriorityQueue,
                                   LocalGapPriorityQueue)
 
@@ -26,8 +25,8 @@ class TestDispatcherSimple(object):
         log_new_incumbent = True
         convergence_checker = ConvergenceChecker(minimize)
 
-        root = Node(size=0)
-        Node._insert_tree_id(root._data, 0)
+        root = Node()
+        root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective
         queue = DispatcherQueueData(
@@ -104,6 +103,17 @@ class TestDispatcherSimple(object):
         disp.initialize(
             inf,
             queue,
+            'lifo',
+            convergence_checker,
+            node_limit,
+            time_limit,
+            log,
+            log_interval_seconds,
+            log_new_incumbent)
+        assert type(disp.queue) is LIFOQueue
+        disp.initialize(
+            inf,
+            queue,
             'random',
             convergence_checker,
             node_limit,
@@ -132,8 +142,8 @@ class TestDispatcherSimple(object):
         log_new_incumbent = True
         convergence_checker = ConvergenceChecker(minimize)
 
-        root = Node(size=0)
-        Node._insert_tree_id(root._data, 0)
+        root = Node()
+        root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective
         queue = DispatcherQueueData(

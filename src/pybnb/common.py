@@ -41,6 +41,8 @@ class QueueStrategy(str, enum.Enum):
     objective and bound is always selected next."""
     fifo = "fifo"
     """Nodes are served in first-in, first-out order."""
+    lifo = "lifo"
+    """Nodes are served in last-in, first-out order."""
     random = "random"
     """Nodes are assigned a random priority before entering
     the queue."""

@@ -31,28 +31,19 @@ class InfeasibleMin(pybnb.Problem):
             return 1.0/delta
 
     def save_state(self, node):
-        node.resize(2)
-        state = node.state
-        state[0] = self._xL
-        state[1] = self._xU
+        node.state = (self._xL, self._xU)
 
     def load_state(self, node):
-        state = node.state
-        self._xL = float(state[0])
-        self._xU = float(state[1])
+        (self._xL, self._xU) = node.state
 
-    def branch(self, parent):
+    def branch(self, node):
         xL, xU = self._xL, self._xU
         if (xU - xL) <= self._branching_abstol:
-            return ()
-        children = [parent.new_child()
-                    for i in range(2)]
+            return
         mid = 0.5 * (xL + xU)
-        self._xL = xL
-        self._xU = mid
-        self.save_state(children[0])
-        self._xL = mid
-        self._xU = xU
-        self.save_state(children[1])
-        self._xL, self._xU = xL, xU
-        return children
+        child = node.new_child()
+        child.state = (xL, mid)
+        yield child
+        child = node.new_child()
+        child.state = (mid, xU)
+        yield child

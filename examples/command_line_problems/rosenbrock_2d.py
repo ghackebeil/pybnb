@@ -222,20 +222,13 @@ class Rosenbrock2D(PyomoProblem):
                 return self.infeasible_objective()
 
     def save_state(self, node):
-        node.resize(4)
-        state = node.state
-        state[0] = self._model.x.lb
-        state[1] = self._model.x.ub
-        state[2] = self._model.y.lb
-        state[3] = self._model.y.ub
+        node.state = (self._model.x.bounds,
+                      self._model.y.bounds)
 
     def load_state(self, node):
-        state = node.state
-        assert len(state) == 4
-        self._model.x.lb = float(state[0])
-        self._model.x.ub = float(state[1])
-        self._model.y.lb = float(state[2])
-        self._model.y.ub = float(state[3])
+        assert len(node.state) == 2
+        self._model.x.bounds = node.state[0]
+        self._model.y.bounds = node.state[1]
         self.rebuild_convex_envelopes()
         self._last_bound_was_feasible = False
 

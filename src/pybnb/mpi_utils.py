@@ -128,7 +128,7 @@ def send_nothing(comm, dest, tag=0):
          tag=tag)
 send_nothing._nothing = None
 
-def recv_data(comm, status, datatype=None, out=None):
+def recv_data(comm, status, datatype, out=None):
     """A helper function for receiving numeric or string
     data sent using the lower-level buffer-based mpi4py
     routines.
@@ -141,44 +141,32 @@ def recv_data(comm, status, datatype=None, out=None):
         An MPI status object that has been populated with
         information about the message to be received via a
         probe.
-    datatype : {``mpi4py.MPI.DOUBLE``, ``mpi4py.MPI.CHAR``}, optional
+    datatype : :class:`mpi4py.MPI.Datatype`
         An MPI datatype used to interpret the received
-        data. If None, ``mpi4py.MPI.DOUBLE`` will be
-        used. (default: None)
+        data. If the datatype is :obj:`mpi4py.MPI.CHAR`,
+        the received data will be converted to a string.
     out : buffer-like object, optional
         A buffer-like object that is compatible with the datatype
-        argument and can be passed to comm.Recv. If None, one will be
-        created using the built-in ``array`` module. If not None, the
-        array must be at least as large as the incoming data.
+        argument and can be passed to comm.Recv. Can only be left
+        as None when the datatype is :obj:`mpi4py.MPI.CHAR`.
 
     Returns
     -------
-    ``array.array`` or string or user-provided
-        If the out keyword is not None, then that object will be
-        return. Otherwise, When the datatype is ``mpi4py.MPI.DOUBLE``,
-        an array with typecode "d" is returned. When the datatype
-        ``mpi4py.MPI.CHAR``, a string is returned.
+    string or user-provided data buffer
     """
     import mpi4py.MPI
     assert not status.Get_error()
-    if datatype is None:
-        datatype = mpi4py.MPI.DOUBLE
     size = status.Get_count(datatype)
-    convert_to_string = False
-    if out is None:
-        if datatype == mpi4py.MPI.DOUBLE:
-            out = array.array("d",[0])*size
-        else:
-            convert_to_string = True
-            assert datatype == mpi4py.MPI.CHAR
-            out = array.array("B",b"\0")*size
-    else:
-        assert len(out) >= size
+    if datatype == mpi4py.MPI.CHAR:
+        assert out is None
+        out = array.array("B",b"\0")*size
+    assert (out is not None) and \
+        (len(out) >= size)
     comm.Recv([out,datatype],
               source=status.Get_source(),
               tag=status.Get_tag(),
               status=status)
     assert not status.Get_error()
-    if convert_to_string:
+    if datatype == mpi4py.MPI.CHAR:
         out = _array_to_string(out)
     return out

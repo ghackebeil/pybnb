@@ -1,13 +1,13 @@
 import os
 import sys
 
-import pytest
 from runtests.mpi import MPITest
 
-import pybnb
-from pybnb.common import inf
-from pybnb.solver import (SolverResults,
-                          Solver)
+from pybnb import (QueueStrategy,
+                   Node,
+                   inf,
+                   SolverResults,
+                   Solver)
 from pybnb.misc import get_simple_logger
 
 from .common import mpi_available
@@ -31,6 +31,11 @@ finally:
 
 _ignore_value_ = object()
 
+_queue_strategies = sorted(QueueStrategy)
+_queue_strategies.append((QueueStrategy.bound,
+                          QueueStrategy.objective,
+                          'breadth'))
+
 def _execute_single_test(problem,
                          baseline,
                          solver=None,
@@ -47,15 +52,13 @@ def _execute_single_test(problem,
             pass
         elif solver.comm.rank == 3:
             pass
-    orig = pybnb.node.Node()
+    orig = Node()
     problem.save_state(orig)
     results = solver.solve(problem, **kwds)
 
-    current = pybnb.node.Node()
+    current = Node()
     problem.save_state(current)
-    assert len(current.state) == len(orig.state)
-    for i in range(len(current.state)):
-        assert current.state[i] == orig.state[i]
+    assert current.state == orig.state
     assert len(vars(results)) > 0
     assert len(vars(results)) == len(vars(baseline))
     for name in sorted(sorted(list(vars(results).keys()))):
@@ -251,7 +254,7 @@ def _test_infeasible_max(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(
@@ -414,7 +417,7 @@ def _test_infeasible_min(comm):
     baseline.nodes = 255
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(
@@ -436,7 +439,7 @@ def _test_root_infeasible_max(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(
@@ -458,7 +461,7 @@ def _test_root_infeasible_min(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(
@@ -480,7 +483,7 @@ def _test_unbounded_max(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(
@@ -502,7 +505,7 @@ def _test_unbounded_min(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(
@@ -601,10 +604,10 @@ def _test_zero_objective_max(comm):
     baseline.nodes = None
     baseline.wall_time = _ignore_value_
     problem = zero_objective_max.ZeroObjectiveMax()
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
-        if queue_strategy == "depth":
+        if queue_strategy in ("depth","lifo"):
             baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
@@ -708,10 +711,10 @@ def _test_zero_objective_min(comm):
     baseline.nodes = None
     baseline.wall_time = _ignore_value_
     problem = zero_objective_min.ZeroObjectiveMin()
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
-        if queue_strategy == "depth":
+        if queue_strategy in ("depth","lifo"):
             baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
@@ -738,7 +741,7 @@ def _test_delayed_unbounded_max(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(
@@ -760,7 +763,7 @@ def _test_delayed_unbounded_min(comm):
     _execute_single_test(problem,
                          baseline,
                          solver=solver)
-    for queue_strategy in sorted(pybnb.QueueStrategy):
+    for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
         _execute_single_test(

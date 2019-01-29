@@ -24,6 +24,7 @@ Modules
 .. toctree::
     :maxdepth: 1
 
+    configuration
     common
     problem
     node

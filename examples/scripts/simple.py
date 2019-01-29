@@ -27,23 +27,18 @@ class Simple(pybnb.Problem):
     def bound(self):
         return -(self._xU - self._xL)**2
     def save_state(self, node):
-        node.resize(2)
-        node.state[0] = self._xL
-        node.state[1] = self._xU
+        node.state = (self._xL, self._xU)
     def load_state(self, node):
-        self._xL = float(node.state[0])
-        self._xU = float(node.state[1])
+        (self._xL, self._xU) = node.state
     def branch(self, node):
         xL, xU = self._xL, self._xU
         xM = 0.5 * (xL + xU)
-        self._xL, self._xU = xL, xM
-        left = node.new_child()
-        self.save_state(left)
-        self._xL, self._xU = xM, xU
-        right = node.new_child()
-        self.save_state(right)
-        self._xL, self._xU = xL, xU
-        return left, right
+        child = node.new_child()
+        child.state = (xL, xM)
+        yield child
+        child = node.new_child()
+        child.state = (xM, xU)
+        yield child
     #
     # optional methods
     #

@@ -55,41 +55,36 @@ class BinaryKnapsack(pybnb.Problem):
             (self._W - weight)*(self._v[k]/float(self._w[k]))
 
     def save_state(self, node):
-        node.resize(self._n+3)
-        node.state.fill(-1)
-        node.state[0] = self._weight
-        node.state[1] = self._value
-        node.state[2] = self._level
-        node.state[3:len(self._choices)+3] = self._choices
+        node.state = (self._weight,
+                      self._value,
+                      self._level,
+                      self._choices)
 
     def load_state(self, node):
-        assert len(node.state) == self._n+3
-        self._weight = float(node.state[0])
-        self._value = float(node.state[1])
-        self._level = int(node.state[2])
-        self._choices = []
-        for i in node.state[3:]:
-            if i == -1:
-                break
-            self._choices.append(int(i))
+        assert len(node.state) == 4
+        self._weight = node.state[0]
+        self._value = node.state[1]
+        self._level = node.state[2]
+        self._choices = node.state[3]
         assert len(self._choices) <= self._n
         assert self._weight <= self._W
         assert self._level <= self._n
 
     def branch(self, node):
         assert len(self._choices) < self._n
+        orig_state = node.state
+        node.state = None
         for level in range(self._level, self._n):
             i = self._sorted_order[level]
             child_weight = self._weight + self._w[i]
             if child_weight <= self._W:
                 child = node.new_child()
-                assert len(child.state) == len(node.state)
-                child.state[:] = node.state[:]
-                child.state[0] = child_weight
-                child.state[1] = self._value + self._v[i]
-                child.state[2] = level + 1
-                child.state[3+len(self._choices)] = i
+                child.state = (child_weight,
+                               self._value + self._v[i],
+                               level + 1,
+                               self._choices + [i])
                 yield child
+        node.state = orig_state
 
 if __name__ == "__main__":
     import pybnb.misc
