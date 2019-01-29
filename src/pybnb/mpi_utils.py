@@ -157,7 +157,6 @@ def recv_data(comm, status, datatype, out=None):
     import mpi4py.MPI
     assert not status.Get_error()
     size = status.Get_count(datatype)
-    convert_to_string = False
     if datatype == mpi4py.MPI.CHAR:
         assert out is None
         out = array.array("B",b"\0")*size
