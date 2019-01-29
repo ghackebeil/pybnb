@@ -409,15 +409,12 @@ class Solver(object):
                     clist = problem.branch(working_node)
                     for child in clist:
                         children.append(child)
-                        child.parent_tree_id = current_tree_id
-                        child.tree_id = None
-                        child.tree_depth = current_tree_depth + 1
-                        if child.objective is None:
-                            child.objective = working_node.objective
+                        assert child.parent_tree_id == current_tree_id
+                        assert child.tree_id is None
+                        assert child.tree_depth == current_tree_depth + 1
                         assert child.objective == working_node.objective
-                        if child.bound is None:
-                            child.bound = working_node.bound
-                        elif convergence_checker.bound_worsened(
+                        assert child.bound is not None
+                        if convergence_checker.bound_worsened(
                                 child.bound,
                                 working_node.bound):    #pragma:nocover
                             self._disp.log_warning(

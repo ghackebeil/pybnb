@@ -10,10 +10,7 @@ import six
 if not six.PY2:
     import pickle
 else:
-    try:
-        import cPickle as pickle
-    except ImportError:                           #pragma:nocover
-        import pickle
+    import cPickle as pickle
 
 _serializer_modules = {}
 _serializer_modules["pickle"] = pickle
