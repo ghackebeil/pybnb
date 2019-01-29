@@ -8,8 +8,8 @@ import signal
 
 class MPI_InterruptHandler(object):
     """A context manager for temporarily assigning a handler
-    to SIGINT, SIGUSR1, and CTRL_C_EVENT, depending on the
-    availability of these signals in the current OS."""
+    to SIGINT and SIGUSR1, depending on the availability of
+    these signals in the current OS."""
     _sigs = [signal.SIGINT]
     if hasattr(signal, 'SIGUSR1'):
         # not available on windows
