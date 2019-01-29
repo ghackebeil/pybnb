@@ -43,7 +43,8 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         priority. Items placed in the queue may not be
         None. This method returns a unique counter associated
         with each put."""
-        assert item is not None
+        if item is None:
+            raise ValueError("queue item can not be None")
         cnt = self._count
         self._count += 1
         _push_(self._heap, (self._negate(priority), cnt, item))
@@ -64,7 +65,8 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         efficient than two separate put and get
         calls. Returns a tuple containing the put and get
         return values."""
-        assert item is not None
+        if item is None:
+            raise ValueError("queue item can not be None")
         cnt = self._count
         self._count += 1
         if len(self._heap) > 0:
@@ -137,7 +139,8 @@ class _NoThreadingFIFOQueue(object):
         """Puts an item into the queue. Items placed in the
         queue may not be None. This method returns a unique
         counter associated with each put."""
-        assert item is not None
+        if item is None:
+            raise ValueError("queue item can not be None")
         cnt = self._count
         self._count += 1
         self._deque.append((cnt, item))
@@ -156,7 +159,8 @@ class _NoThreadingFIFOQueue(object):
         efficient than two separate put and get
         calls. Returns a tuple containing the put and get
         return values."""
-        assert item is not None
+        if item is None:
+            raise ValueError("queue item can not be None")
         cnt = self._count
         self._count += 1
         if len(self._deque) > 0:
@@ -229,7 +233,8 @@ class _NoThreadingLIFOQueue(object):
         """Puts an item into the queue. Items placed in the
         queue may not be None. This method returns a unique
         counter associated with each put."""
-        assert item is not None
+        if item is None:
+            raise ValueError("queue item can not be None")
         cnt = self._count
         self._count += 1
         self._items.append((cnt, item))
@@ -248,7 +253,8 @@ class _NoThreadingLIFOQueue(object):
         efficient than two separate put and get
         calls. Returns a tuple containing the put and get
         return values."""
-        assert item is not None
+        if item is None:
+            raise ValueError("queue item can not be None")
         cnt = self._count
         self._count += 1
         return cnt, item

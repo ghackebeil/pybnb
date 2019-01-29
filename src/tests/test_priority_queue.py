@@ -115,9 +115,9 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
 
     def test_put_get(self):
         q = _NoThreadingMaxPriorityFirstQueue()
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             q.put(None, 0)
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             q.put_get(None, 0)
         assert sorted(q.items()) == []
         assert_isheap(q._heap)
@@ -204,9 +204,9 @@ class Test_NoThreadingFIFOQueue(object):
 
     def test_put_get(self):
         q = _NoThreadingFIFOQueue()
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             q.put(None)
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             q.put_get(None)
         assert list(q.items()) == []
         assert q.put_get(1) == (0,1)
@@ -306,9 +306,9 @@ class Test_NoThreadingLIFOQueue(object):
 
     def test_put_get(self):
         q = _NoThreadingLIFOQueue()
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             q.put(None)
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             q.put_get(None)
         assert list(q.items()) == []
         assert q.put_get(1) == (0,1)
