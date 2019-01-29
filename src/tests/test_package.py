@@ -17,19 +17,19 @@ class Test(object):
         if not is_pypy:
             if sys.version_info.major == 2:
                 if sys.version_info.minor == 7:
-                    pass
+                    print(sys.version_info)
             elif sys.version_info.major == 3:
                 if sys.version_info.minor == 5:
-                    pass
+                    print(sys.version_info)
                 elif sys.version_info.minor == 6:
-                    pass
+                    print(sys.version_info)
                 elif sys.version_info.minor == 7:
-                    pass
+                    print(sys.version_info)
         if is_pypy:
             if sys.version_info.major == 2:
-                pass
+                print(sys.version_info)
             if sys.version_info.major == 3:
-                pass
+                print(sys.version_info)
 
     def test_version(self):
         pybnb.__version__
