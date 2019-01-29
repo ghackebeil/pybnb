@@ -13,7 +13,6 @@ class Test(object):
 
     # See what Python versions the combined
     # coverage report includes
-    print("@@@", sys.version_info)
     def test_show_coverage(self):
         if not is_pypy:
             if sys.version_info.major == 2:

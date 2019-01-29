@@ -56,7 +56,7 @@ build: off
 
 test_script:
   - pytest -v --doctest-modules src/pybnb
-  - pytest -v -s --cov=pybnb --cov=examples --cov=src/tests
+  - pytest -v --cov=pybnb --cov=examples --cov=src/tests
   - "powershell Rename-Item -Path .coverage -NewName coverage.1"
   - python run-mpitests.py --mpirun="mpiexec -n 4" --no-build --with-coverage -v
   - "powershell Rename-Item -Path .coverage -NewName coverage.2"
