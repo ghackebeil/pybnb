@@ -167,13 +167,9 @@ description of each of the required methods.
                self._xL = 0.0
                self._xU = 1.0
            def save_state(self, node):
-               node.resize(2)
-               node.state[0] = self._xL
-               node.state[1] = self._xU
+               node.state = (self._xL, self._xU)
            def load_state(self, node):
-               assert len(node.state) == 2
-               self._xL = float(node.state[0])
-               self._xU = float(node.state[1])
+               self._xL, self._xU = node.state
 
  - :func:`Problem.branch(node) <pybnb.problem.Problem.branch>`
 
@@ -209,7 +205,7 @@ description of each of the required methods.
 How the Solver Calls the Problem Methods
 ----------------------------------------
 
-The following block of pseudocode provides a high level
+The following block of pseudocode provides a high-level
 overview of how the solver calls the methods on a
 user-defined problem. Highlighted lines show where problem
 methods are called.
@@ -250,12 +246,11 @@ methods are called.
         problem.load_state(root)
         problem.notify_solve_finished(...)
 
-Note from the above that, during the main solve loop
-starting on line 13, it is safe to assume that the six
-highlighted problem methods between line 13 and line 25 will
-be called in the relative order shown. The conditions under
-which these methods will be called are briefly discussed
-below:
+Note that, during the main solve loop starting on line 13,
+it is safe to assume that the six highlighted problem
+methods between line 13 and line 25 will be called in the
+relative order shown. The conditions under which these
+methods will be called are briefly discussed below:
 
  - **<conditional_1>** (line 15): This condition is met when
    the `best_objective` received from the dispatcher is not
