@@ -8,6 +8,7 @@ import array
 import collections
 import marshal
 
+from pybnb.configuration import config
 from pybnb.common import _int_to_termination_condition
 from pybnb.node import _SerializedNode
 from pybnb.problem import _SolveInfo
@@ -121,7 +122,8 @@ class DispatcherProxy(object):
         data = marshal.dumps((best_objective,
                               previous_bound,
                               solve_info.data,
-                              node_list))
+                              node_list),
+                             config.MARSHAL_PROTOCOL_VERSION)
         self.comm.Send([data,mpi4py.MPI.BYTE],
                        self.dispatcher_rank,
                        tag=DispatcherAction.update)

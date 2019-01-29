@@ -3,6 +3,8 @@ Branch-and-bound node implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+from pybnb.configuration import config
+
 import six
 
 if not six.PY2:
@@ -12,6 +14,40 @@ else:
         import cPickle as pickle
     except ImportError:
         import pickle
+
+_serializer_modules = {}
+_serializer_modules["pickle"] = pickle
+_serializer_modules["dill"] = None
+
+def _get_dill():
+    assert config.SERIALIZER == "dill"
+    import dill
+    _serializer_modules["dill"] = dill
+    return dill
+
+def _dumps(obj):
+    try:
+        mod = _serializer_modules[config.SERIALIZER]
+    except KeyError:
+        raise ValueError("Invalid serializer '%s'. "
+                         "Valid choices are: ['pickle', 'dill']"
+                         % (config.SERIALIZER))
+    if mod is None:
+        mod = _get_dill()
+    return mod.dumps(
+        obj,
+        protocol=config.SERIALIZER_PROTOCOL_VERSION)
+
+def _loads(obj):
+    try:
+        mod = _serializer_modules[config.SERIALIZER]
+    except KeyError:
+        raise ValueError("Invalid serializer '%s'. "
+                         "Valid choices are: ['pickle', 'dill']"
+                         % (config.SERIALIZER))
+    if mod is None:
+        mod = _get_dill()
+    return mod.loads(obj)
 
 class _SerializedNode(object):
     """A helper object used by the distributed dispatcher
@@ -40,8 +76,7 @@ class _SerializedNode(object):
                 node.parent_tree_id,
                 node.tree_depth,
                 node.queue_priority,
-                pickle.dumps(node,
-                             protocol=pickle.HIGHEST_PROTOCOL))
+                _dumps(node))
 
     @classmethod
     def from_node(cls, node):
@@ -49,7 +84,7 @@ class _SerializedNode(object):
 
     @staticmethod
     def restore_node(data):
-        return pickle.loads(data)
+        return _loads(data)
 
 class Node(object):
     """A branch-and-bound node that stores problem state.

@@ -8,6 +8,7 @@ env:
   matrix:
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi DEPLOY=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYBNB_SERIALIZER='dill'
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYOMO_RELEASE=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi SLIM=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-mpich EXAMPLES=1

@@ -770,7 +770,7 @@ class Solver(object):
             received from worker processes, and less time
             may pass if a new incumbent objective is
             found. (default: 1.0)
-        log_new_incumbent : bool
+        log_new_incumbent : bool, optional
             **(D)** Controls whether updates to the best
             objective are logged immediately (overriding the
             log interval). Setting this to false can be
@@ -1060,12 +1060,14 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                                                  div=branch_count),
                                     align_unit=True),
                         branch_count_str))
-        other_time = [wt-ot-bt-brt-lst for wt,ot,bt,brt,lst in
+        other_time = [wt-ot-bt-brt-lst if qc != 0 else 0
+                      for wt,ot,bt,brt,lst,qc in
                       zip(work_time,
                           objective_time,
                           bound_time,
                           branch_time,
-                          load_state_time)]
+                          load_state_time,
+                          queue_count)]
         stream.write(" - other:     %6.2f%% [avg time: %8s, count: %s]\n"
                      % (_nonzero_avg(other_time,
                                      div=wall_time)*100.0,

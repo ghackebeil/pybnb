@@ -1,4 +1,5 @@
 from pybnb.__about__ import __version__
+#from pybnb.configuration import config
 from pybnb.common import (minimize,
                           maximize,
                           inf,

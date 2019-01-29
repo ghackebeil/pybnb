@@ -12,6 +12,7 @@ import socket
 import logging
 import marshal
 
+from pybnb.configuration import config
 from pybnb.common import (maximize,
                           inf,
                           TerminationCondition,
@@ -827,10 +828,12 @@ class DispatcherDistributed(DispatcherBase):
                     stop = False
                     dest = self.needs_work_queue.popleft()
                     node = self._get_work_to_send(dest)
-                    send_ = marshal.dumps((self.best_objective,
-                                           node.tree_id,
-                                           node.queue_priority,
-                                           node.data))
+                    send_ = marshal.dumps(
+                        (self.best_objective,
+                         node.tree_id,
+                         node.queue_priority,
+                         node.data),
+                        config.MARSHAL_PROTOCOL_VERSION)
                     if self._send_requests[dest] is not None:
                         self._send_requests[dest].Wait()
                     self._send_requests[dest] = \
@@ -859,7 +862,8 @@ class DispatcherDistributed(DispatcherBase):
                     (self.best_objective,
                      data[0],
                      _termination_condition_to_int[data[1]],
-                     data[2].data))
+                     data[2].data),
+                    config.MARSHAL_PROTOCOL_VERSION)
                 # everyone needs work, so we must be done
                 requests = []
                 while len(self.needs_work_queue) > 0:

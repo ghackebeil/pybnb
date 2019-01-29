@@ -465,3 +465,43 @@ and placed on the results object that will be returned from
 the :func:`Solver.solve <pybnb.solver.Solver.solve>` method
 (:func:`notify_solve_finished
 <pybnb.problem.Problem.notify_solve_finished>`).
+
+Serialization Configuration
+---------------------------
+
+The following configuration items are available for
+controlling how node state is transmitted during a parallel
+solve:
+
+=========================== ======= ======================= =======
+config item                 type    default                 meaning
+=========================== ======= ======================= =======
+SERIALIZER                  str     "pickle"                | The serializer used to transform the user-defined
+                                                            | node state into a byte stream that can be
+                                                            | transmitted with MPI. Allowed values are "pickle"
+                                                            | and "dill".
+SERIALIZER_PROTOCOL_VERSION int     pickle.HIGHEST_PROTOCOL | The value assigned to the ``protocol`` keyword of
+                                                            | the pickle or dill ``dumps`` function.
+MARSHAL_PROTOCOL_VERSION    int     2                       | The value assigned to the ``version`` argument of
+                                                            | the ``marshal.dumps`` function. The marshal module
+                                                            | is used to serialize all other node attributes
+                                                            | besides the user-defined state. It is unlikely
+                                                            | that this setting would need to be adjusted.
+=========================== ======= ======================= =======
+
+These settings are available as attributes on the
+``pybnb.config`` object. For instance, to change the
+serializer for user-defined node state to the ``dill`` module,
+one would add the following to the beginning of their code::
+
+  pybnb.config.SERIALIZER = "dill"
+
+Each of these configurations can also be set through the
+environment by exporting a variable with ``PYBNB_``
+prepended to the attribute name on the config object::
+
+  export PYBNB_SERIALIZER=pickle
+
+The :func:`pybnb.config.reset(...) <pybnb.configuration.Configuration.reset>` method can be called to
+restore all configuration options to their default setting
+(with or without checking the environment).
