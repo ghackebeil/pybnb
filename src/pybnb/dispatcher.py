@@ -545,7 +545,12 @@ class DispatcherLocal(DispatcherBase):
                ((bound is None) or \
                 (self.worst_terminal_bound < bound)):
                 bound = self.worst_terminal_bound
-        return bound
+        if bound is not None:
+            return bound
+        else:
+            # likely means the dispatcher was initialized
+            # with an empty queue
+            return self.converger.unbounded_objective
 
     def _get_final_solve_info(self):
         """Get the final solve information"""
@@ -761,7 +766,12 @@ class DispatcherDistributed(DispatcherBase):
                ((bound is None) or \
                 (self.worst_terminal_bound < bound)):
                 bound = self.worst_terminal_bound
-        return bound
+        if bound is not None:
+            return bound
+        else:
+            # likely means the dispatcher was initialized
+            # with an empty queue
+            return self.converger.unbounded_objective
 
     def _get_final_solve_info(self):
         solve_info = _SolveInfo()
