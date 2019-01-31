@@ -22,7 +22,10 @@ def _get_dill():
     _serializer_modules["dill"] = dill
     return dill
 
-def _dumps(obj):
+def dumps(obj):
+    """Return the serialized representation of the object as
+    a bytes object, using the serialization module set in
+    the current configuration."""
     try:
         mod = _serializer_modules[config.SERIALIZER]
     except KeyError:
@@ -35,7 +38,10 @@ def _dumps(obj):
         obj,
         protocol=config.SERIALIZER_PROTOCOL_VERSION)
 
-def _loads(obj):
+def loads(obj):
+    """Read and return an object from the given serialized
+    data, using the serialization module set in the current
+    configuration."""
     try:
         mod = _serializer_modules[config.SERIALIZER]
     except KeyError:
@@ -73,7 +79,7 @@ class _SerializedNode(object):
                 node.parent_tree_id,
                 node.tree_depth,
                 node.queue_priority,
-                _dumps(node))
+                dumps(node))
 
     @classmethod
     def from_node(cls, node):
@@ -81,7 +87,7 @@ class _SerializedNode(object):
 
     @staticmethod
     def restore_node(data):
-        return _loads(data)
+        return loads(data)
 
 class Node(object):
     """A branch-and-bound node that stores problem state.

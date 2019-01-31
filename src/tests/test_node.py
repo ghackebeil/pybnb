@@ -1,8 +1,8 @@
 import pytest
 
 from pybnb.configuration import config
-from pybnb.node import (_loads,
-                        _dumps,
+from pybnb.node import (loads,
+                        dumps,
                         _SerializedNode,
                         Node)
 
@@ -13,9 +13,9 @@ class TestNode(object):
         config.SERIALIZER = "_not_dill_or_pickle_"
         try:
             with pytest.raises(ValueError):
-                _loads(b'')
+                loads(b'')
             with pytest.raises(ValueError):
-                _dumps(None)
+                dumps(None)
         finally:
             config.SERIALIZER = orig
         print(config)
