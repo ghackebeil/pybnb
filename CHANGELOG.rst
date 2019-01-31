@@ -1,14 +1,19 @@
 Changelog
 =========
 
-0.3.1 - `master`_
+0.5.0 - `master`_
 ~~~~~~~~~~~~~~~~~
+
+* TODO
+
+0.4.0 - 2019-01-31
+~~~~~~~~~~~~~~~~~~
 
 * Major redesign of node serialization, allowing for much
   faster serial performance (especially with PyPy): The
-  `node.state` attribute can now be assigned anything
-  pickle-able. The `node.resize(...)` method should no
-  longer be called. (#5)
+  `node.state` attribute can now be assigned anything (must
+  pickle-able to work in the parallel case). The
+  `node.resize(...)` method should no longer be called. (#5)
 * Adding `pybnb.config` to allow customizing serialization
   of node state (e.g., use `dill` instead of `pickle`). See
   online docs for more information.
