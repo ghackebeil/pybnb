@@ -33,7 +33,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == 0
         assert results.nodes == 1
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         results = solver.solve(DummyProblem(sense),
                                best_objective=(1 if (sense == minimize) else -1))
         assert results.solution_status == "optimal"
@@ -44,7 +43,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == 0
         assert results.nodes == 1
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         results = solver.solve(DummyProblem(sense),
                                best_objective=(1 if (sense == minimize) else -1),
                                disable_objective_call=True)
@@ -56,7 +54,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == 1
         assert results.nodes == 1
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
 
     # empty initial queue
     queue = DispatcherQueueData(
@@ -73,7 +70,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap is None
         assert results.nodes == 0
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         results = solver.solve(DummyProblem(sense),
                                initialize_queue=queue,
                                best_objective=0)
@@ -85,7 +81,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == inf
         assert results.nodes == 0
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         results = solver.solve(DummyProblem(sense),
                                initialize_queue=queue,
                                best_objective=0,
@@ -98,7 +93,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == inf
         assert results.nodes == 0
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
 
     # non-empty initial queue
     node = Node()
@@ -122,7 +116,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == 0
         assert results.nodes == 0
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         queue.nodes[0].objective = orig_objective
         results = solver.solve(DummyProblem(sense),
                                initialize_queue=queue,
@@ -135,7 +128,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == 0
         assert results.nodes == 0
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         queue.nodes[0].objective = (inf if (sense == minimize) else -inf)
         results = solver.solve(DummyProblem(sense),
                                initialize_queue=queue,
@@ -148,7 +140,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == 0
         assert results.nodes == 1
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         queue.nodes[0].objective = (inf if (sense == minimize) else -inf)
         results = solver.solve(DummyProblem(sense),
                                initialize_queue=queue,
@@ -162,7 +153,6 @@ def _test_initialize_queue(comm):
         assert results.relative_gap == 1
         assert results.nodes == 1
         assert results.wall_time is not None
-        assert not hasattr(results, "best_node")
         queue.nodes[0].objective = orig_objective
 
 def test_initialize_queue_nocomm():
