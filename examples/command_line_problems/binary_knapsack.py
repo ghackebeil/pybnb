@@ -71,8 +71,6 @@ class BinaryKnapsack(pybnb.Problem):
 
     def branch(self, node):
         assert len(self._choices) < self._n
-        orig_state = node.state
-        node.state = None
         for level in range(self._level, self._n):
             i = self._sorted_order[level]
             child_weight = self._weight + self._w[i]
@@ -83,7 +81,6 @@ class BinaryKnapsack(pybnb.Problem):
                                level + 1,
                                self._choices + [i])
                 yield child
-        node.state = orig_state
 
 if __name__ == "__main__":
     import pybnb.misc
