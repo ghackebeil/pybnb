@@ -380,6 +380,11 @@ def create_command_line_solver(problem, parser=None):
     except ImportError:                                #pragma:nocover
         pstats_available=False
     import pybnb
+    try:
+        import yaml
+    except ImportError:                                #pragma:nocover
+        raise ImportError("The PyYAML module is required to "
+                          "run the command-line solver.")
 
     if parser is None:
         import argparse
