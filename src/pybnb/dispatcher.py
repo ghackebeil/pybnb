@@ -840,9 +840,7 @@ class DispatcherDistributed(DispatcherBase):
                     node = self._get_work_to_send(dest)
                     send_ = marshal.dumps(
                         (self.best_objective,
-                         node.tree_id,
-                         node.queue_priority,
-                         node.data),
+                         node.slots),
                         config.MARSHAL_PROTOCOL_VERSION)
                     if self._send_requests[dest] is not None:
                         self._send_requests[dest].Wait()

@@ -160,12 +160,8 @@ class DispatcherProxy(object):
             else:
                 data_ = data
             (best_objective,
-             node_tree_id,
-             node_queue_priority,
-             node_data) = marshal.loads(data_)
-            node = _SerializedNode.restore_node(node_data)
-            node.tree_id = node_tree_id
-            node.queue_priority = node_queue_priority
+             node_slots) = marshal.loads(data_)
+            node = _SerializedNode.restore_node(node_slots)
             return False, best_objective, node
 
     def log_info(self, msg):

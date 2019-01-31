@@ -61,11 +61,10 @@ class BinaryKnapsack(pybnb.Problem):
                       self._choices)
 
     def load_state(self, node):
-        assert len(node.state) == 4
-        self._weight = node.state[0]
-        self._value = node.state[1]
-        self._level = node.state[2]
-        self._choices = node.state[3]
+        (self._weight,
+         self._value,
+         self._level,
+         self._choices) = node.state
         assert len(self._choices) <= self._n
         assert self._weight <= self._W
         assert self._level <= self._n

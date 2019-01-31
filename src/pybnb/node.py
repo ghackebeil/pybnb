@@ -71,6 +71,16 @@ class _SerializedNode(object):
          self.queue_priority,
          self.data) = slots
 
+    @property
+    def slots(self):
+        return (self.objective,
+                self.bound,
+                self.tree_id,
+                self.parent_tree_id,
+                self.tree_depth,
+                self.queue_priority,
+                self.data)
+
     @staticmethod
     def to_slots(node):
         return (node.objective,
@@ -79,15 +89,24 @@ class _SerializedNode(object):
                 node.parent_tree_id,
                 node.tree_depth,
                 node.queue_priority,
-                dumps(node))
+                dumps(node.state))
 
     @classmethod
     def from_node(cls, node):
         return cls(cls.to_slots(node))
 
     @staticmethod
-    def restore_node(data):
-        return loads(data)
+    def restore_node(slots):
+        node = Node()
+        (node.objective,
+         node.bound,
+         node.tree_id,
+         node.parent_tree_id,
+         node.tree_depth,
+         node.queue_priority,
+         node.state) = slots
+        node.state = loads(node.state)
+        return node
 
 class Node(object):
     """A branch-and-bound node that stores problem state.
@@ -107,7 +126,7 @@ class Node(object):
     queue_priority : float or tuple of floats
         The queue priority of the node.
     state
-        The user specified node state (must be pickle-able).
+        The user specified node state.
     """
     __slots__ = ("objective",
                  "bound",
@@ -129,10 +148,12 @@ class Node(object):
     def resize(self, *args, **kwds):
         raise NotImplementedError(
             "It is no longer necessary to call "
-            "node.resize(...). Simply assign any "
-            "pickle-able object to the node.state "
-            "attribute. It no longer needs to be "
-            "a numpy array.")
+            "node.resize(...). Simply assign any object "
+            "to the node.state attribute. It no longer "
+            "needs to be a numpy array. The node state "
+            "must be serialize-able using pickle or dill "
+            "in order to be compatible with the MPI-based "
+            "parallel solver.")
 
     def __str__(self):
         out = \

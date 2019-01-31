@@ -145,31 +145,35 @@ description of each of the required methods.
  - :func:`Problem.save_state(node) <pybnb.problem.Problem.save_state>`
 
    This method should save any relevant state information
-   about the problem into the numeric :attr:`Node.state
-   <pybnb.node.Node.state>` array on the node argument. The
-   amount of available storage in this array can be adjusted
-   by calling the :func:`resize <pybnb.node.Node.resize>`
-   method on the node.
+   about the problem onto the :attr:`state
+   <pybnb.node.Node.state>` attribute of node argument. If
+   one wishes to utilize the MPI-based parallel solver, the
+   only requirement for what goes into the node state is
+   that it can be serialized using the ``pickle`` or
+   ``dill`` modules. By default, ``pybnb`` is configured to
+   use the ``pickle`` module for node serialization. See the
+   section titled :ref:`configuration` for details on how to
+   adjust this and related settings.
 
  - :func:`Problem.load_state(node) <pybnb.problem.Problem.load_state>`
 
-   This method should load the problem state stored inside
-   the numeric :attr:`Node.state <pybnb.node.Node.state>` array
-   on the node argument. For instance, a pair of
-   :func:`Problem.save_state <pybnb.problem.Problem.save_state>` and
-   :func:`Problem.load_state <pybnb.problem.Problem.load_state>`
-   implementations might look like:
+   This method should load the problem state stored on the
+   the :attr:`state <pybnb.node.Node.state>` attribute of
+   the node argument. The code block below shows an example
+   pair of :func:`save_state
+   <pybnb.problem.Problem.save_state>` and :func:`load_state
+   <pybnb.problem.Problem.load_state>` implementations.
 
    .. code-block:: python
 
        class MyProblem(pybnb.Problem):
            def __init__(self):
-               self._xL = 0.0
-               self._xU = 1.0
+               self._L = 0.0
+               self._U = 1.0
            def save_state(self, node):
-               node.state = (self._xL, self._xU)
+               node.state = (self._L, self._U)
            def load_state(self, node):
-               self._xL, self._xU = node.state
+               (self._L, self._U) = node.state
 
  - :func:`Problem.branch(node) <pybnb.problem.Problem.branch>`
 
@@ -460,6 +464,8 @@ and placed on the results object that will be returned from
 the :func:`Solver.solve <pybnb.solver.Solver.solve>` method
 (:func:`notify_solve_finished
 <pybnb.problem.Problem.notify_solve_finished>`).
+
+.. _configuration:
 
 Serialization Configuration
 ---------------------------
