@@ -2,6 +2,7 @@
 
 set -e
 
+${DOC} pip uninstall -y numpy
 ${DOC} pip uninstall -y mpi4py
 ${DOC} pip uninstall -y Pyomo
 ${DOC} pip uninstall -y Pyutilib

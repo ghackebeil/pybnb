@@ -3,12 +3,20 @@ Branch-and-bound solver implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+
+# recognized pytest-doctestplus plugin,
+# not the standard doctest
+__doctest_requires__ = {'SolverResults.write': ['yaml']}
+
 import sys
 import time
 import array
+import math
+import base64
 
 from pybnb.common import (minimize,
                           maximize,
+                          inf,
                           QueueStrategy,
                           TerminationCondition,
                           SolutionStatus)
@@ -20,7 +28,8 @@ from pybnb.misc import (MPI_InterruptHandler,
                         as_stream,
                         get_simple_logger,
                         get_default_args)
-from pybnb.node import Node
+from pybnb.node import (Node,
+                        dumps)
 from pybnb.convergence_checker import (_default_scale,
                                        ConvergenceChecker)
 from pybnb.dispatcher_proxy import DispatcherProxy
@@ -93,6 +102,12 @@ class SolverResults(object):
         The process-local wall time (seconds). This is the
         only value on the results object that varies between
         processes.
+    best_node : :class:`Node <pybnb.node.Node>`
+        The node with the best objective obtained during the
+        solve. If an initial best_objective was provided to
+        the solver, this may result in a best node with an
+        objective different from (worse than) the optimal
+        objective stored on the results.
     """
 
     def __init__(self):
@@ -104,6 +119,7 @@ class SolverResults(object):
         self.relative_gap = None
         self.nodes = None
         self.wall_time = None
+        self.best_node = None
 
     def pprint(self, stream=sys.stdout):
         """Prints a nicely formatted representation of the
@@ -121,7 +137,9 @@ class SolverResults(object):
 
     def write(self, stream, prefix="", pretty=False):
         """Writes results in YAML format to a stream or
-        file.
+        file. Changing the parameter values from their
+        defaults may result in the output becoming
+        non-compatible with the YAML format.
 
         Parameters
         ----------
@@ -135,6 +153,25 @@ class SolverResults(object):
             Indicates whether or not certain recognized
             attributes should be formatted for more
             human-readable output. (default: False)
+
+        Example
+        -------
+
+        >>> import six
+        >>> import yaml
+        >>> import pybnb
+        >>> results = pybnb.SolverResults()
+        >>> results.best_node = pybnb.Node()
+        >>> results.best_node.tree_id = 123
+        >>> out = six.StringIO()
+        >>> # the best_node is serialized
+        >>> results.write(out)
+        >>> del results
+        >>> results_dict = yaml.load(out.getvalue())
+        >>> # de-serialize the best_node
+        >>> best_node = pybnb.node.loads(results_dict['best_node'])
+        >>> assert best_node.tree_id == 123
+
         """
         with as_stream(stream) as stream:
             attrs = vars(self)
@@ -142,26 +179,79 @@ class SolverResults(object):
             first = ('solution_status', 'termination_condition',
                      'objective', 'bound',
                      'absolute_gap', 'relative_gap',
-                     'nodes', 'wall_time')
+                     'nodes', 'wall_time', 'best_node')
             for cnt, name in enumerate(first):
                 if not hasattr(self, name):
                     continue
                 names.remove(name)
                 val = getattr(self, name)
                 if val is not None:
-                    if pretty:
-                        if name == 'wall_time':
-                            val = time_format(val, digits=2)
-                        elif name in ('objective','bound',
-                                      'absolute_gap','relative_gap'):
-                            val = "%.7g" % (val)
-                    if name in ("solution_status", "termination_condition"):
+                    if name in ("solution_status",
+                                "termination_condition"):
                         val = val.value
-                stream.write(prefix+'%s: %s\n'
-                             % (name, val))
+                    elif pretty:
+                        if name == 'wall_time':
+                            val = time_format(val,
+                                              digits=2)
+                        elif name in ('objective',
+                                      'bound',
+                                      'absolute_gap',
+                                      'relative_gap'):
+                            val = "%.7g" % (val)
+                        elif name == "best_node":
+                            val = ("Node(id=%s, depth=%s, objective=%s)"
+                                   % (val.tree_id,
+                                      val.tree_depth,
+                                      val.objective))
+                    else:
+                        if name == "best_node":
+                            val = dumps(val)
+                            if hasattr(base64, 'encodebytes'):
+                                val = base64.encodebytes(val).\
+                                    decode("ascii")
+                            else:
+                                val = base64.encodestring(val).\
+                                    decode("ascii")
+                            val = ('\n  '.join(
+                                val.splitlines()))
+                            val = ("!!binary |\n  %s"
+                                   % (val))
+                        else:
+                            val_ = "%r" % (val)
+                            if type(val) is float:
+                                if val_ == 'inf':
+                                    val_ = '.inf'
+                                elif val_ == '-inf':
+                                    val_ = "-.inf"
+                                elif val_ == 'nan':
+                                    val_ = ".nan"
+                            val = val_
+                            del val_
+                if pretty or (val is not None):
+                    stream.write(prefix+'%s: %s\n'
+                                 % (name, val))
+                else:
+                    assert val is None
+                    stream.write(prefix+'%s: null\n'
+                                 % (name))
             for name in names:
-                stream.write(prefix+'%s: %s\n'
-                              % (name, getattr(self, name)))
+                val = getattr(self, name)
+                val_ = "%r" % (val)
+                if type(val) is float:
+                    if val_ == 'inf':
+                        val_ = '.inf'
+                    elif val_ == '-inf':
+                        val_ = "-.inf"
+                    elif val_ == 'nan':
+                        val_ = ".nan"
+                val = val_
+                del val_
+                if val is not None:
+                    stream.write(prefix+'%s: %s\n'
+                                 % (name, val))
+                else:
+                    stream.write(prefix+'%s: null\n'
+                                 % (name))
 
     def __str__(self):
         """Represents the results as a string."""

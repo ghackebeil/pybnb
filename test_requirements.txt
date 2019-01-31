@@ -5,4 +5,5 @@ pyomo
 coverage
 pytest
 pytest-coverage
+pytest-doctestplus
 runtests

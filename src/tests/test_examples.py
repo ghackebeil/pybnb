@@ -32,7 +32,12 @@ if pyomo_available:                                    #pragma:nocover
             ((not hasattr(ipopt,'executable')) or \
             (ipopt.executable() is not None))
 
-import yaml
+yaml_available = False
+try:
+    import yaml
+    yaml_available = True
+except ImportError:
+    pass
 
 thisfile = os.path.abspath(__file__)
 thisdir = os.path.dirname(thisfile)
@@ -68,6 +73,8 @@ for p in [1,2,4]:
                          scenarios)
 @pytest.mark.example
 def test_example(example_name, procs):
+    if not yaml_available:
+        pytest.skip("yaml is not available")
     if example_name in ("test_bin_packing",
                         "test_rosenbrock_2d",
                         "test_range_reduction_pyomo"):
