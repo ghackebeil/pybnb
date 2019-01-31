@@ -101,7 +101,7 @@ Node(objective=-1,
         assert s.tree_depth == node.tree_depth
         assert s.queue_priority == node.queue_priority
         assert s.data is not None
-        node_ = s.restore_node(s.data)
+        node_ = s.restore_node(s.slots)
         assert node_.objective == node.objective
         assert node_.bound == node.bound
         assert node_.tree_id == node.tree_id

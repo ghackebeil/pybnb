@@ -1113,9 +1113,7 @@ class DispatcherDistributed(DispatcherBase):
         """
         nodes = []
         for node in self.queue.items():
-            node_ = node.restore_node(node.data)
-            node_.tree_id = node.tree_id
-            node_.queue_priority = node.queue_priority
+            node_ = node.restore_node(node.slots)
             nodes.append(node_)
         return DispatcherQueueData(
             nodes=nodes,
