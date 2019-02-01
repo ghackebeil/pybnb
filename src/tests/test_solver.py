@@ -162,6 +162,8 @@ class TestSolverResults(object):
         results.bound = 'inf'
         results.absolute_gap = '-inf'
         results.relative_gap = 'nan'
+        results.nodes = None
+        results.junk0 = None
         out = StringIO()
         results.write(out)
         x = yaml.load(out.getvalue())
@@ -169,6 +171,8 @@ class TestSolverResults(object):
         assert x['bound'] == 'inf'
         assert x['absolute_gap'] == '-inf'
         assert x['relative_gap'] == 'nan'
+        assert x['nodes'] is None
+        assert x['junk0'] is None
 
 class TestSolverSimple(object):
 
