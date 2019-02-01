@@ -20,7 +20,6 @@ yaml_available = False
 try:
     import yaml
     yaml_available = True
-    del yaml
 except ImportError:
     pass
 
@@ -163,10 +162,10 @@ class Test(object):
         def f(a, b=1):                            #pragma:nocover
             pass
         assert get_default_args(f) == {'b':1}
-        def f(a=1):
+        def f(a=1):                               #pragma:nocover
             pass
         assert get_default_args(f) == {'a':1}
-        def f(a=(1,)):
+        def f(a=(1,)):                            #pragma:nocover
             pass
         assert get_default_args(f) == {'a':(1,)}
 
