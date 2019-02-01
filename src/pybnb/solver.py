@@ -11,7 +11,6 @@ __doctest_requires__ = {'SolverResults.write': ['yaml']}
 import sys
 import time
 import array
-import math
 import base64
 
 from pybnb.common import (minimize,
