@@ -1,5 +1,5 @@
-Welcome to ``PyBnB``
-====================
+Welcome to ``PyBnB`` - |version|
+================================
 
 ``pybnb`` is a parallel branch-and-bound engine written in
 Python. It designed to run on distributed computing
