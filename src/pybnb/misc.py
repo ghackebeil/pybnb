@@ -521,14 +521,18 @@ def create_command_line_solver(problem, parser=None):
         type=float,
         default=solve_defaults.pop("time_limit"),
         help=solve_docs["time_limit"]["doc"])
+    def _float_or_None(val):                      #pragma:nocover
+        if val == "None":
+            return None
+        return float(val)
     parser.add_argument(
         "--queue-tolerance",
-        type=float,
+        type=_float_or_None,
         default=solve_defaults.pop("queue_tolerance"),
         help=solve_docs["queue_tolerance"]["doc"])
     parser.add_argument(
         "--branch-tolerance",
-        type=float,
+        type=_float_or_None,
         default=solve_defaults.pop("branch_tolerance"),
         help=solve_docs["branch_tolerance"]["doc"])
     parser.add_argument(
