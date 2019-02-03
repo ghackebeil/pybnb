@@ -81,7 +81,7 @@ class TestSolverResults(object):
  - relative_gap: 1
  - nodes: 1
  - wall_time: 1.00 m
- - best_node: Node(id=2, depth=3, objective=4)
+ - best_node: Node(objective=4)
 """
 
     def test_write(self):
@@ -243,3 +243,20 @@ Average Worker Timing:
             solve(DummyProblem(),
                   comm=None,
                   queue_strategy='_not_a_valid_strategy_')
+
+    def test_bad_best_options(self):
+        node = Node()
+        node.objective = None
+        with pytest.raises(ValueError):
+            solve(DummyProblem(),
+                  comm=None,
+                  best_node=node)
+        node.objective = nan
+        with pytest.raises(ValueError):
+            solve(DummyProblem(),
+                  comm=None,
+                  best_node=node)
+        node.objective = 0
+        solve(DummyProblem(),
+              comm=None,
+              best_node=node)

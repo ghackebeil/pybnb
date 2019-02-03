@@ -200,7 +200,10 @@ class Test(object):
 
         rr_junk = RangeReductionProblem(junk)
         assert rr_junk._best_objective == pybnb.inf
-        rr_junk.notify_new_best_objective_received(1)
+        node_ = pybnb.Node()
+        node_.objective = 1
+        rr_junk.notify_new_best_node(node_)
         assert rr_junk._best_objective == 1
-        rr_junk.notify_new_best_objective(2)
+        node_.objective = 2
+        rr_junk.notify_new_best_node(node_)
         assert rr_junk._best_objective == 2

@@ -51,10 +51,13 @@ def _logging_check(comm):
         root.tree_id = 0
         initialize_queue = DispatcherQueueData(
             nodes=[root],
-            next_tree_id=1)
+            next_tree_id=1,
+            worst_terminal_bound=None,
+            sense=p.sense())
         out = StringIO()
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         opt._disp.initialize(p.infeasible_objective(),
+                             None,
                              initialize_queue,
                              "bound",
                              ConvergenceChecker(p.sense()),

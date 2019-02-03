@@ -420,6 +420,8 @@ def create_command_line_solver(problem, parser=None):
     solve_docs.pop("problem")
     assert set(solve_defaults.keys()) == \
         set(solve_docs.keys())
+    solve_defaults.pop("best_node")
+    solve_docs.pop("best_node")
     solve_defaults.pop("initialize_queue")
     solve_docs.pop("initialize_queue")
     solve_defaults.pop("scale_function")

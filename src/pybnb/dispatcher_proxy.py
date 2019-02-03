@@ -113,13 +113,17 @@ class DispatcherProxy(object):
 
     def update(self,
                best_objective,
+               best_node,
                previous_bound,
                solve_info,
                node_list):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.update`."""
+        if best_node is not None:
+            best_node = _SerializedNode.to_slots(best_node)
         node_list = [_SerializedNode.to_slots(node_)
                      for node_ in node_list]
         data = marshal.dumps((best_objective,
+                              best_node,
                               previous_bound,
                               solve_info.data,
                               node_list),
@@ -142,13 +146,19 @@ class DispatcherProxy(object):
             else:
                 data_ = data
             (best_objective,
+             best_node_slots,
              global_bound,
              termination_condition_int,
              solve_info_data) = marshal.loads(data_)
+            best_node = None
+            if best_node_slots is not None:
+                best_node = _SerializedNode.restore_node(
+                    best_node_slots)
             solve_info = _SolveInfo()
             solve_info.data = array.array('d',solve_info_data)
             return (True,
                     best_objective,
+                    best_node,
                     (global_bound,
                      _int_to_termination_condition[
                          termination_condition_int],
@@ -160,9 +170,14 @@ class DispatcherProxy(object):
             else:
                 data_ = data
             (best_objective,
+             best_node_slots,
              node_slots) = marshal.loads(data_)
+            best_node = None
+            if best_node_slots is not None:
+                best_node = _SerializedNode.restore_node(
+                    best_node_slots)
             node = _SerializedNode.restore_node(node_slots)
-            return False, best_objective, node
+            return False, best_objective, best_node, node
 
     def log_info(self, msg):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_info`."""

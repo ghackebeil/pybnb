@@ -130,6 +130,48 @@ class Discrete(pybnb.Problem):
             child.state = right_idx
             yield child
 
+class SmallHeap(pybnb.Problem):
+    def __init__(self):
+        self._heap_index = 0
+        self._max_heap_index = 4
+    def sense(self):
+        return pybnb.minimize
+    def objective(self):
+        if self._heap_index == 0:
+            return 3
+        elif self._heap_index in (1,2):
+            return 2
+        elif self._heap_index == 3:
+            return 0
+        else:
+            assert self._heap_index == 4
+            return 1
+    def bound(self):
+        if self._heap_index == 0:
+            return -3
+        elif self._heap_index in (1,2):
+            return -2
+        else:
+            assert self._heap_index in (3,4)
+            return -1
+    def save_state(self, node):
+        node.state = self._heap_index
+    def load_state(self, node):
+        self._heap_index = node.state
+    def branch(self, node):
+        i = self._heap_index
+        assert 0 <= i <= self._max_heap_index
+        left_index =  2*i + 1
+        if left_index <= self._max_heap_index:
+            child = node.new_child()
+            child.state = left_index
+            yield child
+        right_index = 2*i + 2
+        if right_index <= self._max_heap_index:
+            child = node.new_child()
+            child.state = right_index
+            yield child
+
 def _test_heaps(comm):
     solver = pybnb.Solver(comm=comm)
     if comm is not None:
@@ -139,10 +181,47 @@ def _test_heaps(comm):
             pass
         elif comm.rank == 3:
             pass
+
+    problem = SmallHeap()
+    results = solver.solve(problem,
+                           queue_strategy='breadth')
+    assert results.solution_status == "feasible"
+    assert results.termination_condition == "no_nodes"
+    assert results.objective == 0
+    assert results.bound == -2
+    assert results.best_node.objective == 0
+    assert results.best_node.bound == -1
+    assert results.best_node.state == 3
+    _uuid = results.best_node._uuid
+    queue = solver.save_dispatcher_queue()
+    if solver.is_dispatcher:
+        assert queue.bound() == -2
+        assert queue.worst_terminal_bound == -2
+        assert len(queue.nodes) == 0
+        assert queue.next_tree_id == 5
+    results = solver.solve(problem,
+                           initialize_queue=queue,
+                           best_node=results.best_node)
+    assert results.solution_status == "feasible"
+    assert results.termination_condition == "no_nodes"
+    assert results.objective == 0
+    assert results.bound == -2
+    assert results.best_node.objective == 0
+    assert results.best_node.bound == -1
+    assert results.best_node.state == 3
+    assert results.best_node._uuid == _uuid
+    queue = solver.save_dispatcher_queue()
+    if solver.is_dispatcher:
+        assert queue.bound() == -2
+        assert queue.worst_terminal_bound == -2
+        assert len(queue.nodes) == 0
+        assert queue.next_tree_id == 5
+
     for heap in gen_heaps(2):
         heap_bound = get_bound(heap)
-        node_list = [None, len(heap)] + [i for i in range(len(heap))
-                                         if heap[i] is not None]
+        node_list = [None, len(heap)] + \
+            [i for i in range(len(heap))
+             if heap[i] is not None]
         # min
         for objective_node in node_list:
             if objective_node is not None:

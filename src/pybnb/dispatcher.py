@@ -11,9 +11,11 @@ import os
 import socket
 import logging
 import marshal
+import math
 
 from pybnb.configuration import config
-from pybnb.common import (maximize,
+from pybnb.common import (minimize,
+                          maximize,
                           inf,
                           TerminationCondition,
                           _termination_condition_to_int)
@@ -22,7 +24,8 @@ from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     DispatcherResponse,
                                     DispatcherProxy)
-from pybnb.node import _SerializedNode
+from pybnb.node import (Node,
+                        _SerializedNode)
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import Message
 from pybnb.priority_queue import PriorityQueueFactory
@@ -36,9 +39,7 @@ from sortedcontainers import SortedList
 
 import six
 
-class DispatcherQueueData(
-        collections.namedtuple("DispatcherQueueData",
-                               ["nodes","next_tree_id"])):
+class DispatcherQueueData(object):
     """A namedtuple storing data that can be used to
     initialize a dispatcher queue.
 
@@ -50,7 +51,49 @@ class DispatcherQueueData(
         The next tree_id that will be assigned to a
         node. This must be an integer that is larger than
         any tree_id in the nodes list.
+    worst_terminal_bound : float or None
+        The worst bound of any node where branching did not
+        continue.
+    sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
+        The objective sense for the problem that produced
+        this queue.
     """
+    __slots__ = ("nodes",
+                 "next_tree_id",
+                 "worst_terminal_bound",
+                 "sense")
+    def __init__(self,
+                 nodes,
+                 next_tree_id,
+                 worst_terminal_bound,
+                 sense):
+        self.nodes = nodes
+        self.next_tree_id = next_tree_id
+        self.worst_terminal_bound = worst_terminal_bound
+        self.sense = sense
+        assert sense in (minimize, maximize)
+
+    def bound(self):
+        """Returns the global bound defined by this queue data."""
+        bound = None
+        if len(self.nodes) > 0:
+            if self.sense == minimize:
+                bound = min(n_.bound for n_ in self.nodes)
+            else:
+                assert self.sense == maximize
+                bound = max(n_.bound for n_ in self.nodes)
+        if self.worst_terminal_bound is not None:
+            if bound is not None:
+                if self.sense == minimize:
+                    bound = min(bound,
+                                self.worst_terminal_bound)
+                else:
+                    assert self.sense == maximize
+                    bound = max(bound,
+                                self.worst_terminal_bound)
+            else:
+                bound = self.worst_terminal_bound
+        return bound
 
 class StatusPrinter(object):
     """Logs status information about the branch-and-bound
@@ -274,14 +317,15 @@ class DispatcherBase(object):
     implementations."""
 
     def __init__(self):
+        self.start_time = None
         self.initialized = False
         self.log_new_incumbent = False
         self.termination_condition = None
-        self.start_time = None
-        self.last_global_bound = None
-        self.best_objective = None
         self.converger = None
+        self.last_global_bound = None
         self.queue = None
+        self.best_node = None
+        self.best_objective = None
         self.journalist = None
         self.node_limit = None
         self.time_limit = None
@@ -298,10 +342,12 @@ class DispatcherBase(object):
         else:
             tree_id = node.tree_id
             assert tree_id is not None
+            assert tree_id >= 0
             assert tree_id < self.next_tree_id
         bound = node.bound
-        if self.converger.eligible_for_queue(bound,
-                                             self.best_objective):
+        if self.converger.eligible_for_queue(
+                bound,
+                self.best_objective):
             self.queue.put(node)
             return True
         else:
@@ -315,22 +361,42 @@ class DispatcherBase(object):
             self.worst_terminal_bound = bound
 
     def _check_update_best_objective(self, objective):
+        assert objective is not None
+        assert not math.isnan(objective)
         updated = False
-        if self.converger.objective_improved(objective,
-                                             self.best_objective):
+        if self.converger.objective_improved(
+                objective,
+                self.best_objective):
+            self.best_objective = objective
             updated = True
             if self.journalist is not None:
                 self.journalist.new_objective(
                     report=self.log_new_incumbent)
-            self.best_objective = objective
             eligible_for_queue_ = self.converger.eligible_for_queue
             removed = self.queue.filter(
                 lambda node_: eligible_for_queue_(
                     node_.bound,
-                    objective))
-            for node in removed:
-                self._check_update_worst_terminal_bound(node.bound)
+                    self.best_objective))
+            for node_ in removed:
+                self._check_update_worst_terminal_bound(node_.bound)
         return updated
+
+    def _check_update_best_node(self, node):
+        best_objective_updated = False
+        objective = node.objective
+        assert objective is not None
+        assert not math.isnan(objective)
+        if (objective != self.converger.infeasible_objective) and \
+           ((self.best_node is None) or \
+            self.converger.objective_improved(
+                objective,
+                self.best_node.objective)):
+            if node._uuid is None:
+                node._generate_uuid()
+            self.best_node = node
+            best_objective_updated = \
+                self._check_update_best_objective(objective)
+        return best_objective_updated
 
     def _check_convergence(self):
         # check if we are done
@@ -363,6 +429,7 @@ class DispatcherBase(object):
 
     def initialize(self,
                    best_objective,
+                   best_node,
                    initialize_queue,
                    queue_strategy,
                    converger,
@@ -377,6 +444,8 @@ class DispatcherBase(object):
         ----------
         best_objective : float
             The assumed best objective to start with.
+        best_node : :class:`Node <pybnb.node.Node>`
+            A node storing the assumed best objective.
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`
             The initial queue.
         queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>`
@@ -421,10 +490,17 @@ class DispatcherBase(object):
         self.log_new_incumbent = log_new_incumbent
         self.termination_condition = None
         self.converger = converger
+        if initialize_queue.sense != self.converger.sense:
+            raise ValueError("The objective sense does not match "
+                             "that of the initial queue.")
         self.last_global_bound = self.converger.unbounded_objective
-        self.best_objective = best_objective
         self.queue = PriorityQueueFactory(queue_strategy,
                                           self.converger.sense)
+        self.best_objective = best_objective
+        self.best_node = None
+        if best_node is not None:
+            assert best_node._uuid is not None
+            self._check_update_best_node(best_node)
         self.node_limit = None
         if node_limit is not None:
             self.node_limit = int(node_limit)
@@ -432,8 +508,15 @@ class DispatcherBase(object):
         if time_limit is not None:
             self.time_limit = float(time_limit)
         self.served_nodes_count = 0
-        self.worst_terminal_bound = None
+        self.worst_terminal_bound = \
+            initialize_queue.worst_terminal_bound
         self.next_tree_id = initialize_queue.next_tree_id
+        if (type(self.next_tree_id) is not int) or \
+           (self.next_tree_id < 0):
+            raise ValueError(
+                "Invalid next_tree_id value: %r. "
+                "Must be a nonnegative integer."
+                % (self.next_tree_id))
         self.journalist = None
         if (log is not None) and (not log.disabled):
             self.journalist = StatusPrinter(
@@ -441,12 +524,21 @@ class DispatcherBase(object):
                 log,
                 log_interval_seconds=log_interval_seconds)
         if len(initialize_queue.nodes):
-            self._check_update_best_objective(
+            self._check_update_best_node(
                 self.converger.best_objective(
-                    node.objective for node in
-                    initialize_queue.nodes))
+                    initialize_queue.nodes,
+                    key=lambda n_: n_.objective))
             for node in initialize_queue.nodes:
-                assert node.tree_id is not None
+                if (type(node.tree_id) is not int) or \
+                   (node.tree_id < 0) or \
+                   (node.tree_id >= self.next_tree_id):
+                    raise ValueError(
+                        "Invalid node tree id: %s. "
+                        "Must be a non-negative integer "
+                        "that is strictly less than the "
+                        "provided next tree id (%s)."
+                        % (node.tree_id,
+                           self.next_tree_id))
                 self._add_work_to_queue(node,
                                         set_tree_id=False)
 
@@ -483,7 +575,9 @@ class DispatcherBase(object):
         """
         return DispatcherQueueData(
             nodes=list(self.queue.items()),
-            next_tree_id=self.next_tree_id)
+            next_tree_id=self.next_tree_id,
+            worst_terminal_bound=self.worst_terminal_bound,
+            sense=self.converger.sense)
 
     #
     # Abstract Methods
@@ -570,12 +664,13 @@ class DispatcherLocal(DispatcherBase):
     def _check_update_best_objective(self, objective):
         updated = super(DispatcherLocal, self).\
             _check_update_best_objective(objective)
-        if updated and \
-           (self.external_bound is not None):
-            if not self.converger.eligible_for_queue(
-                    self.external_bound,
-                    objective):
-                self.external_bound = None
+        if updated:
+            assert self.best_objective == objective
+            if self.external_bound is not None:
+                if not self.converger.eligible_for_queue(
+                        self.external_bound,
+                        objective):
+                    self.external_bound = None
 
     #
     # Interface
@@ -583,6 +678,7 @@ class DispatcherLocal(DispatcherBase):
 
     def initialize(self,
                    best_objective,
+                   best_node,
                    initialize_queue,
                    queue_strategy,
                    converger,
@@ -599,6 +695,7 @@ class DispatcherLocal(DispatcherBase):
         self.active_nodes = 0
         super(DispatcherLocal, self).initialize(
             best_objective,
+            best_node,
             initialize_queue,
             queue_strategy,
             converger,
@@ -617,6 +714,7 @@ class DispatcherLocal(DispatcherBase):
 
     def update(self,
                best_objective,
+               best_node,
                previous_bound,
                solve_info,
                node_list):
@@ -624,12 +722,15 @@ class DispatcherLocal(DispatcherBase):
 
         Parameters
         ----------
-        best_objective : float
-            The current best objective value known to the
+        best_objective : float or None
+            A new potential best objective found by the
             worker.
-        previous_bound : float
+        best_node : :class:`Node <pybnb.node.Node>` or None
+            A new potential best node found by the worker.
+        previous_bound : float or None
             The updated bound computed for the last node
-            that was processed by the worker.
+            that was processed by the worker, or None
+            if children are returned.
         solve_info : :class:`_SolveInfo`
             The most up-to-date worker solve information.
         node_list : list
@@ -640,7 +741,9 @@ class DispatcherLocal(DispatcherBase):
         solve_finished : bool
             Indicates if the dispatcher has terminated the solve.
         new_objective : float
-            The best objective value known to the dispatcher.
+            The best objective known to the dispatcher.
+        best_node : :class:`Node <pybnb.node.Node>` or None
+            The best node known to the dispatcher.
         data : :class:`Node <pybnb.node.Node>` or None
             If solve_finished is false, a new node for the
             worker to process. Otherwise, a tuple containing
@@ -648,16 +751,25 @@ class DispatcherLocal(DispatcherBase):
             string, and the number of explored nodes.
         """
         assert self.initialized
-        self._check_update_best_objective(best_objective)
+        assert (best_objective is None) or \
+            self.first_update
+        if best_objective is not None:
+            self._check_update_best_objective(
+                best_objective)
+        if best_node is not None:
+            assert best_node._uuid is not None
+            self._check_update_best_node(best_node)
         self.solve_info.data[:] = solve_info.data
         self.external_bound = None
         self.active_nodes = 0
         if len(node_list):
+            assert previous_bound is None
             for node in node_list:
                 self._add_work_to_queue(node,
                                         set_tree_id=True)
         else:
             if not self.first_update:
+                assert previous_bound is not None
                 self._check_update_worst_terminal_bound(
                     previous_bound)
         self.first_update = False
@@ -665,7 +777,8 @@ class DispatcherLocal(DispatcherBase):
         self._check_convergence()
         if (self.queue.size() == 0) and \
            (self.termination_condition is None):
-            self.termination_condition = TerminationCondition.no_nodes
+            self.termination_condition = \
+                TerminationCondition.no_nodes
         if self.termination_condition is None:
             node = self._get_work_item()
             self.active_nodes = 1
@@ -676,7 +789,10 @@ class DispatcherLocal(DispatcherBase):
                          (last_global_bound != \
                           self.last_global_bound)
                 self.journalist.tic(force=force)
-            return (False, self.best_objective, node)
+            return (False,
+                    self.best_objective,
+                    self.best_node,
+                    node)
         else:
             if self.journalist is not None:
                 self.journalist.tic(force=True)
@@ -684,6 +800,7 @@ class DispatcherLocal(DispatcherBase):
             self.initialized = False
             return (True,
                     self.best_objective,
+                    self.best_node,
                     (self._get_current_bound(),
                      self.termination_condition,
                      self._get_final_solve_info()))
@@ -792,6 +909,7 @@ class DispatcherDistributed(DispatcherBase):
         updated = super(DispatcherDistributed, self).\
             _check_update_best_objective(objective)
         if updated:
+            assert self.best_objective == objective
             self_external_bounds = self.external_bounds
             eligible_for_queue = self.converger.eligible_for_queue
             # trim the sorted external_bounds list
@@ -838,8 +956,12 @@ class DispatcherDistributed(DispatcherBase):
                     stop = False
                     dest = self.needs_work_queue.popleft()
                     node = self._get_work_to_send(dest)
+                    best_node_slots = None
+                    if self.best_node is not None:
+                        best_node_slots = self.best_node.slots
                     send_ = marshal.dumps(
                         (self.best_objective,
+                         best_node_slots,
                          node.slots),
                         config.MARSHAL_PROTOCOL_VERSION)
                     if self._send_requests[dest] is not None:
@@ -866,8 +988,12 @@ class DispatcherDistributed(DispatcherBase):
                 data = (self._get_current_bound(),
                         self.termination_condition,
                         self._get_final_solve_info())
+                best_node_slots = None
+                if self.best_node is not None:
+                    best_node_slots = self.best_node.slots
                 send_ = marshal.dumps(
                     (self.best_objective,
+                     best_node_slots,
                      data[0],
                      _termination_condition_to_int[data[1]],
                      data[2].data),
@@ -882,7 +1008,7 @@ class DispatcherDistributed(DispatcherBase):
                                         DispatcherResponse.nowork))
                 mpi4py.MPI.Request.Waitall(requests)
 
-        return (stop, self.best_objective, data)
+        return (stop, self.best_objective, self.best_node, data)
 
     def _update_solve_info(self, solve_info_data, source):
         self.explored_nodes_count -= \
@@ -897,6 +1023,7 @@ class DispatcherDistributed(DispatcherBase):
 
     def initialize(self,
                    best_objective,
+                   best_node,
                    initialize_queue,
                    queue_strategy,
                    converger,
@@ -918,13 +1045,18 @@ class DispatcherDistributed(DispatcherBase):
         self.has_work.clear()
         self._send_requests = None
         self.explored_nodes_count = 0
+        if best_node is not None:
+            best_node = _SerializedNode.from_node(best_node)
         initialize_queue_ = DispatcherQueueData(
-            next_tree_id=initialize_queue.next_tree_id,
             nodes=[_SerializedNode.from_node(node) \
                    if (type(node) is not _SerializedNode) else node
-                   for node in initialize_queue.nodes])
+                   for node in initialize_queue.nodes],
+            next_tree_id=initialize_queue.next_tree_id,
+            worst_terminal_bound=initialize_queue.worst_terminal_bound,
+            sense=initialize_queue.sense)
         super(DispatcherDistributed, self).initialize(
             best_objective,
+            best_node,
             initialize_queue_,
             queue_strategy,
             converger,
@@ -944,6 +1076,7 @@ class DispatcherDistributed(DispatcherBase):
 
     def update(self,
                best_objective,
+               best_node,
                previous_bound,
                solve_info,
                node_list,
@@ -952,12 +1085,15 @@ class DispatcherDistributed(DispatcherBase):
 
         Parameters
         ----------
-        best_objective : float
-            The current best objective value known to the
+        best_objective : float or None
+            A new potential best objective found by the
             worker.
-        previous_bound : float
+        best_node : :class:`Node <pybnb.node.Node>` or None
+            A new potential best node found by the worker.
+        previous_bound : float or None
             The updated bound computed for the last node
-            that was processed by the worker.
+            that was processed by the worker, or None
+            if children are returned.
         solve_info : :class:`_SolveInfo`
             The most up-to-date worker solve information.
         node_list : list
@@ -971,6 +1107,8 @@ class DispatcherDistributed(DispatcherBase):
             Indicates if the dispatcher has terminated the solve.
         new_objective : float
             The best objective value known to the dispatcher.
+        best_node : :class:`Node <pybnb.node.Node>` or None
+            The best node known to the dispatcher.
         data : ``array.array`` or None
             If solve_finished is false, a data array
             representing a new node for the worker to
@@ -990,16 +1128,25 @@ class DispatcherDistributed(DispatcherBase):
                 self.external_bounds.remove(val_)
             except ValueError:
                 # rare, but can happen when
-                # _check_update_best_objective modifies
+                # _check_update_best_node modifies
                 # the external_bounds list
                 pass
-        self._check_update_best_objective(best_objective)
+        assert (best_objective is None) or \
+            self.first_update
+        if best_objective is not None:
+            self._check_update_best_objective(
+                best_objective)
+        if best_node is not None:
+            assert best_node._uuid is not None
+            self._check_update_best_node(best_node)
         if len(node_list):
+            assert previous_bound is None
             for node in node_list:
                 self._add_work_to_queue(node,
                                         set_tree_id=True)
         else:
             if not self.first_update[source]:
+                assert previous_bound is not None
                 self._check_update_worst_terminal_bound(
                     previous_bound)
         self.first_update[source] = False
@@ -1063,22 +1210,31 @@ class DispatcherDistributed(DispatcherBase):
                 else:
                     data_ = data
                 (best_objective,
+                 best_node,
                  previous_bound,
                  solve_info_data,
                  node_list) = marshal.loads(data_)
                 solve_info_.data = array.array('d',solve_info_data)
+                if best_node is not None:
+                    best_node = _SerializedNode(best_node)
                 node_list = [_SerializedNode(state) for state in node_list]
                 ret = self.update(best_objective,
+                                  best_node,
                                   previous_bound,
                                   solve_info_,
                                   node_list,
                                   source)
                 stop = ret[0]
                 if stop:
+                    best_node = ret[2]
+                    if best_node is not None:
+                        best_node = _SerializedNode.restore_node(
+                            best_node.slots)
                     return (ret[1],     # best_objective
-                            ret[2][0],  # global_bound
-                            ret[2][1],  # termination_condition
-                            ret[2][2])  # global_solve_info
+                            best_node,
+                            ret[3][0],  # global_bound
+                            ret[3][1],  # termination_condition
+                            ret[3][2])  # global_solve_info
             elif tag == DispatcherAction.log_info:
                 msg.recv(mpi4py.MPI.CHAR)
                 self.log_info(msg.data)
@@ -1094,7 +1250,7 @@ class DispatcherDistributed(DispatcherBase):
             elif tag == DispatcherAction.stop_listen:
                 msg.recv()
                 assert msg.data is None
-                return (None, None, None, None)
+                return (None, None, None, None, None)
             else:                                 #pragma:nocover
                 raise RuntimeError("Dispatcher received invalid "
                                    "message tag '%s' from rank '%s'"
@@ -1117,4 +1273,6 @@ class DispatcherDistributed(DispatcherBase):
             nodes.append(node_)
         return DispatcherQueueData(
             nodes=nodes,
-            next_tree_id=self.next_tree_id)
+            next_tree_id=self.next_tree_id,
+            worst_terminal_bound=self.worst_terminal_bound,
+            sense=self.converger.sense)

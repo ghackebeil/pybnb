@@ -253,13 +253,8 @@ class RangeReductionProblem(Problem):
     def branch(self, node):
         return self.problem.branch(node)
 
-    def notify_new_best_objective_received(self,
-                                           objective):
-        self._best_objective = objective
-
-    def notify_new_best_objective(self,
-                                  objective):
-        self.notify_new_best_objective_received(objective)
+    def notify_new_best_node(self, node):
+        self._best_objective = node.objective
 
     def notify_solve_finished(self,
                               comm,

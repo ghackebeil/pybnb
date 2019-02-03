@@ -11,11 +11,11 @@ __doctest_requires__ = {'SolverResults.write': ['yaml']}
 import sys
 import time
 import array
+import math
 import base64
 
 from pybnb.common import (minimize,
                           maximize,
-                          inf,
                           QueueStrategy,
                           TerminationCondition,
                           SolutionStatus)
@@ -198,10 +198,8 @@ class SolverResults(object):
                                       'relative_gap'):
                             val = "%.7g" % (val)
                         elif name == "best_node":
-                            val = ("Node(id=%s, depth=%s, objective=%s)"
-                                   % (val.tree_id,
-                                      val.tree_depth,
-                                      val.objective))
+                            val = ("Node(objective=%s)"
+                                   % (val.objective))
                     else:
                         if name == "best_node":
                             val = dumps(val)
@@ -336,6 +334,8 @@ class Solver(object):
         self._solve_start = None
         self._wall_time = 0.0
         self._best_objective = None
+        self._best_node = None
+        self._best_node_updated = False
         self._local_solve_info = _SolveInfo()
         self._global_solve_info = None
 
@@ -343,19 +343,26 @@ class Solver(object):
         self._solve_start = None
         self._wall_time = 0.0
         self._best_objective = None
+        self._best_node = None
+        self._best_node_updated = False
         self._local_solve_info.reset()
         self._global_solve_info = None
 
-    def _check_update_best_objective(self,
-                                     convergence_checker,
-                                     new_objective):
-        if convergence_checker.objective_improved(
-                new_objective,
-                self._best_objective):
-            self._best_objective = new_objective
-            return True
-        else:
-            return False
+    def _check_update_best_node(self,
+                                convergence_checker,
+                                node):
+        objective = node.objective
+        assert objective is not None
+        assert not math.isnan(objective)
+        if (objective != convergence_checker.infeasible_objective) and \
+           ((self._best_node is None) or \
+            convergence_checker.objective_improved(
+                objective,
+                self._best_node.objective)):
+            if node._uuid is None:
+                node._generate_uuid()
+            self._best_node = node
+            self._best_node_updated = True
 
     def _fill_results(self, results, convergence_checker):
         if results.bound == convergence_checker.infeasible_objective:
@@ -395,6 +402,7 @@ class Solver(object):
     def _solve(self,
                problem,
                best_objective,
+               best_node,
                disable_objective_call,
                convergence_checker,
                results):
@@ -405,42 +413,61 @@ class Solver(object):
         assert unbounded_objective == \
             convergence_checker.unbounded_objective
 
+        assert best_objective is not None
         self._best_objective = best_objective
-        children = ()
-        bound = unbounded_objective
+        self._best_node = best_node
         if not isinstance(problem, _ProblemWithSolveInfoCollection):
             problem = _SimpleSolveInfoCollector(problem)
             problem.set_clock(self._time)
         problem.set_solve_info_object(self._local_solve_info)
 
+        first_update = True
+        children = ()
+        bound = None
         while (1):
+            if len(children) != 0:
+                bound = None
             update_start = self._time()
-            stop, new_objective, working_node = \
-                self._disp.update(
-                    self._best_objective,
-                    bound,
-                    self._local_solve_info,
-                    children)
+            new_best_objective = None
+            if first_update:
+                new_best_objective = self._best_objective
+            new_best_node = None
+            if self._best_node_updated:
+                new_best_node = self._best_node
+            self._best_node_updated = False
+            first_update = False
+            (stop,
+             new_best_objective,
+             new_best_node,
+             working_node) = self._disp.update(
+                 new_best_objective,
+                 new_best_node,
+                 bound,
+                 self._local_solve_info,
+                 children)
             update_stop = self._time()
 
-            updated = self._check_update_best_objective(
-                convergence_checker,
-                new_objective)
-            if updated and \
-               (self._best_objective != unbounded_objective):
-                problem.notify_new_best_objective_received(
-                    self._best_objective)
-            del updated
+            old_best_node = self._best_node
+            self._best_objective = new_best_objective
+            self._best_node = new_best_node
+            assert (old_best_node is None) or \
+                (old_best_node._uuid is not None)
+            assert (self._best_node is None) or \
+                (self._best_node._uuid is not None)
+            if (self._best_node is not None) and \
+               ((old_best_node is None) or \
+                (self._best_node._uuid != old_best_node._uuid)):
+                problem.notify_new_best_node(self._best_node)
+            del old_best_node
+            del new_best_objective
+            del new_best_node
 
             children = []
 
             if stop:
                 # make sure all processes have the exact same best
                 # objective value (not just subject to tolerances)
-                self._best_objective = new_objective
                 break
-            # load the new data into the working_node
-            del new_objective
             self._local_solve_info._increment_explored_nodes_stat(1)
             self._local_solve_info._increment_queue_stat(
                 update_stop-update_start, 1)
@@ -480,14 +507,9 @@ class Solver(object):
                         "WARNING: Local node bound is worse "
                         "than local node objective (bound=%r, "
                         "objective=%r)" % (bound, objective))
-                updated = self._check_update_best_objective(
+                self._check_update_best_node(
                     convergence_checker,
-                    objective)
-                if updated and \
-                   (self._best_objective != unbounded_objective):
-                    problem.notify_new_best_objective(
-                        self._best_objective)
-                del updated
+                    working_node)
                 if (objective != unbounded_objective) and \
                     convergence_checker.eligible_for_queue(
                         bound,
@@ -501,8 +523,10 @@ class Solver(object):
                         assert child.parent_tree_id == current_tree_id
                         assert child.tree_id is None
                         assert child.tree_depth == current_tree_depth + 1
-                        assert child.objective == working_node.objective
                         assert child.bound is not None
+                        self._check_update_best_node(
+                            convergence_checker,
+                            child)
                         if convergence_checker.bound_worsened(
                                 child.bound,
                                 working_node.bound):    #pragma:nocover
@@ -519,6 +543,7 @@ class Solver(object):
         termination_condition = working_node[1]
         global_solve_info = working_node[2]
         return (self._best_objective,
+                self._best_node,
                 global_bound,
                 termination_condition,
                 global_solve_info)
@@ -683,6 +708,7 @@ class Solver(object):
     def solve(self,
               problem,
               best_objective=None,
+              best_node=None,
               disable_objective_call=False,
               absolute_gap=1e-8,
               relative_gap=1e-4,
@@ -724,11 +750,20 @@ class Solver(object):
             An object defining a branch-and-bound problem.
         best_objective : float, optional
             Initializes the solve with an assumed best
-            objective. This is the only option used by both
-            worker and dispatcher processes that can be set
-            to a different value on each process. The
-            dispatcher will collect all values and use the
-            best. (default: None)
+            objective. Both this and the best_node option
+            can be set to different values on all
+            processes. The dispatcher will collect all
+            values and use the best. (default: None)
+        best_node : :class:`Node <pybnb.node.Node>`, optional
+            Initializes the solve with an assumed best node.
+            This option can be used in place of the
+            best_objective option when a best node from a
+            previous solve has been collected. It can also
+            be assigned a node object that was created
+            manually by the user. The objective attribute is
+            the only property of this object that will
+            affect the solve. It must be set to a numeric
+            value. (default: None)
         disable_objective_call : bool, optional
             **(W)** Disables requests for an objective value from
             subproblems. (default: False)
@@ -879,6 +914,16 @@ class Solver(object):
 
         if best_objective is None:
             best_objective = problem.infeasible_objective()
+        assert not math.isnan(best_objective)
+
+        if best_node is not None:
+            if (best_node.objective is None) or \
+               math.isnan(best_node.objective):
+                raise ValueError("The best_node objective "
+                                 "attribute must be set to "
+                                 "a numeric value.")
+            if best_node._uuid is None:
+                best_node._generate_uuid()
 
         results = SolverResults()
         convergence_checker = ConvergenceChecker(
@@ -894,21 +939,11 @@ class Solver(object):
         problem.notify_solve_begins(self.comm,
                                     self.worker_comm,
                                     convergence_checker)
-        root = Node()
-        problem.save_state(root)
+
+        orig = Node()
+        problem.save_state(orig)
         try:
             if self.is_dispatcher:
-                if initialize_queue is None:
-                    root_ = Node()
-                    root_.tree_depth = 0
-                    root_.queue_priority = 0
-                    root_.bound = problem.unbounded_objective()
-                    root_.objective = best_objective
-                    root_.tree_id = 0
-                    root_.state = root.state
-                    initialize_queue = DispatcherQueueData(
-                        nodes=[root_],
-                        next_tree_id=1)
                 if log is _notset:
                     log = get_simple_logger()
                 if not isinstance(queue_strategy,
@@ -929,21 +964,41 @@ class Solver(object):
                     for key_ in sorted(_solve_defaults):
                         if key_ == 'log':
                             continue
-                        elif key_ == 'best_objective':
-                            continue
-                        elif key_ == 'initialize_queue':
-                            continue
-                        val_ = _solve_defaults[key_]
-                        if locals_[key_] != val_:
+                        default_ = _solve_defaults[key_]
+                        val_ = locals_[key_]
+                        if key_ == 'best_objective':
+                            default_ = problem.infeasible_objective()
+                        if val_ != default_:
                             if not changed:
                                 log.info('\nUsing non-default solver options:')
                             changed = True
+                            if key_ == 'log':
+                                default_ = "<console>"
+                            elif key_ == 'initialize_queue':
+                                default_ = "<root>"
+                                val_ = "Queue(size=%s)" % (len(val_.nodes))
+                            elif key_ == 'best_node':
+                                val_ = "Node(objective=%s)" % (val_.objective)
                             log.info(' - %s: %s (default: %s)'
-                                     % (key_, locals_[key_], val_))
+                                     % (key_, val_, default_))
                     if changed:
                         log.info('')
+                if initialize_queue is None:
+                    root = Node()
+                    root.tree_depth = 0
+                    root.queue_priority = 0
+                    root.bound = problem.unbounded_objective()
+                    root.objective = problem.infeasible_objective()
+                    root.tree_id = 0
+                    root.state = orig.state
+                    initialize_queue = DispatcherQueueData(
+                        nodes=[root],
+                        next_tree_id=1,
+                        worst_terminal_bound=None,
+                        sense=convergence_checker.sense)
                 self._disp.initialize(
                     best_objective,
+                    best_node,
                     initialize_queue,
                     queue_strategy,
                     convergence_checker,
@@ -976,10 +1031,12 @@ class Solver(object):
                 with MPI_InterruptHandler(handler):
                     tmp = self._solve(problem,
                                       best_objective,
+                                      best_node,
                                       disable_objective_call,
                                       convergence_checker,
                                       results)
             (results.objective,
+             results.best_node,
              results.bound,
              results.termination_condition,
              self._global_solve_info) = tmp
@@ -991,7 +1048,7 @@ class Solver(object):
             sys.stderr.flush()
             raise
         finally:
-            problem.load_state(root)
+            problem.load_state(orig)
         self._wall_time = self._time() - self._solve_start
         results.wall_time = self._wall_time
 

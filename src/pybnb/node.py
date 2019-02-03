@@ -3,6 +3,8 @@ Branch-and-bound node implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+import uuid
+
 from pybnb.configuration import config
 
 import six
@@ -61,6 +63,7 @@ class _SerializedNode(object):
                  "parent_tree_id",
                  "tree_depth",
                  "queue_priority",
+                 "_uuid",
                  "data")
     def __init__(self, slots):
         (self.objective,
@@ -69,7 +72,11 @@ class _SerializedNode(object):
          self.parent_tree_id,
          self.tree_depth,
          self.queue_priority,
+         self._uuid,
          self.data) = slots
+
+    def _generate_uuid(self):
+        self._uuid = uuid.uuid4().hex
 
     @property
     def slots(self):
@@ -79,6 +86,7 @@ class _SerializedNode(object):
                 self.parent_tree_id,
                 self.tree_depth,
                 self.queue_priority,
+                self._uuid,
                 self.data)
 
     @staticmethod
@@ -89,6 +97,7 @@ class _SerializedNode(object):
                 node.parent_tree_id,
                 node.tree_depth,
                 node.queue_priority,
+                node._uuid,
                 dumps(node.state))
 
     @classmethod
@@ -104,6 +113,7 @@ class _SerializedNode(object):
          node.parent_tree_id,
          node.tree_depth,
          node.queue_priority,
+         node._uuid,
          node.state) = slots
         node.state = loads(node.state)
         return node
@@ -134,6 +144,7 @@ class Node(object):
                  "parent_tree_id",
                  "tree_depth",
                  "queue_priority",
+                 "_uuid",
                  "state")
 
     def __init__(self):
@@ -143,7 +154,11 @@ class Node(object):
         self.parent_tree_id = None
         self.tree_depth = 0
         self.queue_priority = None
+        self._uuid = None
         self.state = None
+
+    def _generate_uuid(self):
+        self._uuid = uuid.uuid4().hex
 
     def resize(self, *args, **kwds):
         raise NotImplementedError(
