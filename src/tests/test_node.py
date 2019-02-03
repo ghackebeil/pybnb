@@ -92,6 +92,7 @@ Node(objective=-1,
         node.parent_tree_id = 0
         node.tree_depth = -1
         node.queue_priority = (1,2,3)
+        node._uuid = None
         node.state = 'a'
         s = _SerializedNode.from_node(node)
         assert s.objective == node.objective
@@ -100,7 +101,10 @@ Node(objective=-1,
         assert s.parent_tree_id == node.parent_tree_id
         assert s.tree_depth == node.tree_depth
         assert s.queue_priority == node.queue_priority
+        assert s._uuid is None
         assert s.data is not None
+        s._generate_uuid()
+        assert s._uuid is not None
         node_ = s.restore_node(s.slots)
         assert node_.objective == node.objective
         assert node_.bound == node.bound
@@ -109,3 +113,4 @@ Node(objective=-1,
         assert node_.tree_depth == node.tree_depth
         assert node_.queue_priority == node.queue_priority
         assert node_.state == node.state
+        assert node_._uuid == s._uuid

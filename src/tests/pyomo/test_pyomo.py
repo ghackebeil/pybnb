@@ -168,6 +168,36 @@ class Test(object):
         assert con.body is model.objective
         assert con.ub == 100
 
+    def test_sense(self):
+        class Max(PyomoProblem):
+            def __init__(self):
+                self._pyomo_model = pmo.block()
+                self._pyomo_model.o = pmo.objective(
+                    sense=pmo.maximize)
+                self._pyomo_model_objective = self._pyomo_model.o
+                super(Max, self).__init__()
+            @property
+            def pyomo_model(self):
+                return self._pyomo_model
+            @property
+            def pyomo_model_objective(self):
+                return self._pyomo_model_objective
+        assert Max().sense() == pybnb.maximize
+        class Min(PyomoProblem):
+            def __init__(self):
+                self._pyomo_model = pmo.block()
+                self._pyomo_model.o = pmo.objective(
+                    sense=pmo.minimize)
+                self._pyomo_model_objective = self._pyomo_model.o
+                super(Min, self).__init__()
+            @property
+            def pyomo_model(self):
+                return self._pyomo_model
+            @property
+            def pyomo_model_objective(self):
+                return self._pyomo_model_objective
+        assert Min().sense() == pybnb.minimize
+
     def test_RangeReductionProblem(self):
         class Junk(PyomoProblem):
             def __init__(self):

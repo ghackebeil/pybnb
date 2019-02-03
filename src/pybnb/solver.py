@@ -949,8 +949,6 @@ class Solver(object):
                 if not isinstance(queue_strategy,
                                   (six.string_types,
                                    QueueStrategy)):
-                    for qs in queue_strategy:
-                        print(qs, isinstance(qs, QueueStrategy))
                     queue_strategy = tuple(qs.value \
                         if isinstance(qs, QueueStrategy) else qs
                         for qs in queue_strategy)
@@ -972,9 +970,7 @@ class Solver(object):
                             if not changed:
                                 log.info('\nUsing non-default solver options:')
                             changed = True
-                            if key_ == 'log':
-                                default_ = "<console>"
-                            elif key_ == 'initialize_queue':
+                            if key_ == 'initialize_queue':
                                 default_ = "<root>"
                                 val_ = "Queue(size=%s)" % (len(val_.nodes))
                             elif key_ == 'best_node':

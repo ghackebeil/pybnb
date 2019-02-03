@@ -316,7 +316,6 @@ class _SolveInfo(object):
 class _ProblemWithSolveInfoCollection(Problem):
     """A Problem objects that keeps track of statistics used
     by the solver"""
-
     def __init__(self):
         self._clock = None
         self._solve_info = None
@@ -331,7 +330,6 @@ class _ProblemWithSolveInfoCollection(Problem):
 class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
     """A wrapper for Problem objects that collects statistics
     on methods called during the solve."""
-
     def __init__(self, problem):
         self._problem = problem
         super(_SimpleSolveInfoCollector, self).__init__()
