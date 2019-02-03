@@ -198,9 +198,9 @@ class Test(object):
         assert junk.pyomo_object_to_cid[junk.pyomo_model.r] == ('r',)
         assert junk.cid_to_pyomo_object[('r',)] is junk.pyomo_model.r
 
-        rr_junk = RangeReductionProblem(junk, pybnb.inf)
-        assert rr_junk.objective() == pybnb.inf
+        rr_junk = RangeReductionProblem(junk)
+        assert rr_junk._best_objective == pybnb.inf
         rr_junk.notify_new_best_objective_received(1)
-        assert rr_junk.objective() == 1
+        assert rr_junk._best_objective == 1
         rr_junk.notify_new_best_objective(2)
-        assert rr_junk.objective() == 2
+        assert rr_junk._best_objective == 2

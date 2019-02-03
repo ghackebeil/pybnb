@@ -34,7 +34,8 @@ class McCormickEnvelope(pmo.constraint_tuple):
         self.update_constraints()
 
     def update_constraints(self):
-        """Rebuild constraints using current domain variable bounds"""
+        """Rebuild constraints using current domain variable
+        bounds"""
         x, y, z = self.x, self.y, self.z
         assert x.has_lb() and x.has_ub()
         assert y.has_lb() and y.has_ub()
@@ -63,7 +64,8 @@ class SquaredEnvelope(pmo.constraint_tuple):
         self.update_constraints()
 
     def update_constraints(self):
-        """Rebuild constraints using current domain variable bounds"""
+        """Rebuild constraints using current domain variable
+        bounds"""
         x, z = self.x, self.z
         assert x.has_lb() and x.has_ub()
         self[1].body = z - (x.lb + x.ub)*x
@@ -164,7 +166,8 @@ class Rosenbrock2D(PyomoProblem):
         # constraints for x2y. After that, they are no
         # longer needed as they are enforced by the
         # SquaredEnvelope constraints.
-        self._model.x2.bounds = self._model.x2_c.derived_output_bounds()
+        self._model.x2.bounds = \
+            self._model.x2_c.derived_output_bounds()
         self._model.x2y_c.update_constraints()
         self._model.x2.bounds = (-pybnb.inf,
                                  pybnb.inf)
@@ -185,8 +188,7 @@ class Rosenbrock2D(PyomoProblem):
     # Implement Problem abstract methods
     #
 
-    def sense(self):
-        return pybnb.minimize
+    #def sense(self): # implemented by PyomoProblem base class
 
     def objective(self):
         self.setup_model_for_objective()
