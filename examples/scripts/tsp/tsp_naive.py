@@ -47,10 +47,6 @@ class TSP_Naive(pybnb.Problem):
         self._N = len(adj)
         # state that changes during the solve
         self._path = [0]
-        # these will be set to the best solution
-        # on all processes when the solve completes
-        self._best_tour = None
-        self._best_cost = None
 
     #
     # Implement Problem abstract methods
@@ -128,47 +124,18 @@ class TSP_Naive(pybnb.Problem):
                 child.state = self._path + [v]
                 yield child
 
-    def notify_solve_begins(self,
-                            comm,
-                            worker_comm,
-                            convergence_checker):
-        self._best_tour = None
-        self._best_cost = None
-
-    def notify_new_best_objective_received(self,
-                                           objective):
-        pass
-
-    def notify_new_best_objective(self,
-                                  objective):
-        # convert the path to a tour and save it
-        self._best_tour = list(self._path)
-        self._best_tour.append(self._path[0])
-        self._best_cost = objective
-
     def notify_solve_finished(self,
                               comm,
                               worker_comm,
                               results):
-        # determine who is storing the best solution and, if
-        # there is one, broadcast it to everyone and place
-        # it on the results object
-        if (comm is not None) and \
-           (comm.size > 1):
-            import mpi4py.MPI
-            cost = self.infeasible_objective()
-            tour = None
-            if self._best_cost is not None:
-                cost = self._best_cost
-                tour = self._best_tour
-            assert self.sense() == pybnb.minimize
-            cost, src_rank = comm.allreduce(
-                sendobj=(cost, comm.rank),
-                op=mpi4py.MPI.MINLOC)
-            if cost != self.infeasible_objective():
-                self._best_tour = comm.bcast(tour, root=src_rank)
-                self._best_cost = cost
-        results.tour = self._best_tour
+        tour = None
+        if (results.best_node is not None) and \
+           (results.best_node.state is not None):
+            path = results.best_node.state
+            tour_ = path + [path[0]]
+            tour = {'cost': results.best_node.objective,
+                    'tour': tour_}
+        results.tour = tour
 
 if __name__ == "__main__":
     import argparse
