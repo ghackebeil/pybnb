@@ -78,8 +78,8 @@ class Problem(object):
         """
         raise NotImplementedError()
 
-    def branch(self, node):                #pragma:nocover
-        """Returns a list of :class:`pybnb.node.Node`
+    def branch(self):                #pragma:nocover
+        """Returns a list of :class:`Node <pybnb.node.Node>`
         objects that partition the node state into zero or
         more children. This method can also be defined as a
         generator.
@@ -362,9 +362,9 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         self._solve_info._increment_bound_stat(stop-start, 1)
         return tmp
 
-    def branch(self, node):
+    def branch(self):
         start = self._clock()
-        for item in self._problem.branch(node):
+        for item in self._problem.branch():
             yield item
         stop = self._clock()
         self._solve_info._increment_branch_stat(stop-start, 1)

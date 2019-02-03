@@ -77,14 +77,14 @@ class Lipschitz1D(pybnb.Problem):
         self._fM_cached = None
         assert self._xL <= self._xM <= self._xU
 
-    def branch(self, node):
-        child = node.new_child()
+    def branch(self):
+        child = pybnb.Node()
         child.state = (self._xL,
                        self._xM,
                        self._fL_cached,
                        self._fM_cached)
         yield child
-        child = node.new_child()
+        child = pybnb.Node()
         child.state = (self._xM,
                        self._xU,
                        self._fM_cached,

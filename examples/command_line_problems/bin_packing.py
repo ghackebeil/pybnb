@@ -84,7 +84,7 @@ class BinPacking(pybnb.Problem):
                     return False
         return True
 
-    def _branch_y(self, node):
+    def _branch_y(self):
 
         N = range(len(self.W))
         for i in N:
@@ -115,8 +115,8 @@ class BinPacking(pybnb.Problem):
         orig_bounds.update((xij, xij.bounds)
                            for xij in self.model.x.components())
 
-        children = [node.new_child(),
-                    node.new_child()]
+        children = [pybnb.Node(),
+                    pybnb.Node()]
 
         # first branch: fix this bin on
         self.model.y[i].lb = self.model.y[i].ub = 1
@@ -137,7 +137,7 @@ class BinPacking(pybnb.Problem):
 
         return children
 
-    def _branch_x(self, node):
+    def _branch_x(self):
         N = range(len(self.W))
         orig_bounds = pmo.ComponentMap()
         orig_bounds.update((yi, yi.bounds)
@@ -179,8 +179,8 @@ class BinPacking(pybnb.Problem):
             return ()
 
         assert bv is not None
-        children = [node.new_child(),
-                    node.new_child()]
+        children = [pybnb.Node(),
+                    pybnb.Node()]
         bv.lb = bv.ub = 1
         self.save_state(children[0])
         bv.lb = bv.ub = 0
@@ -300,13 +300,13 @@ class BinPacking(pybnb.Problem):
                 vi.bounds = node.state[k]
                 k += 1
 
-    def branch(self, node):
+    def branch(self):
         # try to branch on y
-        children = self._branch_y(node)
+        children = self._branch_y()
         if len(children):
             return children
         # otherwise, branch on x
-        return self._branch_x(node)
+        return self._branch_x()
 
 if __name__ == "__main__":
     import pybnb.misc

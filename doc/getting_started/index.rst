@@ -68,7 +68,7 @@ at least the six required methods shown below.
        def bound(self): ...
        def save_state(self, node): ...
        def load_state(self, node): ...
-       def branch(self, node): ...
+       def branch(self): ...
        # optional methods
        def notify_solve_begins(self,
                                comm,
@@ -156,11 +156,11 @@ description of each of the required methods.
  - :func:`Problem.load_state(node) <pybnb.problem.Problem.load_state>`
 
    This method should load the problem state stored on the
-   the :attr:`state <pybnb.node.Node.state>` attribute of
-   the node argument. The code block below shows an example
-   pair of :func:`save_state
-   <pybnb.problem.Problem.save_state>` and :func:`load_state
-   <pybnb.problem.Problem.load_state>` implementations.
+   :attr:`state <pybnb.node.Node.state>` attribute of the
+   node argument. The code block below shows an example pair
+   of :func:`save_state <pybnb.problem.Problem.save_state>`
+   and :func:`load_state <pybnb.problem.Problem.load_state>`
+   implementations.
 
    .. code-block:: python
 
@@ -173,36 +173,36 @@ description of each of the required methods.
            def load_state(self, node):
                (self._L, self._U) = node.state
 
- - :func:`Problem.branch(node) <pybnb.problem.Problem.branch>`
+ - :func:`Problem.branch() <pybnb.problem.Problem.branch>`
 
    This method should partition the problem domain defined
-   within the user state on the `node` object into zero or
-   more child states and return them as new node objects. A
-   child node should be created by calling
-   :func:`node.new_child()
-   <pybnb.node.Node.new_child>`. Note that for the branching
-   process to make sense in the context of a
-   branch-and-bound solve, the bound computed from the child
-   node states should improve (or not be worse than) the
-   bound for the parent node. Once the child bound is
-   computed, the solver will issue a warning if it is found
-   to be worse than the bound from the parent node, as this
-   is indicative of a programming error or other numerical
+   by the current user state into zero or more child states
+   and return them on new nodes. A child node can be created
+   by directly instantiating a :class:`pybnb.Node
+   <pybnb.node.Node>` object. Note that for the branching
+   process to make sense, the bound computed from the child
+   states should improve (or not be worse than) the bound
+   for their parent node. Once the child bound is computed,
+   the solver will issue a warning if it is found to be
+   worse than the bound from its parent node, as this is
+   indicative of a programming error or other numerical
    issues.
 
-   When this method is called, the :attr:`node.bound
-   <pybnb.node.Node.bound>` and :attr:`node.objective
-   <pybnb.node.Node.objective>` attributes will have been
-   set to the value returned from :func:`Problem.bound()
-   <pybnb.problem.Problem.bound>` and
-   :func:`Problem.objective()
-   <pybnb.problem.Problem.objective>`, respectively.  Any
-   child nodes returned from :func:`node.new_child()
-   <pybnb.node.Node.new_child>` will inherit this bound and
-   objective, which may affect their prioritization in the
-   global work queue. As user can assign a new value to one
-   or both of these attributes before returning a child
-   node.
+   Note that any child nodes returned from
+   :func:`Problem.branch() <pybnb.problem.Problem.branch>`
+   will automatically be assigned the bound and objective
+   from their parent for potential use in determining their
+   prioritization in the global work queue. Users can
+   override this by manually assigning a value to one or
+   both of these node attributes before yielding them from
+   the branch method.
+
+   Additionally, further control over the prioritization of
+   a child node can be achieved by setting the
+   ``queue_strategy`` solve option to "custom", and then
+   directly assigning a value to the :attr:`queue_priority
+   <pybnb.node.Node.queue_priority>` attribute of the child
+   node before it is yielded.
 
 How the Solver Calls the Problem Methods
 ----------------------------------------
@@ -241,7 +241,7 @@ methods are called.
                     problem.notify_new_best_node(node=node,
                                                  current=True)
                 if <conditional_4>:
-                    children = problem.branch(node)
+                    children = problem.branch()
                     for child in children:
                         if <conditional_5>:
                             problem.notify_new_best_node(node=child,

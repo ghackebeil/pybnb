@@ -250,8 +250,8 @@ class RangeReductionProblem(Problem):
     def load_state(self, node):
         self.problem.load_state(node)
 
-    def branch(self, node):
-        return self.problem.branch(node)
+    def branch(self):
+        return self.problem.branch()
 
     def notify_new_best_node(self,
                              node,

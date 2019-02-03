@@ -19,9 +19,9 @@ class DelayedUnboundedMin(pybnb.Problem):
         pass
     def load_state(self, node):
         self.tree_id = node.tree_id
-    def branch(self, node):
-        yield node.new_child()
-        yield node.new_child()
-        yield node.new_child()
-        yield node.new_child()
-        yield node.new_child()
+    def branch(self):
+        yield pybnb.Node()
+        yield pybnb.Node()
+        yield pybnb.Node()
+        yield pybnb.Node()
+        yield pybnb.Node()

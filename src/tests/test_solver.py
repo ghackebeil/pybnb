@@ -32,7 +32,7 @@ class DummyProblem(Problem):
     def bound(self): return 0
     def save_state(self, node): pass
     def load_state(self, node): pass
-    def branch(self, node): raise NotImplementedError()
+    def branch(self): raise NotImplementedError()
 
 class _DummyComm_Size1(object):
     size = 1
@@ -54,6 +54,21 @@ class TestSolverResults(object):
  - nodes: None
  - wall_time: None
  - best_node: None
+"""
+        results.best_node = Node()
+        out = StringIO()
+        results.pprint(stream=out)
+        assert out.getvalue() == \
+            """solver results:
+ - solution_status: None
+ - termination_condition: None
+ - objective: None
+ - bound: None
+ - absolute_gap: None
+ - relative_gap: None
+ - nodes: None
+ - wall_time: None
+ - best_node: Node(objective=None)
 """
         results.solution_status = \
             SolutionStatus.optimal

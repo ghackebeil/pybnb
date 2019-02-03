@@ -69,15 +69,22 @@ class BinaryKnapsack(pybnb.Problem):
         assert self._weight <= self._W
         assert self._level <= self._n
 
-    def branch(self, node):
+    def branch(self):
         assert len(self._choices) < self._n
         for level in range(self._level, self._n):
             i = self._sorted_order[level]
             child_weight = self._weight + self._w[i]
             if child_weight <= self._W:
-                child = node.new_child()
+                child_value = self._value + self._v[i]
+                child = pybnb.Node()
+                # we know the child objective value, so
+                # assign it to the child node rather than
+                # letting it inherit the parent objective
+                # value (this may be useful for queue
+                # prioritization)
+                child.objective = child_value
                 child.state = (child_weight,
-                               self._value + self._v[i],
+                               child_value,
                                level + 1,
                                self._choices + [i])
                 yield child

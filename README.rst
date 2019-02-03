@@ -35,11 +35,11 @@ Quick Start
           node.state = self.bounds
       def load_state(self, node):
           self.bounds = node.state
-      def branch(self, node):
+      def branch(self):
           L, U = self.bounds
           mid = 0.5 * (L + U)
           for l,u in [(L,mid), (mid,U)]:
-              child = node.new_child()
+              child = pybnb.Node()
               child.state = (l,u)
               yield child
 

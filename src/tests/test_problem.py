@@ -39,7 +39,7 @@ class TestProblem(object):
         with pytest.raises(NotImplementedError):
             p.save_state(None)
         with pytest.raises(NotImplementedError):
-            p.branch(None)
+            p.branch()
         p.notify_solve_begins(None, None, None)
         p.notify_new_best_node(None, None)
         p.notify_solve_finished(None, None, None)
@@ -345,7 +345,7 @@ class Test_SolveInfo(object):
             def load_state(self, node):
                 time.sleep(0.01)
                 self.d['load_state'] = True
-            def branch(self, node):
+            def branch(self):
                 time.sleep(0.01)
                 self.d['branch'] = True
                 return ()
@@ -511,7 +511,7 @@ class Test_SolveInfo(object):
         assert info.branch_call_count == 0
         assert info.total_load_state_time > 0
         assert info.load_state_call_count == 1
-        list(p.branch(None))
+        list(p.branch())
         assert j.d['sense'] == True
         assert j.d['objective'] == True
         assert j.d['bound'] == True

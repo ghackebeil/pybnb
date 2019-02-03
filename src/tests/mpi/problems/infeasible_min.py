@@ -36,14 +36,14 @@ class InfeasibleMin(pybnb.Problem):
     def load_state(self, node):
         (self._xL, self._xU) = node.state
 
-    def branch(self, node):
+    def branch(self):
         xL, xU = self._xL, self._xU
         if (xU - xL) <= self._branching_abstol:
             return
         mid = 0.5 * (xL + xU)
-        child = node.new_child()
+        child = pybnb.Node()
         child.state = (xL, mid)
         yield child
-        child = node.new_child()
+        child = pybnb.Node()
         child.state = (mid, xU)
         yield child

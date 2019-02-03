@@ -198,8 +198,11 @@ class SolverResults(object):
                                       'relative_gap'):
                             val = "%.7g" % (val)
                         elif name == "best_node":
-                            val = ("Node(objective=%s)"
-                                   % (val.objective))
+                            if val.objective is not None:
+                                val = ("Node(objective=%.7g)"
+                                       % (val.objective))
+                            else:
+                                val = "Node(objective=None)"
                     else:
                         if name == "best_node":
                             val = dumps(val)
@@ -524,21 +527,16 @@ class Solver(object):
                     convergence_checker.eligible_to_branch(
                         bound,
                         objective):
-                    clist = problem.branch(working_node)
+                    clist = problem.branch()
                     for child in clist:
                         children.append(child)
-                        assert child.parent_tree_id == current_tree_id
+                        assert child.parent_tree_id is None
+                        child.parent_tree_id = current_tree_id
                         assert child.tree_id is None
-                        assert child.tree_depth == current_tree_depth + 1
-                        assert child.bound is not None
-                        updated = self._check_update_best_node(
-                            convergence_checker,
-                            child)
-                        if updated:
-                            problem.notify_new_best_node(
-                                node=self._best_node,
-                                current=False)
-                        if convergence_checker.bound_worsened(
+                        child.tree_depth = current_tree_depth + 1
+                        if child.bound is None:
+                            child.bound = bound
+                        elif convergence_checker.bound_worsened(
                                 child.bound,
                                 working_node.bound):    #pragma:nocover
                             self._disp.log_warning(
@@ -548,6 +546,14 @@ class Solver(object):
                                 "(child=%r, parent=%r)"
                                 % (child.bound,
                                    working_node.bound))
+                        if child.objective is None:
+                            child.objective = objective
+                        elif self._check_update_best_node(
+                                convergence_checker,
+                                child):
+                            problem.notify_new_best_node(
+                                node=self._best_node,
+                                current=False)
 
         assert len(working_node) == 3
         global_bound = working_node[0]
@@ -985,7 +991,7 @@ class Solver(object):
                                 default_ = "<root>"
                                 val_ = "Queue(size=%s)" % (len(val_.nodes))
                             elif key_ == 'best_node':
-                                val_ = "Node(objective=%s)" % (val_.objective)
+                                val_ = "Node(objective=%.7g)" % (val_.objective)
                             log.info(' - %s: %s (default: %s)'
                                      % (key_, val_, default_))
                     if changed:
@@ -1016,25 +1022,25 @@ class Solver(object):
                     log_new_incumbent)
             if not self.is_worker:
                 def handler(signum, frame):       #pragma:nocover
+                    self._disp.termination_condition = \
+                        TerminationCondition.interrupted
                     self._disp.log_warning(
                         "Solve interrupted by user. "
                         "Waiting for current worker "
                         "jobs to complete before "
                         "terminating the solve.")
-                    self._disp.termination_condition = \
-                        TerminationCondition.interrupted
                 with MPI_InterruptHandler(handler):
                     tmp = self._disp.serve()
             else:
                 def handler(signum, frame):       #pragma:nocover
                     if self.is_dispatcher:
+                        self._disp.termination_condition = \
+                            TerminationCondition.interrupted
                         self._disp.log_warning(
                             "Solve interrupted by user. "
                             "Waiting for current worker "
                             "jobs to complete before "
                             "terminating the solve.")
-                        self._disp.termination_condition = \
-                            TerminationCondition.interrupted
                 with MPI_InterruptHandler(handler):
                     tmp = self._solve(problem,
                                       best_objective,

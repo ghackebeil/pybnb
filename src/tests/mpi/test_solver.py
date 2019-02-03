@@ -17,7 +17,7 @@ class DummyProblem(Problem):
     def bound(self): return 0
     def save_state(self, node): pass
     def load_state(self, node): pass
-    def branch(self, node): return ()
+    def branch(self): return ()
 
 def _test_initialize_queue(comm):
     solver = Solver(comm=comm)

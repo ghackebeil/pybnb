@@ -108,7 +108,7 @@ class TSP_Naive(pybnb.Problem):
         self._path = node.state
         assert len(self._path) <= self._N
 
-    def branch(self, node):
+    def branch(self):
         # note that the branch method should never be called
         # with a path of length N as the objective and bound
         # converge exactly in that case.
@@ -120,7 +120,7 @@ class TSP_Naive(pybnb.Problem):
             # either no edge or u == v
             if (self._adj[u][v] is not None) and \
                (v not in visited):
-                child = node.new_child()
+                child = pybnb.Node()
                 child.state = self._path + [v]
                 yield child
 

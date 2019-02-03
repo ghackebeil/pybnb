@@ -113,20 +113,20 @@ class Discrete(pybnb.Problem):
     def load_state(self, node):
         self._heap_idx = node.state
 
-    def branch(self, node):
+    def branch(self):
         i = self._heap_idx
         assert i >= 0
         assert i < len(self._bound_bheap)
         left_idx =  2*i + 1
         if (left_idx < len(self._bound_bheap)) and \
            (self._bound_bheap[left_idx] is not None):
-            child = node.new_child()
+            child = pybnb.Node()
             child.state = left_idx
             yield child
         right_idx = 2*i + 2
         if (right_idx < len(self._bound_bheap)) and \
            (self._bound_bheap[right_idx] is not None):
-            child = node.new_child()
+            child = pybnb.Node()
             child.state = right_idx
             yield child
 
@@ -158,17 +158,17 @@ class SmallHeap(pybnb.Problem):
         node.state = self._heap_index
     def load_state(self, node):
         self._heap_index = node.state
-    def branch(self, node):
+    def branch(self):
         i = self._heap_index
         assert 0 <= i <= self._max_heap_index
         left_index =  2*i + 1
         if left_index <= self._max_heap_index:
-            child = node.new_child()
+            child = pybnb.Node()
             child.state = left_index
             yield child
         right_index = 2*i + 2
         if right_index <= self._max_heap_index:
-            child = node.new_child()
+            child = pybnb.Node()
             child.state = right_index
             yield child
 
