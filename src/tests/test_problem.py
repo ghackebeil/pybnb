@@ -41,7 +41,7 @@ class TestProblem(object):
         with pytest.raises(NotImplementedError):
             p.branch(None)
         p.notify_solve_begins(None, None, None)
-        p.notify_new_best_node(None)
+        p.notify_new_best_node(None, None)
         p.notify_solve_finished(None, None, None)
 
 class Test_SolveInfo(object):
@@ -354,7 +354,9 @@ class Test_SolveInfo(object):
                                       worker_comm,
                                       convergence_checker):
                 self.d['notify_solve_begins'] = True
-            def notify_new_best_node(self, node):
+            def notify_new_best_node(self,
+                                     node,
+                                     current):
                 self.d['notify_new_best_node'] = True
             def notify_solve_finished(self,
                                       comm,
@@ -551,7 +553,7 @@ class Test_SolveInfo(object):
         assert info.branch_call_count == 1
         assert info.total_load_state_time > 0
         assert info.load_state_call_count == 1
-        p.notify_new_best_node(None)
+        p.notify_new_best_node(None, None)
         assert j.d['sense'] == True
         assert j.d['objective'] == True
         assert j.d['bound'] == True

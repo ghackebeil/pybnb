@@ -354,6 +354,7 @@ class Solver(object):
         objective = node.objective
         assert objective is not None
         assert not math.isnan(objective)
+        updated = False
         if (objective != convergence_checker.infeasible_objective) and \
            ((self._best_node is None) or \
             convergence_checker.objective_improved(
@@ -363,6 +364,8 @@ class Solver(object):
                 node._generate_uuid()
             self._best_node = node
             self._best_node_updated = True
+            updated = True
+        return updated
 
     def _fill_results(self, results, convergence_checker):
         if results.bound == convergence_checker.infeasible_objective:
@@ -457,7 +460,8 @@ class Solver(object):
             if (self._best_node is not None) and \
                ((old_best_node is None) or \
                 (self._best_node._uuid != old_best_node._uuid)):
-                problem.notify_new_best_node(self._best_node)
+                problem.notify_new_best_node(node=self._best_node,
+                                             current=False)
             del old_best_node
             del new_best_objective
             del new_best_node
@@ -507,9 +511,12 @@ class Solver(object):
                         "WARNING: Local node bound is worse "
                         "than local node objective (bound=%r, "
                         "objective=%r)" % (bound, objective))
-                self._check_update_best_node(
+                updated = self._check_update_best_node(
                     convergence_checker,
                     working_node)
+                if updated:
+                    problem.notify_new_best_node(node=self._best_node,
+                                                 current=True)
                 if (objective != unbounded_objective) and \
                     convergence_checker.eligible_for_queue(
                         bound,
@@ -524,9 +531,13 @@ class Solver(object):
                         assert child.tree_id is None
                         assert child.tree_depth == current_tree_depth + 1
                         assert child.bound is not None
-                        self._check_update_best_node(
+                        updated = self._check_update_best_node(
                             convergence_checker,
                             child)
+                        if updated:
+                            problem.notify_new_best_node(
+                                node=self._best_node,
+                                current=False)
                         if convergence_checker.bound_worsened(
                                 child.bound,
                                 working_node.bound):    #pragma:nocover

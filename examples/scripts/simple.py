@@ -47,7 +47,9 @@ class Simple(pybnb.Problem):
                             worker_comm,
                             convergence_checker):
         pass
-    def notify_new_best_node(self, node):
+    def notify_new_best_node(self,
+                             node,
+                             current):
         pass
     def notify_solve_finished(self,
                               comm,

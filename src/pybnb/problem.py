@@ -151,7 +151,9 @@ class Problem(object):
         """
         pass
 
-    def notify_new_best_node(self, node):
+    def notify_new_best_node(self,
+                             node,
+                             current):
         """Called when a branch-and-bound solver receives a
         new best node from the dispatcher. The
         :class:`Problem <pybnb.problem.Problem>` base class
@@ -162,6 +164,11 @@ class Problem(object):
         ----------
         node : :class:`Node <pybnb.node.Node>`
             The new best node.
+        current : bool
+            Indicates whether or not the node argument is
+            the currently loaded node (from the most recent
+            :fun:`load_state <pybnb.problem.load_state>`
+            call).
         """
         pass
 
@@ -380,8 +387,11 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
             worker_comm,
             convergence_checker)
 
-    def notify_new_best_node(self, node):
-        self._problem.notify_new_best_node(node)
+    def notify_new_best_node(self,
+                             node,
+                             current):
+        self._problem.notify_new_best_node(node,
+                                           current)
 
     def notify_solve_finished(self,
                               comm,

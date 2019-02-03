@@ -232,8 +232,8 @@ class Test(object):
         assert rr_junk._best_objective == pybnb.inf
         node_ = pybnb.Node()
         node_.objective = 1
-        rr_junk.notify_new_best_node(node_)
+        rr_junk.notify_new_best_node(node_, False)
         assert rr_junk._best_objective == 1
         node_.objective = 2
-        rr_junk.notify_new_best_node(node_)
+        rr_junk.notify_new_best_node(node_, False)
         assert rr_junk._best_objective == 2
