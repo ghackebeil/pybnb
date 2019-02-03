@@ -4,7 +4,7 @@ pybnb.problem
 .. automodule:: pybnb.problem
 
   .. autoclass:: pybnb.problem.Problem
-    :members: infeasible_objective, unbounded_objective, notify_new_best_objective_received, notify_new_best_objective, notify_solve_finished
+    :members: infeasible_objective, unbounded_objective, notify_solve_begins, notify_new_best_node, notify_solve_finished
 
     .. automethod:: pybnb.problem.Problem.sense
       :abstractmethod:

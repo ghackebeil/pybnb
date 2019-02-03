@@ -167,7 +167,7 @@ class Problem(object):
         current : bool
             Indicates whether or not the node argument is
             the currently loaded node (from the most recent
-            :fun:`load_state <pybnb.problem.load_state>`
+            :func:`load_state <pybnb.problem.load_state>`
             call).
         """
         pass

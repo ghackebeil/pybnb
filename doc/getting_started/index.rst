@@ -75,11 +75,9 @@ at least the six required methods shown below.
                                worker_comm,
                                convergence_checker):
            ...
-       def notify_new_best_objective_received(self,
-                                              objective):
-           ...
-       def notify_new_best_objective(self,
-                                     objective):
+       def notify_new_best_node(self,
+                                node,
+                                current):
            ...
        def notify_solve_finished(self,
                                  comm,
@@ -231,18 +229,23 @@ methods are called.
         # solve loop
         #
         while <solve_not_terminated>:
-            node, best_objective = dispatcher.update(...)
+            node, best_node = dispatcher.update(...)
             if <conditional_1>:
-               problem.notify_new_best_objective_received(...)
+               problem.notify_new_best_node(node=best_node,
+                                            current=False)
             problem.load_state(node)
             bound = problem.bound()
             if <conditional_2>:
                 objective = problem.objective()
                 if <conditional_3>:
-                    best_objective = objective
-                    problem.notify_new_best_objective(...)
+                    problem.notify_new_best_node(node=node,
+                                                 current=True)
                 if <conditional_4>:
-                    problem.branch(node)
+                    children = problem.branch(node)
+                    for child in children:
+                        if <conditional_5>:
+                            problem.notify_new_best_node(node=child,
+                                                         current=False)
 
         #
         # solve finalization
@@ -424,46 +427,6 @@ assigned to the `initialize_queue` keyword of the
 processes that are not the dispatcher, this function returns
 `None`, which is the default value of the `initialize_queue`
 keyword.
-
-Saving the Optimal Solution
----------------------------
-
-At this time, the solver does not attempt to track any node
-data pertaining to the optimal solution. However, the
-following optional problem methods can be used to implement
-this kind of functionality:
-
- - :func:`notify_solve_begins
-   <pybnb.problem.Problem.notify_solve_begins>`
- - :func:`notify_new_best_objective_received
-   <pybnb.problem.Problem.notify_new_best_objective_received>`
- - :func:`notify_new_best_objective
-   <pybnb.problem.Problem.notify_new_best_objective>`
- - :func:`notify_solve_finished
-   <pybnb.problem.Problem.notify_solve_finished>`
-
-The code block below shows these methods being used to save
-a solution to the Traveling Salesperson Problem. The full
-example can be found `here
-<https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_naive.py>`_.
-
-.. literalinclude:: ../../examples/scripts/tsp/tsp_naive.py
-   :language: python
-   :lines: 131-171
-   :dedent: 4
-
-The code shown above saves the path loaded by the most
-recent call to :func:`load_state
-<pybnb.problem.Problem.load_state>` when the solver
-identifies it as a new best
-(:func:`notify_new_best_objective
-<pybnb.problem.Problem.notify_new_best_objective>`). Then,
-when the solve ends, it is determined which process is
-storing the optimal tour so it can be broadcast to everyone
-and placed on the results object that will be returned from
-the :func:`Solver.solve <pybnb.solver.Solver.solve>` method
-(:func:`notify_solve_finished
-<pybnb.problem.Problem.notify_solve_finished>`).
 
 .. _configuration:
 
