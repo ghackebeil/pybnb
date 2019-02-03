@@ -24,8 +24,7 @@ from pybnb.dispatcher_proxy import (ProcessType,
                                     DispatcherAction,
                                     DispatcherResponse,
                                     DispatcherProxy)
-from pybnb.node import (Node,
-                        _SerializedNode)
+from pybnb.node import _SerializedNode
 from pybnb.problem import _SolveInfo
 from pybnb.mpi_utils import Message
 from pybnb.priority_queue import PriorityQueueFactory
