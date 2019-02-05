@@ -65,6 +65,7 @@ class TestDispatcherSimple(object):
         convergence_checker = ConvergenceChecker(minimize)
 
         root = Node()
+        root.tree_depth = 0
         root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective
@@ -205,6 +206,7 @@ class TestDispatcherSimple(object):
         convergence_checker = ConvergenceChecker(minimize)
 
         root = Node()
+        root.tree_depth = 0
         root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective

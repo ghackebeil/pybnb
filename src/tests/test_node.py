@@ -31,7 +31,7 @@ class TestNode(object):
         assert node.bound is None
         assert node.tree_id is None
         assert node.parent_tree_id is None
-        assert node.tree_depth == 0
+        assert node.tree_depth is None
         assert node.queue_priority is None
         assert node.state is None
 
@@ -41,9 +41,10 @@ class TestNode(object):
         assert node.bound is None
         assert node.tree_id is None
         assert node.parent_tree_id is None
-        assert node.tree_depth == 0
+        assert node.tree_depth is None
         assert node.queue_priority is None
         assert node.state is None
+        node.tree_depth = 0
         node = node.new_child()
         assert node.objective is None
         assert node.bound is None

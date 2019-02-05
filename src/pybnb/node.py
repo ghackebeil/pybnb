@@ -152,7 +152,7 @@ class Node(object):
         self.bound = None
         self.tree_id = None
         self.parent_tree_id = None
-        self.tree_depth = 0
+        self.tree_depth = None
         self.queue_priority = None
         self._uuid = None
         self.state = None
