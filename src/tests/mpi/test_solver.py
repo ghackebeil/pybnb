@@ -35,7 +35,6 @@ def _test_initialize_queue(comm):
         assert results.wall_time is not None
         assert results.best_node is not None
         assert results.best_node.objective == results.objective
-        assert results.best_node.tree_id == 0
         assert results.best_node.tree_depth == 0
         results = solver.solve(DummyProblem(sense),
                                best_objective=(1 if (sense == minimize) else -1))
@@ -49,7 +48,6 @@ def _test_initialize_queue(comm):
         assert results.wall_time is not None
         assert results.best_node is not None
         assert results.best_node.objective == results.objective
-        assert results.best_node.tree_id == 0
         assert results.best_node.tree_depth == 0
         results = solver.solve(DummyProblem(sense),
                                best_objective=(1 if (sense == minimize) else -1),
@@ -97,13 +95,11 @@ def _test_initialize_queue(comm):
         if (comm is None) or (comm.size == 1):
             assert results.best_node is not best_node_
         assert results.best_node.objective == results.objective
-        assert results.best_node.tree_id == 0
         assert results.best_node.tree_depth == 0
 
     # empty initial queue
     queue = DispatcherQueueData(
         nodes=[],
-        next_tree_id=0,
         worst_terminal_bound=None,
         sense=minimize)
     for sense in (minimize, maximize):
@@ -184,13 +180,11 @@ def _test_initialize_queue(comm):
     # non-empty initial queue
     root = Node()
     root._uuid = 'abcd'
-    root.tree_id = 0
     root.tree_depth = 0
     root.objective = 0
     root.bound = 0
     queue = DispatcherQueueData(
         nodes=[root],
-        next_tree_id=1,
         worst_terminal_bound=None,
         sense=minimize)
     orig_objective = queue.nodes[0].objective

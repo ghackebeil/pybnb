@@ -27,8 +27,6 @@ def _new_child(node):
     child = Node()
     child.objective = node.objective
     child.bound = node.bound
-    assert child.tree_id is None
-    child.parent_tree_id = node.tree_id
     child.tree_depth = node.tree_depth + 1
     assert child.queue_priority is None
     assert child.state is None

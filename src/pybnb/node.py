@@ -59,8 +59,6 @@ class _SerializedNode(object):
     for lightweight handling of serialized nodes."""
     __slots__ = ("objective",
                  "bound",
-                 "tree_id",
-                 "parent_tree_id",
                  "tree_depth",
                  "queue_priority",
                  "_uuid",
@@ -68,8 +66,6 @@ class _SerializedNode(object):
     def __init__(self, slots):
         (self.objective,
          self.bound,
-         self.tree_id,
-         self.parent_tree_id,
          self.tree_depth,
          self.queue_priority,
          self._uuid,
@@ -82,8 +78,6 @@ class _SerializedNode(object):
     def slots(self):
         return (self.objective,
                 self.bound,
-                self.tree_id,
-                self.parent_tree_id,
                 self.tree_depth,
                 self.queue_priority,
                 self._uuid,
@@ -93,8 +87,6 @@ class _SerializedNode(object):
     def to_slots(node):
         return (node.objective,
                 node.bound,
-                node.tree_id,
-                node.parent_tree_id,
                 node.tree_depth,
                 node.queue_priority,
                 node._uuid,
@@ -109,8 +101,6 @@ class _SerializedNode(object):
         node = Node()
         (node.objective,
          node.bound,
-         node.tree_id,
-         node.parent_tree_id,
          node.tree_depth,
          node.queue_priority,
          node._uuid,
@@ -127,10 +117,6 @@ class Node(object):
         The objective value for the node.
     bound : float
         The bound value for the node.
-    tree_id : int
-        The tree id for the node (non-negative integer).
-    parent_tree_id : int
-        The tree id of the parent of the node (non-negative integer).
     tree_depth : int
         The tree depth of the node (0-based).
     queue_priority : float or tuple of floats
@@ -140,8 +126,6 @@ class Node(object):
     """
     __slots__ = ("objective",
                  "bound",
-                 "tree_id",
-                 "parent_tree_id",
                  "tree_depth",
                  "queue_priority",
                  "_uuid",
@@ -150,8 +134,6 @@ class Node(object):
     def __init__(self):
         self.objective = None
         self.bound = None
-        self.tree_id = None
-        self.parent_tree_id = None
         self.tree_depth = None
         self.queue_priority = None
         self._uuid = None
@@ -174,24 +156,16 @@ class Node(object):
         out = \
             ("Node(objective=%s,\n"
              "     bound=%s,\n"
-             "     tree_id=%s,\n"
-             "     parent_tree_id=%s,\n"
              "     tree_depth=%s,\n"
-             "     queue_priority=%s)"
              % (self.objective,
                 self.bound,
-                self.tree_id,
-                self.parent_tree_id,
-                self.tree_depth,
-                self.queue_priority))
+                self.tree_depth))
         return out
 
     def new_child(self):
         child = Node()
         child.objective = self.objective
         child.bound = self.bound
-        assert child.tree_id is None
-        child.parent_tree_id = self.tree_id
         child.tree_depth = self.tree_depth + 1
         assert child.queue_priority is None
         assert child.state is None

@@ -47,11 +47,8 @@ def _logging_check(comm):
         p.save_state(root)
         root.objective = p.infeasible_objective()
         root.bound = p.unbounded_objective()
-        assert root.tree_id is None
-        root.tree_id = 0
         initialize_queue = DispatcherQueueData(
             nodes=[root],
-            next_tree_id=1,
             worst_terminal_bound=None,
             sense=p.sense())
         out = StringIO()

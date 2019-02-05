@@ -198,7 +198,6 @@ def _test_heaps(comm):
         assert queue.bound() == -2
         assert queue.worst_terminal_bound == -2
         assert len(queue.nodes) == 0
-        assert queue.next_tree_id == 5
     results = solver.solve(problem,
                            initialize_queue=queue,
                            best_node=results.best_node)
@@ -215,7 +214,6 @@ def _test_heaps(comm):
         assert queue.bound() == -2
         assert queue.worst_terminal_bound == -2
         assert len(queue.nodes) == 0
-        assert queue.next_tree_id == 5
 
     for heap in gen_heaps(2):
         heap_bound = get_bound(heap)

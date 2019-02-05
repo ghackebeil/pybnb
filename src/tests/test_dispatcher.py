@@ -24,29 +24,25 @@ class TestDispatcherQueueData(object):
     def test_bound(self):
 
         for sense in (minimize, maximize):
-            queue = DispatcherQueueData([],0,None,sense)
+            queue = DispatcherQueueData([],
+                                        None,
+                                        sense)
             assert queue.nodes == []
-            assert queue.next_tree_id == 0
             assert queue.worst_terminal_bound is None
             assert queue.sense == sense
             assert queue.bound() is None
             queue = DispatcherQueueData([],
                                         0,
-                                        0,
                                         sense)
             assert queue.nodes == []
-            assert queue.next_tree_id == 0
             assert queue.worst_terminal_bound == 0
             assert queue.sense == sense
             assert queue.bound() == 0
             queue = DispatcherQueueData([Node()],
-                                        1,
                                         0,
                                         sense)
-            queue.nodes[0].tree_id = 0
             queue.nodes[0].bound = (-1 if (sense == minimize) else 1)
             assert len(queue.nodes) == 1
-            assert queue.next_tree_id == 1
             assert queue.worst_terminal_bound == 0
             assert queue.sense == sense
             assert queue.bound() == (-1 if (sense == minimize) else 1)
@@ -66,12 +62,10 @@ class TestDispatcherSimple(object):
 
         root = Node()
         root.tree_depth = 0
-        root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective
         queue = DispatcherQueueData(
             [root],
-            1,
             None,
             minimize)
 
@@ -207,12 +201,10 @@ class TestDispatcherSimple(object):
 
         root = Node()
         root.tree_depth = 0
-        root.tree_id = 0
         root.bound = convergence_checker.unbounded_objective
         root.objective = convergence_checker.infeasible_objective
         queue = DispatcherQueueData(
             [root],
-            1,
             None,
             minimize)
 
@@ -295,48 +287,9 @@ class TestDispatcherSimple(object):
         assert disp.best_objective == -2
         assert disp.best_node.objective == -1
         assert disp.best_node is root
-        # bad next tree id
-        queue = DispatcherQueueData(
-            [root],
-            1.4,
-            None,
-            minimize)
-        with pytest.raises(ValueError):
-            disp.initialize(
-                convergence_checker.infeasible_objective,
-                best_node_,
-                queue,
-                'bound',
-                convergence_checker,
-                node_limit,
-                time_limit,
-                log,
-                log_interval_seconds,
-                log_new_incumbent)
-        # bad next tree id relative to root
-        root.tree_id = 2
-        queue = DispatcherQueueData(
-            [root],
-            1,
-            None,
-            minimize)
-        with pytest.raises(ValueError):
-            disp.initialize(
-                convergence_checker.infeasible_objective,
-                best_node_,
-                queue,
-                'bound',
-                convergence_checker,
-                node_limit,
-                time_limit,
-                log,
-                log_interval_seconds,
-                log_new_incumbent)
         # bad objective sense
-        root.tree_id = 0
         queue = DispatcherQueueData(
             [root],
-            1,
             None,
             maximize)
         with pytest.raises(ValueError):

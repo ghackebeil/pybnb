@@ -89,7 +89,6 @@ class TestSolverResults(object):
         results.nodes = 1
         results.wall_time = 60
         results.best_node = Node()
-        results.best_node.tree_id = 2
         results.best_node.tree_depth = 3
         results.best_node.objective = 4
         out = StringIO()
@@ -136,8 +135,6 @@ class TestSolverResults(object):
         results.wall_time = 1.0
         results.best_node = Node()
         results.best_node.queue_priority = 12
-        results.best_node.parent_tree_id = 1
-        results.best_node.tree_id = 2
         results.best_node.tree_depth = 3
         results.best_node.state = (1,2)
         results.best_node.objective = 1.5
@@ -165,8 +162,6 @@ class TestSolverResults(object):
         assert type(x['wall_time']) is float
         best_node_ = loads(x['best_node'])
         assert best_node_.queue_priority == 12
-        assert best_node_.parent_tree_id == 1
-        assert best_node_.tree_id == 2
         assert best_node_.tree_depth == 3
         assert best_node_.state == (1,2)
         assert best_node_.objective == 1.5

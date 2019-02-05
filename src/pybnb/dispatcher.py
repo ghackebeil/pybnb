@@ -46,10 +46,6 @@ class DispatcherQueueData(object):
     ----------
     nodes : list
         A list of :class:`Node <pybnb.node.Node>` objects.
-    next_tree_id : int
-        The next tree_id that will be assigned to a
-        node. This must be an integer that is larger than
-        any tree_id in the nodes list.
     worst_terminal_bound : float or None
         The worst bound of any node where branching did not
         continue.
@@ -58,16 +54,13 @@ class DispatcherQueueData(object):
         this queue.
     """
     __slots__ = ("nodes",
-                 "next_tree_id",
                  "worst_terminal_bound",
                  "sense")
     def __init__(self,
                  nodes,
-                 next_tree_id,
                  worst_terminal_bound,
                  sense):
         self.nodes = nodes
-        self.next_tree_id = next_tree_id
         self.worst_terminal_bound = worst_terminal_bound
         self.sense = sense
         assert sense in (minimize, maximize)
@@ -330,19 +323,9 @@ class DispatcherBase(object):
         self.time_limit = None
         self.served_nodes_count = None
         self.worst_terminal_bound = None
-        self.next_tree_id = None
         self.clock = None
 
-    def _add_work_to_queue(self, node, set_tree_id=True):
-        if set_tree_id:
-            assert node.tree_id is None
-            node.tree_id = self.next_tree_id
-            self.next_tree_id += 1
-        else:
-            tree_id = node.tree_id
-            assert tree_id is not None
-            assert tree_id >= 0
-            assert tree_id < self.next_tree_id
+    def _add_work_to_queue(self, node):
         bound = node.bound
         if self.converger.eligible_for_queue(
                 bound,
@@ -509,13 +492,6 @@ class DispatcherBase(object):
         self.served_nodes_count = 0
         self.worst_terminal_bound = \
             initialize_queue.worst_terminal_bound
-        self.next_tree_id = initialize_queue.next_tree_id
-        if (type(self.next_tree_id) is not int) or \
-           (self.next_tree_id < 0):
-            raise ValueError(
-                "Invalid next_tree_id value: %r. "
-                "Must be a nonnegative integer."
-                % (self.next_tree_id))
         self.journalist = None
         if (log is not None) and (not log.disabled):
             self.journalist = StatusPrinter(
@@ -528,18 +504,7 @@ class DispatcherBase(object):
                     initialize_queue.nodes,
                     key=lambda n_: n_.objective))
             for node in initialize_queue.nodes:
-                if (type(node.tree_id) is not int) or \
-                   (node.tree_id < 0) or \
-                   (node.tree_id >= self.next_tree_id):
-                    raise ValueError(
-                        "Invalid node tree id: %s. "
-                        "Must be a non-negative integer "
-                        "that is strictly less than the "
-                        "provided next tree id (%s)."
-                        % (node.tree_id,
-                           self.next_tree_id))
-                self._add_work_to_queue(node,
-                                        set_tree_id=False)
+                self._add_work_to_queue(node)
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
@@ -574,7 +539,6 @@ class DispatcherBase(object):
         """
         return DispatcherQueueData(
             nodes=list(self.queue.items()),
-            next_tree_id=self.next_tree_id,
             worst_terminal_bound=self.worst_terminal_bound,
             sense=self.converger.sense)
 
@@ -764,8 +728,7 @@ class DispatcherLocal(DispatcherBase):
         if len(node_list):
             assert previous_bound is None
             for node in node_list:
-                self._add_work_to_queue(node,
-                                        set_tree_id=True)
+                self._add_work_to_queue(node)
         else:
             if not self.first_update:
                 assert previous_bound is not None
@@ -1050,7 +1013,6 @@ class DispatcherDistributed(DispatcherBase):
             nodes=[_SerializedNode.from_node(node) \
                    if (type(node) is not _SerializedNode) else node
                    for node in initialize_queue.nodes],
-            next_tree_id=initialize_queue.next_tree_id,
             worst_terminal_bound=initialize_queue.worst_terminal_bound,
             sense=initialize_queue.sense)
         super(DispatcherDistributed, self).initialize(
@@ -1141,8 +1103,7 @@ class DispatcherDistributed(DispatcherBase):
         if len(node_list):
             assert previous_bound is None
             for node in node_list:
-                self._add_work_to_queue(node,
-                                        set_tree_id=True)
+                self._add_work_to_queue(node)
         else:
             if not self.first_update[source]:
                 assert previous_bound is not None
@@ -1272,6 +1233,5 @@ class DispatcherDistributed(DispatcherBase):
             nodes.append(node_)
         return DispatcherQueueData(
             nodes=nodes,
-            next_tree_id=self.next_tree_id,
             worst_terminal_bound=self.worst_terminal_bound,
             sense=self.converger.sense)

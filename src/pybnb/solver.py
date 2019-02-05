@@ -161,7 +161,7 @@ class SolverResults(object):
         >>> import pybnb
         >>> results = pybnb.SolverResults()
         >>> results.best_node = pybnb.Node()
-        >>> results.best_node.tree_id = 123
+        >>> results.best_node.objective = 123
         >>> out = six.StringIO()
         >>> # the best_node is serialized
         >>> results.write(out)
@@ -169,7 +169,7 @@ class SolverResults(object):
         >>> results_dict = yaml.load(out.getvalue())
         >>> # de-serialize the best_node
         >>> best_node = pybnb.node.loads(results_dict['best_node'])
-        >>> assert best_node.tree_id == 123
+        >>> assert best_node.objective == 123
 
         """
         with as_stream(stream) as stream:
@@ -502,14 +502,15 @@ class Solver(object):
                 # make sure all processes have the exact same best
                 # objective value (not just subject to tolerances)
                 break
-            self._local_solve_info._increment_explored_nodes_stat(1)
-            self._local_solve_info._increment_queue_stat(
-                update_stop-update_start, 1)
+            if not is_nested_solve:
+                self._local_solve_info.\
+                    _increment_explored_nodes_stat(1)
+                self._local_solve_info.\
+                    _increment_queue_stat(
+                        update_stop-update_start, 1)
 
             bound = working_node.bound
-            current_tree_id = working_node.tree_id
             current_tree_depth = working_node.tree_depth
-            assert current_tree_id is not None
             assert current_tree_depth >= 0
 
             # we should not be receiving a node that
@@ -557,10 +558,9 @@ class Solver(object):
                     clist = problem.branch()
                     for child in clist:
                         children.append(child)
-                        assert child.parent_tree_id is None
-                        child.parent_tree_id = current_tree_id
-                        assert child.tree_id is None
-                        child.tree_depth = current_tree_depth + 1
+                        if child.tree_depth is None:
+                            child.tree_depth = current_tree_depth + 1
+                        assert child.tree_depth > current_tree_depth
                         if child.bound is None:
                             child.bound = bound
                         elif convergence_checker.bound_worsened(
@@ -1030,11 +1030,9 @@ class Solver(object):
                     root.queue_priority = 0
                     root.bound = problem.unbounded_objective()
                     root.objective = problem.infeasible_objective()
-                    root.tree_id = 0
                     root.state = orig.state
                     initialize_queue = DispatcherQueueData(
                         nodes=[root],
-                        next_tree_id=1,
                         worst_terminal_bound=None,
                         sense=convergence_checker.sense)
                 self._disp.initialize(

@@ -99,9 +99,8 @@ class Problem(object):
         start of the solve by all processes involved to
         collect the root node problem state, but it may be
         called additional times. When it is called for the
-        root node, the :attr:`node.tree_id <pybnb.node.Node.tree_id>`
-        and :attr:`node.parent_tree_id <pybnb.node.Node.parent_tree_id>`
-        will both be None.
+        root node, the :attr:`node.tree_depth <pybnb.node.Node.tree_depth>`
+        will be zero.
 
         Note
         ----

@@ -12,6 +12,8 @@ Changelog
   `load_state` and not some arbitrary node. Child nodes
   should be created using `pybnb.Node()` as opposed to
   `node.new_child()`.
+* Removing `tree_id` and `parent_tree_id` attributes from
+  the Node class.
 
 0.4.0 - 2019-01-31
 ~~~~~~~~~~~~~~~~~~

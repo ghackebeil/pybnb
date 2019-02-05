@@ -9,7 +9,7 @@ class DelayedUnboundedMin(pybnb.Problem):
     def sense(self):
         return pybnb.minimize
     def objective(self):
-        if self.tree_id >= 10:
+        if self._node.tree_depth > 1:
             return self.unbounded_objective()
         else:
             return 0
@@ -18,7 +18,7 @@ class DelayedUnboundedMin(pybnb.Problem):
     def save_state(self, node):
         pass
     def load_state(self, node):
-        self.tree_id = node.tree_id
+        self._node = node
     def branch(self):
         yield pybnb.Node()
         yield pybnb.Node()

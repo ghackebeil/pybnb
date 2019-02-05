@@ -76,7 +76,6 @@ def _execute_single_test(problem,
                  str(getattr(baseline, name))+")")
     if solver.is_dispatcher:
         q = solver.save_dispatcher_queue()
-        assert q.next_tree_id >= 0
         assert len(q.nodes) == solver._disp.queue.size()
         assert q.sense == solver._disp.converger.sense
         assert q.worst_terminal_bound == solver._disp.worst_terminal_bound
