@@ -2,14 +2,13 @@ import copy
 import logging
 import math
 
-from pybnb.node import Node
-from pybnb.dispatcher import (DispatcherQueueData,
-                              DispatcherLocal)
-from pybnb.misc import get_simple_logger
+from pybnb.dispatcher import DispatcherQueueData
 from pybnb.solver import Solver
 from pybnb.problem import _ProblemWithSolveInfoCollection
 
 class _RedirectHandler(logging.Handler):
+    """Redirects log messages with a WARNING level or above
+    to the provided dispatcher's log."""
 
     def __init__(self, dispatcher):
         super(_RedirectHandler, self).__init__()
