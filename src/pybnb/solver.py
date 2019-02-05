@@ -439,21 +439,24 @@ class Solver(object):
                disable_objective_call,
                convergence_checker,
                results):
+        from pybnb.futures import nested_solve
+        is_nested_solve = False
+        if isinstance(problem, nested_solve):
+            is_nested_solve = True
+        if not isinstance(problem, _ProblemWithSolveInfoCollection):
+            problem = _SimpleSolveInfoCollector(problem)
+            problem.set_clock(self._time)
+        problem.set_solve_info_object(self._local_solve_info)
+
+        assert best_objective is not None
+        self._best_objective = best_objective
+        self._best_node = best_node
         infeasible_objective = problem.infeasible_objective()
         assert infeasible_objective == \
             convergence_checker.infeasible_objective
         unbounded_objective = problem.unbounded_objective()
         assert unbounded_objective == \
             convergence_checker.unbounded_objective
-
-        assert best_objective is not None
-        self._best_objective = best_objective
-        self._best_node = best_node
-        if not isinstance(problem, _ProblemWithSolveInfoCollection):
-            problem = _SimpleSolveInfoCollector(problem)
-            problem.set_clock(self._time)
-        problem.set_solve_info_object(self._local_solve_info)
-
         first_update = True
         children = ()
         bound = None
@@ -468,7 +471,6 @@ class Solver(object):
             if self._best_node_updated:
                 new_best_node = self._best_node
             self._best_node_updated = False
-            first_update = False
             (stop,
              new_best_objective,
              new_best_node,
@@ -479,6 +481,9 @@ class Solver(object):
                  self._local_solve_info,
                  children)
             update_stop = self._time()
+
+            if first_update and is_nested_solve:
+                problem._initialize(self._disp, new_best_objective)
 
             old_best_node = self._best_node
             self._best_objective = new_best_objective
@@ -495,6 +500,7 @@ class Solver(object):
             del old_best_node
             del new_best_objective
             del new_best_node
+            first_update = False
 
             children = []
 
