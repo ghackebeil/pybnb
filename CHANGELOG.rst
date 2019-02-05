@@ -4,7 +4,14 @@ Changelog
 0.5.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
-* TODO
+* Tracking the best node and storing it on the results
+  object (#1, #3, #7)
+* Removing node argument from `branch` method of Problem
+  implementations. This makes it more apparent that
+  branching occurs for the node from the most recent
+  `load_state` and not some arbitrary node. Child nodes
+  should be created using `pybnb.Node()` as opposed to
+  `node.new_child()`.
 
 0.4.0 - 2019-01-31
 ~~~~~~~~~~~~~~~~~~

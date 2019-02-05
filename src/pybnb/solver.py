@@ -278,6 +278,33 @@ class Solver(object):
         (default: 0)
     """
 
+    def _check_for_old_branch_signature(self, problem):
+        if not self.is_dispatcher:
+            return
+        import inspect
+        import six
+        argname = None
+        if not six.PY2:
+            # py3 does not include selse argument of class methods
+            sig = inspect.signature(problem.branch)
+            if len(sig.parameters) == 1:
+                argname = list(sig.parameters.keys())[0]
+        else:
+            # py2 includes self argument of class methods
+            sig = inspect.getargspec(problem.branch)
+            if len(sig.args) == 2:
+                argname = sig.args[1]
+        if argname is not None:
+            raise TypeError("The pybnb solver has detected that "
+                            "the 'branch' method on your problem "
+                            "uses the old call signature compatible "
+                            "with pybnb 0.4.0 and earlier. To make "
+                            "your problem compatible with the most "
+                            "recent version of pybnb, please remove "
+                            "the '%s' argument from this method, and "
+                            "replace '%s.new_child()' with "
+                            "'pybnb.Node()'." % (argname, argname))
+
     def __init__(self,
                  comm=_notset,
                  dispatcher_rank=0):
@@ -926,6 +953,7 @@ class Solver(object):
         results : :class:`SolverResults`
             An object storing information about the solve.
         """
+        self._check_for_old_branch_signature(problem)
         self._reset_local_solve_stats()
         self._solve_start = self._time()
 

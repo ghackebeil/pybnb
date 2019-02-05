@@ -26,6 +26,14 @@ try:
 except ImportError:
     pass
 
+class BadBranchSignatureProblem(Problem):
+    def sense(self): return minimize
+    def objective(self): return 0
+    def bound(self): return 0
+    def save_state(self, node): pass
+    def load_state(self, node): pass
+    def branch(self, node): raise NotImplementedError()
+
 class DummyProblem(Problem):
     def sense(self): return minimize
     def objective(self): return 0
@@ -275,3 +283,9 @@ Average Worker Timing:
         solve(DummyProblem(),
               comm=None,
               best_node=node)
+
+    def test_bad_branch_signature(self):
+        problem = BadBranchSignatureProblem()
+        with pytest.raises(TypeError):
+            solve(problem,
+                  comm=None)
