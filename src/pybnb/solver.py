@@ -783,11 +783,11 @@ class Solver(object):
         dispatcher. For the serial case (no MPI), the single
         process is both a worker and a dispatcher. For the
         parallel case, exactly one process is a dispatcher
-        and all processes are workers. A **(W)** in the
-        parameter description indicates that it is only used
-        by worker processes (ignored otherwise). A **(D)**
-        in the parameter description indicates that it is
-        only used by the dispatcher process (ignored
+        and all other processes are workers. A **(W)** in
+        the parameter description indicates that it is only
+        used by worker processes (ignored otherwise). A
+        **(D)** in the parameter description indicates that
+        it is only used by the dispatcher process (ignored
         otherwise). An **(A)** indicates that it is used by
         all processes, and it is assumed the same value is
         provided for each process; otherwise, the behavior
