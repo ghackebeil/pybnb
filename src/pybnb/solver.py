@@ -282,7 +282,6 @@ class Solver(object):
         if not self.is_dispatcher:
             return
         import inspect
-        import six
         argname = None
         if not six.PY2:
             # py3 does not include selse argument of class methods

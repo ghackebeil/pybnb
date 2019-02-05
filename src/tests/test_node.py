@@ -69,8 +69,7 @@ class TestNode(object):
             """\
 Node(objective=-1,
      bound=-2,
-     tree_depth=3,
-     queue_priority=(1, 2, 3))"""
+     tree_depth=3)"""
 
     def test_serialization(self):
         node = Node()

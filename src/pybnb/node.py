@@ -156,7 +156,7 @@ class Node(object):
         out = \
             ("Node(objective=%s,\n"
              "     bound=%s,\n"
-             "     tree_depth=%s,\n"
+             "     tree_depth=%s)"
              % (self.objective,
                 self.bound,
                 self.tree_depth))
