@@ -389,10 +389,16 @@ class DispatcherBase(object):
                 check_termination_criteria(global_bound,
                                            self.best_objective)
             if self.termination_condition is None:
-                if (self.node_limit is not None) and \
-                   (self.served_nodes_count >= self.node_limit):
-                    self.termination_condition = \
-                        TerminationCondition.node_limit
+                if self.node_limit is not None:
+                    (served_nodes_count, explored_nodes_count, _) = \
+                        self._get_node_counts()
+                    # we need to check the explored count as
+                    # it may be greater than the served
+                    # count due to the use of a nested solver
+                    if (served_nodes_count >= self.node_limit) or \
+                       (explored_nodes_count >= self.node_limit):
+                        self.termination_condition = \
+                            TerminationCondition.node_limit
                 if self.termination_condition is None:
                     if (self.time_limit is not None) and \
                        ((self.clock() - self.start_time) >= self.time_limit):
