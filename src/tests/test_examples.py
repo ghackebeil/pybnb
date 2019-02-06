@@ -15,7 +15,7 @@ except ImportError:
 pyomo_available = False
 try:
     import pyomo.kernel as pmo
-    if getattr(pmo,'version_info',(0,)*3) >= (5,4,3):  #pragma:nocover
+    if getattr(pmo,"version_info",(0,)*3) >= (5,4,3):  #pragma:nocover
         pyomo_available = True
 except:                                                #pragma:nocover
     pass
@@ -29,7 +29,7 @@ if pyomo_available:                                    #pragma:nocover
     else:
         ipopt_available = \
             (ipopt.available(exception_flag=False)) and \
-            ((not hasattr(ipopt,'executable')) or \
+            ((not hasattr(ipopt,"executable")) or \
             (ipopt.executable() is not None))
 
 yaml_available = False
@@ -61,8 +61,18 @@ for fname in examples:
     basename = basename[:-3]
     tname = "test_"+basename
     bname = os.path.join(baselinedir,basename+".yaml")
-    tdict[tname] = (fname,bname)
+    tdict[tname] = (fname,bname,None)
 assert len(tdict) == len(examples)
+
+assert "test_binary_knapsack" in tdict
+assert len(tdict["test_binary_knapsack"]) == 3
+assert "test_binary_knapsack_nested" not in tdict
+tdict["test_binary_knapsack_nested"] = \
+    (tdict["test_binary_knapsack"][0],
+     tdict["test_binary_knapsack"][1],
+     ["--nested-solver",
+      "--nested-node-limit=10",
+      "--nested-queue-strategy=random"])
 
 scenarios = []
 for p in [1,2,4]:
@@ -85,7 +95,10 @@ def test_example(example_name, procs):
             pytest.skip("MPI is not available")
     if (not mpi4py_available) and (procs > 1):
         pytest.skip("MPI is not available")
-    filename, baseline_filename = tdict[example_name]
+    filename, baseline_filename, options = tdict[example_name]
+    cmd = ["python", filename]
+    if options is not None:
+        cmd.extend(options)
     assert os.path.exists(filename)
     fid, results_filename = tempfile.mkstemp()
     os.close(fid)
@@ -93,13 +106,16 @@ def test_example(example_name, procs):
         if procs == 1:
             if example_name in ("test_range_reduction_pyomo",
                                 "test_tsp_naive"):
-                rc = subprocess.call(['python', filename,
-                                      "--results-file", results_filename])
+                rc = subprocess.call(cmd + \
+                                     ["--results-file",
+                                      results_filename])
             elif example_name == "test_simple":
-                rc = subprocess.call(['python', filename])
+                rc = subprocess.call(cmd)
             else:
-                rc = subprocess.call(['python', filename, '--disable-mpi',
-                                      "--results-file", results_filename])
+                rc = subprocess.call(cmd + \
+                                     ["--disable-mpi",
+                                      "--results-file",
+                                      results_filename])
         else:
             assert procs > 1
             if subprocess.call(["mpirun",
@@ -107,16 +123,16 @@ def test_example(example_name, procs):
                                 "--version"],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT):
-                rc = subprocess.call(["mpirun",
-                                      "-np", str(procs),
-                                      'python', filename,
-                                      "--results-file", results_filename])
+                rc = subprocess.call(["mpirun","-np", str(procs)] + \
+                                     cmd + \
+                                     ["--results-file",
+                                      results_filename])
             else:
-                rc = subprocess.call(["mpirun",
-                                      "--allow-run-as-root",
-                                      "-np", str(procs),
-                                      'python', filename,
-                                      "--results-file", results_filename])
+                rc = subprocess.call(["mpirun", "--allow-run-as-root",
+                                      "-np", str(procs)] + \
+                                     cmd + \
+                                     ["--results-file",
+                                      results_filename])
         assert rc == 0
         if example_name == "test_simple":
             assert not os.path.exists(baseline_filename)
