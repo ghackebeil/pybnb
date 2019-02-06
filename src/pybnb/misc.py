@@ -368,14 +368,23 @@ def _run_command_line_solver(problem, args):
         nested_solver_defaults = get_default_args(
             pybnb.futures.NestedSolver.__init__)
         if args.nested_node_limit != \
-           nested_solver_defaults["node_limit"]:
-            assert False
+           nested_solver_defaults["node_limit"]:     #pragma:nocover
+            logging.getLogger("pybnb").warning(
+                "The user-specified --nested-node-limit "
+                "setting will be ignored. Did you forget the "
+                "--nested-solver flag?")
         if args.nested_time_limit != \
-           nested_solver_defaults["time_limit"]:
-            assert False
+           nested_solver_defaults["time_limit"]:     #pragma:nocover
+            logging.getLogger("pybnb").warning(
+                "The user-specified --nested-time-limit "
+                "setting will be ignored. Did you forget the "
+                "--nested-solver flag?")
         if args.nested_queue_strategy != \
-           nested_solver_defaults["queue_strategy"]:
-            assert False
+           nested_solver_defaults["queue_strategy"]: #pragma:nocover
+            logging.getLogger("pybnb").warning(
+                "The user-specified --nested-queue-strategy "
+                "setting will be ignored. Did you forget the "
+                "--nested-solver flag?")
     solve_kwds = dict(vars(args))
     del solve_kwds["disable_mpi"]
     del solve_kwds["profile"]
