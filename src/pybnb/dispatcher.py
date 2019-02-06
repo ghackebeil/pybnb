@@ -373,8 +373,7 @@ class DispatcherBase(object):
             self.converger.objective_improved(
                 objective,
                 self.best_node.objective)):
-            if node._uuid is None:
-                node._generate_uuid()
+            assert node._uuid is not None
             self.best_node = node
             best_objective_updated = \
                 self._check_update_best_objective(objective)
