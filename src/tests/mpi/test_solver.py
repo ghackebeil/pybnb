@@ -219,11 +219,8 @@ def _test_initialize_queue(comm):
         if solver.is_worker:
             assert problem._notify_new_best_node_call_count == 1
             assert problem._notify_new_best_node_args[0] is results.best_node
-            if solver._local_solve_info.explored_nodes_count == 1:
-                assert not problem._notify_new_best_node_args[1]
-            else:
-                assert solver._local_solve_info.explored_nodes_count == 0
-                assert not problem._notify_new_best_node_args[1]
+            assert solver._local_solve_info.explored_nodes_count == 0
+            assert not problem._notify_new_best_node_args[1]
         else:
             assert problem._notify_new_best_node_call_count == 0
         best_node_ = Node()
@@ -248,11 +245,8 @@ def _test_initialize_queue(comm):
         if solver.is_worker:
             assert problem._notify_new_best_node_call_count == 1
             assert problem._notify_new_best_node_args[0] is results.best_node
-            if solver._local_solve_info.explored_nodes_count == 1:
-                assert not problem._notify_new_best_node_args[1]
-            else:
-                assert solver._local_solve_info.explored_nodes_count == 0
-                assert not problem._notify_new_best_node_args[1]
+            assert solver._local_solve_info.explored_nodes_count == 0
+            assert not problem._notify_new_best_node_args[1]
         else:
             assert problem._notify_new_best_node_call_count == 0
 
