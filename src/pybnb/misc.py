@@ -357,9 +357,32 @@ def get_simple_logger(filename=None,
 
 def _run_command_line_solver(problem, args):
     import pybnb
+    import pybnb.futures
+    if args.nested_solver:
+        problem = pybnb.futures.NestedSolver(
+            problem,
+            node_limit=args.nested_node_limit,
+            time_limit=args.nested_time_limit,
+            queue_strategy=args.nested_queue_strategy)
+    else:
+        nested_solver_defaults = get_default_args(
+            pybnb.futures.NestedSolver.__init__)
+        if args.nested_node_limit != \
+           nested_solver_defaults["node_limit"]:
+            assert False
+        if args.nested_time_limit != \
+           nested_solver_defaults["time_limit"]:
+            assert False
+        if args.nested_queue_strategy != \
+           nested_solver_defaults["queue_strategy"]:
+            assert False
     solve_kwds = dict(vars(args))
     del solve_kwds["disable_mpi"]
     del solve_kwds["profile"]
+    del solve_kwds["nested_solver"]
+    del solve_kwds["nested_node_limit"]
+    del solve_kwds["nested_time_limit"]
+    del solve_kwds["nested_queue_strategy"]
     if args.disable_mpi:
         results = pybnb.solve(problem, comm=None, **solve_kwds)
     else:
@@ -559,6 +582,13 @@ def create_command_line_solver(problem, parser=None):
         dest="log_new_incumbent",
         default=True,
         help=solve_docs["log_new_incumbent"]["doc"])
+    val = solve_defaults.pop("disable_signal_handlers")
+    assert not val
+    parser.add_argument(
+        "--disable-signal-handlers",
+        action="store_true",
+        default=False,
+        help=solve_docs["disable_signal_handlers"]["doc"])
     assert len(solve_defaults) == 0, str(solve_defaults)
 
     parser.add_argument(
@@ -584,6 +614,40 @@ def create_command_line_solver(problem, parser=None):
     parser.add_argument('--version',
                         action='version',
                         version='pybnb '+str(pybnb.__version__))
+    import pybnb.futures
+    nested_solver_defaults = get_default_args(
+        pybnb.futures.NestedSolver.__init__)
+    nested_solver_docs = get_keyword_docs(
+        pybnb.futures.NestedSolver.__doc__)
+    nested_solver_docs.pop("problem")
+    assert len(nested_solver_defaults) == len(nested_solver_docs)
+    parser.add_argument(
+        "--nested-solver",
+        action="store_true",
+        default=False,
+        help=("**(W)** Wraps the problem in a "
+              ":class:`pybnb.futures.NestedSolver` object. "
+              "See additional --nested-solver-* options."))
+    parser.add_argument(
+        "--nested-node-limit",
+        type=int,
+        default=nested_solver_defaults.pop("node_limit"),
+        help=nested_solver_docs["node_limit"]["doc"])
+    parser.add_argument(
+        "--nested-time-limit",
+        type=float,
+        default=nested_solver_defaults.pop("time_limit"),
+        help=nested_solver_docs["time_limit"]["doc"])
+    parser.add_argument(
+        "--nested-queue-strategy",
+        type=str,
+        choices=_QueueStrategyChoices(),
+        action=_QueueStrategyJoin,
+        default=nested_solver_defaults.pop("queue_strategy"),
+        help=nested_solver_docs["queue_strategy"]["doc"])
+    assert len(nested_solver_defaults) == 0,\
+        str(nested_solver_defaults)
+
     args = parser.parse_args()
 
     try:
