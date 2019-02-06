@@ -504,13 +504,8 @@ class DispatcherBase(object):
                 self,
                 log,
                 log_interval_seconds=log_interval_seconds)
-        if len(initialize_queue.nodes):
-            self._check_update_best_node(
-                self.converger.best_objective(
-                    initialize_queue.nodes,
-                    key=lambda n_: n_.objective))
-            for node in initialize_queue.nodes:
-                self._add_work_to_queue(node)
+        for node in initialize_queue.nodes:
+            self._add_work_to_queue(node)
 
     def log_info(self, msg):
         """Pass a message to ``log.info``"""
@@ -579,7 +574,6 @@ class DispatcherLocal(DispatcherBase):
         super(DispatcherLocal, self).__init__()
         self.external_bound = None
         self.solve_info = _SolveInfo()
-        self.first_update = None
         self.active_nodes = 0
         self.clock = time.time
 
@@ -660,7 +654,6 @@ class DispatcherLocal(DispatcherBase):
         :func:`pybnb.dispatcher.DispatcherBase.initialize`
         method for argument descriptions."""
         self.solve_info.reset()
-        self.first_update = True
         self.active_nodes = 0
         super(DispatcherLocal, self).initialize(
             best_objective,
@@ -684,7 +677,7 @@ class DispatcherLocal(DispatcherBase):
     def update(self,
                best_objective,
                best_node,
-               previous_bound,
+               terminal_bound,
                solve_info,
                node_list):
         """Update local worker information.
@@ -696,10 +689,9 @@ class DispatcherLocal(DispatcherBase):
             worker.
         best_node : :class:`Node <pybnb.node.Node>` or None
             A new potential best node found by the worker.
-        previous_bound : float or None
-            The updated bound computed for the last node
-            that was processed by the worker, or None
-            if children are returned.
+        terminal_bound : float or None
+            The worst bound of any terminal nodes that were
+            processed by the worker since the last update.
         solve_info : :class:`_SolveInfo`
             The most up-to-date worker solve information.
         node_list : list
@@ -720,8 +712,6 @@ class DispatcherLocal(DispatcherBase):
             string, and the number of explored nodes.
         """
         assert self.initialized
-        assert (best_objective is None) or \
-            self.first_update
         if best_objective is not None:
             self._check_update_best_objective(
                 best_objective)
@@ -731,16 +721,12 @@ class DispatcherLocal(DispatcherBase):
         self.solve_info.data[:] = solve_info.data
         self.external_bound = None
         self.active_nodes = 0
-        if len(node_list):
-            assert previous_bound is None
+        if len(node_list) > 0:
             for node in node_list:
                 self._add_work_to_queue(node)
-        else:
-            if not self.first_update:
-                assert previous_bound is not None
-                self._check_update_worst_terminal_bound(
-                    previous_bound)
-        self.first_update = False
+        if terminal_bound is not None:
+            self._check_update_worst_terminal_bound(
+                    terminal_bound)
         last_global_bound = self.last_global_bound
         self._check_convergence()
         if (self.queue.size() == 0) and \
@@ -807,8 +793,6 @@ class DispatcherDistributed(DispatcherBase):
             {i: _SolveInfo() for i in self.worker_ranks}
         self.last_known_bound = dict()
         self.external_bounds = SortedList()
-        self.first_update = \
-            {_r: True for _r in self.worker_ranks}
         self.has_work = set()
         self._send_requests = None
         self.explored_nodes_count = 0
@@ -1008,8 +992,6 @@ class DispatcherDistributed(DispatcherBase):
             solve_info.reset()
         self.last_known_bound.clear()
         self.external_bounds.clear()
-        for _r in self.first_update:
-            self.first_update[_r] = True
         self.has_work.clear()
         self._send_requests = None
         self.explored_nodes_count = 0
@@ -1044,7 +1026,7 @@ class DispatcherDistributed(DispatcherBase):
     def update(self,
                best_objective,
                best_node,
-               previous_bound,
+               terminal_bound,
                solve_info,
                node_list,
                source):
@@ -1057,10 +1039,9 @@ class DispatcherDistributed(DispatcherBase):
             worker.
         best_node : :class:`Node <pybnb.node.Node>` or None
             A new potential best node found by the worker.
-        previous_bound : float or None
-            The updated bound computed for the last node
-            that was processed by the worker, or None
-            if children are returned.
+        terminal_bound : float or None
+            The worst bound of any terminal nodes that were
+            processed by the worker since the last update.
         solve_info : :class:`_SolveInfo`
             The most up-to-date worker solve information.
         node_list : list
@@ -1098,24 +1079,18 @@ class DispatcherDistributed(DispatcherBase):
                 # _check_update_best_node modifies
                 # the external_bounds list
                 pass
-        assert (best_objective is None) or \
-            self.first_update
         if best_objective is not None:
             self._check_update_best_objective(
                 best_objective)
         if best_node is not None:
             assert best_node._uuid is not None
             self._check_update_best_node(best_node)
-        if len(node_list):
-            assert previous_bound is None
+        if len(node_list) > 0:
             for node in node_list:
                 self._add_work_to_queue(node)
-        else:
-            if not self.first_update[source]:
-                assert previous_bound is not None
-                self._check_update_worst_terminal_bound(
-                    previous_bound)
-        self.first_update[source] = False
+        if terminal_bound is not None:
+            self._check_update_worst_terminal_bound(
+                terminal_bound)
         last_global_bound = self.last_global_bound
         self._check_convergence()
         ret = self._send_work()
@@ -1177,16 +1152,17 @@ class DispatcherDistributed(DispatcherBase):
                     data_ = data
                 (best_objective,
                  best_node,
-                 previous_bound,
+                 terminal_bound,
                  solve_info_data,
                  node_list) = marshal.loads(data_)
                 solve_info_.data = array.array('d',solve_info_data)
                 if best_node is not None:
                     best_node = _SerializedNode(best_node)
-                node_list = [_SerializedNode(state) for state in node_list]
+                node_list = [_SerializedNode(state)
+                             for state in node_list]
                 ret = self.update(best_objective,
                                   best_node,
-                                  previous_bound,
+                                  terminal_bound,
                                   solve_info_,
                                   node_list,
                                   source)

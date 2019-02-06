@@ -438,10 +438,10 @@ class Solver(object):
                disable_objective_call,
                convergence_checker,
                results):
-        from pybnb.futures import nested_solve
-        is_nested_solve = False
-        if isinstance(problem, nested_solve):
-            is_nested_solve = True
+        from pybnb.futures import NestedSolver
+        is_nested_solver = False
+        if isinstance(problem, NestedSolver):
+            is_nested_solver = True
         if not isinstance(problem, _ProblemWithSolveInfoCollection):
             problem = _SimpleSolveInfoCollector(problem)
             problem.set_clock(self._time)
@@ -457,11 +457,9 @@ class Solver(object):
         assert unbounded_objective == \
             convergence_checker.unbounded_objective
         first_update = True
-        children = ()
-        bound = None
+        terminal_bound = None
+        children = []
         while (1):
-            if len(children) != 0:
-                bound = None
             update_start = self._time()
             new_best_objective = None
             if first_update:
@@ -476,24 +474,28 @@ class Solver(object):
              working_node) = self._disp.update(
                  new_best_objective,
                  new_best_node,
-                 bound,
+                 terminal_bound,
                  self._local_solve_info,
                  children)
             update_stop = self._time()
 
-            if first_update and is_nested_solve:
-                problem._initialize(self._disp, new_best_objective)
+            if first_update and is_nested_solver:
+                problem._initialize(self._disp,
+                                    new_best_objective,
+                                    disable_objective_call)
 
             old_best_node = self._best_node
             self._best_objective = new_best_objective
-            self._best_node = new_best_node
             assert (old_best_node is None) or \
                 (old_best_node._uuid is not None)
-            assert (self._best_node is None) or \
-                (self._best_node._uuid is not None)
-            if (self._best_node is not None) and \
+            assert (new_best_node is None) or \
+                (new_best_node._uuid is not None)
+            updated = False
+            if (new_best_node is not None) and \
                ((old_best_node is None) or \
-                (self._best_node._uuid != old_best_node._uuid)):
+                (new_best_node._uuid != old_best_node._uuid) or \
+                first_update):
+                self._best_node = new_best_node
                 problem.notify_new_best_node(node=self._best_node,
                                              current=False)
             del old_best_node
@@ -501,73 +503,77 @@ class Solver(object):
             del new_best_node
             first_update = False
 
-            children = []
-
             if stop:
                 # make sure all processes have the exact same best
                 # objective value (not just subject to tolerances)
                 break
-            if not is_nested_solve:
+            if not is_nested_solver:
                 self._local_solve_info.\
                     _increment_explored_nodes_stat(1)
                 self._local_solve_info.\
                     _increment_queue_stat(
                         update_stop-update_start, 1)
 
-            bound = working_node.bound
-            current_tree_depth = working_node.tree_depth
-            assert current_tree_depth >= 0
 
             # we should not be receiving a node that
             # does not satisfy these assertions
             assert convergence_checker.eligible_for_queue(
-                    bound,
-                    self._best_objective)
+                working_node.bound,
+                self._best_objective)
+            assert working_node.tree_depth >= 0
 
             problem.load_state(working_node)
-
+            if is_nested_solver:
+                problem._solve()
+                terminal_bound = problem._queue.worst_terminal_bound
+                children = problem._queue.nodes
+                if problem._results.best_node is not None:
+                    self._check_update_best_node(
+                        convergence_checker,
+                        problem._results.best_node)
+                continue
             new_bound = problem.bound()
-            if convergence_checker.bound_worsened(new_bound, bound):    #pragma:nocover
+            if convergence_checker.bound_worsened(new_bound,
+                                                  working_node.bound):    #pragma:nocover
                 self._disp.log_warning(
                     "WARNING: Bound became worse "
                     "(old=%r, new=%r)"
-                    % (bound, new_bound))
+                    % (working_node.bound, new_bound))
             working_node.bound = new_bound
-            bound = new_bound
-
+            children = []
             if convergence_checker.eligible_for_queue(
-                    bound,
+                    working_node.bound,
                     self._best_objective):
-                objective = working_node.objective
                 if not disable_objective_call:
-                    objective = problem.objective()
-                    working_node.objective = objective
-                if convergence_checker.best_bound(bound, objective) != objective: #pragma:nocover
+                    working_node.objective = problem.objective()
+                if convergence_checker.best_bound(
+                        working_node.bound,
+                        working_node.objective) != working_node.objective: #pragma:nocover
                     self._disp.log_warning(
                         "WARNING: Local node bound is worse "
                         "than local node objective (bound=%r, "
-                        "objective=%r)" % (bound, objective))
+                        "objective=%r)" % (working_node.bound,
+                                           working_node.objective))
                 updated = self._check_update_best_node(
                     convergence_checker,
                     working_node)
                 if updated:
                     problem.notify_new_best_node(node=self._best_node,
                                                  current=True)
-                if (objective != unbounded_objective) and \
+                if (working_node.objective != unbounded_objective) and \
                     convergence_checker.eligible_for_queue(
-                        bound,
+                        working_node.bound,
                         self._best_objective) and \
                     convergence_checker.eligible_to_branch(
-                        bound,
-                        objective):
+                        working_node.bound,
+                        working_node.objective):
                     clist = problem.branch()
                     for child in clist:
                         children.append(child)
-                        if child.tree_depth is None:
-                            child.tree_depth = current_tree_depth + 1
-                        assert child.tree_depth > current_tree_depth
+                        assert child.tree_depth is None
+                        child.tree_depth = working_node.tree_depth + 1
                         if child.bound is None:
-                            child.bound = bound
+                            child.bound = working_node.bound
                         elif convergence_checker.bound_worsened(
                                 child.bound,
                                 working_node.bound):    #pragma:nocover
@@ -579,13 +585,11 @@ class Solver(object):
                                 % (child.bound,
                                    working_node.bound))
                         if child.objective is None:
-                            child.objective = objective
-                        elif self._check_update_best_node(
-                                convergence_checker,
-                                child):
-                            problem.notify_new_best_node(
-                                node=self._best_node,
-                                current=False)
+                            child.objective = working_node.objective
+            if len(children) > 0:
+                terminal_bound = None
+            else:
+                terminal_bound = working_node.bound
 
         assert len(working_node) == 3
         global_bound = working_node[0]
@@ -773,7 +777,8 @@ class Solver(object):
               queue_strategy="bound",
               log_interval_seconds=1.0,
               log_new_incumbent=True,
-              log=_notset):
+              log=_notset,
+              disable_signal_handlers=False):
         """Solve a problem using branch-and-bound.
 
         Note
@@ -952,6 +957,11 @@ class Solver(object):
             be sent. The default value causes all output to
             be streamed to the console. Setting to None
             disables all output.
+        disable_signal_handlers : bool, optional
+            **(D)** Indicates whether or disable the
+            registering of signal handlers that allow
+            gracefully terminating a solve early.
+            (default: False)
 
         Returns
         -------
@@ -1060,7 +1070,9 @@ class Solver(object):
                         "Waiting for current worker "
                         "jobs to complete before "
                         "terminating the solve.")
-                with MPI_InterruptHandler(handler):
+                with MPI_InterruptHandler(
+                        handler,
+                        disable=disable_signal_handlers):
                     tmp = self._disp.serve()
             else:
                 def handler(signum, frame):       #pragma:nocover
@@ -1072,7 +1084,9 @@ class Solver(object):
                             "Waiting for current worker "
                             "jobs to complete before "
                             "terminating the solve.")
-                with MPI_InterruptHandler(handler):
+                with MPI_InterruptHandler(
+                        handler,
+                        disable=disable_signal_handlers):
                     tmp = self._solve(problem,
                                       best_objective,
                                       best_node,

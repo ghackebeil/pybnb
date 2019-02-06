@@ -22,26 +22,55 @@ class _RedirectHandler(logging.Handler):
         elif logging.CRITICAL <= record.levelno:
             self._dispatcher.log_critical(record.getMessage())
 
-class nested_solve(_ProblemWithSolveInfoCollection):
+class NestedSolver(_ProblemWithSolveInfoCollection):
+    """A wrapper for problem implementations that uses a
+    nested branch-and-bound solve to process a node.
 
-    def __init__(self, problem, **kwds):
+    Parameters
+    ----------
+    problem : :class:`pybnb.Problem <pybnb.problem.Problem>`
+        An object defining a branch-and-bound problem.
+    node_limit : int, optional
+        The same as the standard solver option, but applied
+        to the nested solver to limit the number nodes to
+        explore when processing a work item. (default: None)
+    time_limit : float, optional
+        The same as the standard solver option, but applied
+        to the nested solver to limit the amount of time
+        spent processing a work item. (default: 5)
+    queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>` or tuple
+        The same as the standard solver option, but applied
+        to the nested solver to control the queue strategy
+        used when processing a work item. (default: 'depth')
+    """
+
+    def __init__(self,
+                 problem,
+                 node_limit=None,
+                 time_limit=5,
+                 queue_strategy="depth"):
         self._problem = problem
+        self._node_limit = node_limit
+        self._time_limit = time_limit
+        self._queue_strategy = queue_strategy
         self._solver = Solver(comm=None)
-        self._solve_options = kwds
         self._log = logging.Logger(None,
                                    level=logging.WARNING)
-        self._results = None
-        self._children = None
-        self._current_node = None
-        self._solve_found_best_node = False
+        self._convergence_checker = None
         self._best_objective = None
         self._best_node = None
-        self._convergence_checker = None
-        super(nested_solve, self).__init__()
+        self._current_node = None
+        self._results = None
+        self._queue = None
+        super(NestedSolver, self).__init__()
 
-    def _initialize(self, dispatcher, best_objective):
+    def _initialize(self,
+                    dispatcher,
+                    best_objective,
+                    disable_objective_call):
         assert best_objective is not None
         self._best_objective = best_objective
+        self._disable_objective_call = disable_objective_call
         self._log.addHandler(_RedirectHandler(dispatcher))
 
     def _solve(self):
@@ -50,7 +79,7 @@ class nested_solve(_ProblemWithSolveInfoCollection):
             bound_stop = self._best_objective
         # shallow copy
         root = copy.copy(self._current_node)
-        queue = DispatcherQueueData(
+        init_queue = DispatcherQueueData(
             nodes=[root],
             worst_terminal_bound=None,
             sense=self._convergence_checker.sense)
@@ -59,65 +88,37 @@ class nested_solve(_ProblemWithSolveInfoCollection):
             best_objective=self._best_objective,
             best_node=self._best_node,
             bound_stop=bound_stop,
-            initialize_queue=queue,
+            initialize_queue=init_queue,
             log=self._log,
-            **self._solve_options)
-        if (self._results.best_node is not None) and \
-           ((self._best_node is None) or \
-            (self._best_node._uuid != self._results.best_node._uuid)):
-            self._best_node = self._results.best_node
-            self._best_objective = self._best_node.objective
-            self._solve_found_best_node = True
-        queue = self._solver.save_dispatcher_queue()
-        self._children = queue.nodes
-        if self._solve_found_best_node:
-            for child in self._children:
-                if child is self._best_node:
-                    break
-            else: # no break in for-loop
-                # add the best node to the children so it will
-                # make it to the top-level dispatcher
-                self._yield_best_node = True
+            absolute_gap=\
+                self._convergence_checker.absolute_gap,
+            relative_gap=\
+                self._convergence_checker.relative_gap,
+            scale_function=\
+                self._convergence_checker.scale_function,
+            queue_tolerance=\
+                self._convergence_checker.queue_tolerance,
+            branch_tolerance=\
+                self._convergence_checker.branch_tolerance,
+            comparison_tolerance=\
+                self._convergence_checker.comparison_tolerance,
+            objective_stop=\
+                self._convergence_checker.objective_stop,
+            disable_objective_call=self._disable_objective_call,
+            node_limit=self._node_limit,
+            time_limit=self._time_limit,
+            queue_strategy=self._queue_strategy,
+            disable_signal_handlers=True)
+        self._queue = self._solver.save_dispatcher_queue()
         self._solve_info.add_from(
             self._solver._global_solve_info)
 
     #
-    # Define Problem methods
+    # Ducktype a partial Problem interface
     #
 
     def sense(self):
         return self._problem.sense()
-
-    def objective(self):
-        assert self._results is not None
-        if (self._results.objective != \
-            self._convergence_checker.unbounded_objective) and \
-            self._convergence_checker.eligible_for_queue(
-                self._results.bound,
-                self._best_objective) and \
-            self._convergence_checker.eligible_to_branch(
-                self._results.bound,
-                self._results.objective) and \
-            self._solve_found_best_node:
-            # we will be returning the new best node as a child
-            # so collect the best objective there
-            return self._current_node.objective
-        else:
-            return self._results.objective
-
-    def bound(self):
-        # after a new state is loaded, bound MUST be called
-        # before any of the other methods
-        if self._results is None:
-            self._solve()
-        return self._results.bound
-
-    def branch(self):
-        assert self._results is not None
-        if self._yield_best_node:
-            yield self._best_node
-        for child in self._children:
-            yield child
 
     def save_state(self, node):
         self._problem.save_state(node)
@@ -128,27 +129,27 @@ class nested_solve(_ProblemWithSolveInfoCollection):
         self._children = None
         self._current_node = node
         self._solve_found_best_node = False
-        self._yield_best_node = False
 
     def notify_solve_begins(self,
                             comm,
                             worker_comm,
                             convergence_checker):
-        self._results = None
-        self._children = None
-        self._current_node = None
-        self._solve_found_best_node = False
         self._best_objective = None
         self._best_node = None
         self._convergence_checker = convergence_checker
+        self._current_node = None
+        self._results = None
+        self._queue = None
         self._problem.notify_solve_begins(
             comm,
             worker_comm,
             convergence_checker)
 
     def notify_new_best_node(self, node, current):
+        self._best_objective = self._convergence_checker.\
+            best_objective(self._best_objective,
+                           node.objective)
         self._best_node = node
-        self._best_objective = node.objective
         self._problem.notify_new_best_node(node, current)
 
     def notify_solve_finished(self,

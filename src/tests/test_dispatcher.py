@@ -268,9 +268,9 @@ class TestDispatcherSimple(object):
             log,
             log_interval_seconds,
             log_new_incumbent)
-        assert disp.best_objective == -1
-        assert disp.best_node.objective == -1
-        assert disp.best_node is root
+        assert disp.best_objective == 1
+        assert disp.best_node.objective == 1
+        assert disp.best_node is best_node_
         best_node_.objective = 1
         root.objective = -1
         disp.initialize(
@@ -285,8 +285,8 @@ class TestDispatcherSimple(object):
             log_interval_seconds,
             log_new_incumbent)
         assert disp.best_objective == -2
-        assert disp.best_node.objective == -1
-        assert disp.best_node is root
+        assert disp.best_node.objective == 1
+        assert disp.best_node is best_node_
         # bad objective sense
         queue = DispatcherQueueData(
             [root],

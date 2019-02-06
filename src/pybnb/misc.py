@@ -16,13 +16,17 @@ class MPI_InterruptHandler(object):
         _sigs.append(signal.SIGUSR1)
     __slots__ = ("_released",
                  "_original_handlers",
-                 "_handler")
-    def __init__(self, handler):
-        self._released = None
+                 "_handler",
+                 "_disable")
+    def __init__(self, handler, disable=False):
+        self._released = True
         self._original_handlers = None
         self._handler = handler
+        self._disable = disable
 
     def __enter__(self):
+        if self._disable:
+            return self
         self._released = False
         self._original_handlers = \
             [(signum, signal.getsignal(signum))
