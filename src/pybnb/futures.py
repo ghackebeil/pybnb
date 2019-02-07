@@ -23,8 +23,10 @@ class _RedirectHandler(logging.Handler):
             self._dispatcher.log_critical(record.getMessage())
 
 class NestedSolver(_ProblemWithSolveInfoCollection):
-    """A wrapper for problem implementations that uses a
-    nested branch-and-bound solve to process a node.
+    """A class for creating a nested branch-and-bound solve
+    strategy. An instance of this class (wrapped around a
+    standard problem) can be passed to the solver as the
+    problem argument.
 
     Parameters
     ----------
@@ -32,7 +34,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         An object defining a branch-and-bound problem.
     node_limit : int, optional
         The same as the standard solver option, but applied
-        to the nested solver to limit the number nodes to
+        to the nested solver to limit the number of nodes to
         explore when processing a work item. (default: None)
     time_limit : float, optional
         The same as the standard solver option, but applied
@@ -117,13 +119,34 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
     # Ducktype a partial Problem interface
     #
 
+    def objective(self):                          #pragma:nocover
+        """The solver does not call this method when it sees the
+        problem implements a nested solve."""
+        raise NotImplementedError()
+
+    def bound(self):                              #pragma:nocover
+        """The solver does not call this method when it sees the
+        problem implements a nested solve."""
+        raise NotImplementedError()
+
+    def branch(self):                #pragma:nocover
+        """The solver does not call this method when it sees the
+        problem implements a nested solve."""
+        raise NotImplementedError()
+
     def sense(self):
+        """Calls the sense() method on the user-provided
+        problem."""
         return self._problem.sense()
 
     def save_state(self, node):
+        """Calls the save_state() method on the user-provided
+        problem."""
         self._problem.save_state(node)
 
     def load_state(self, node):
+        """Calls the load_state() method on the user-provided
+        problem and prepares for a nested solve."""
         self._problem.load_state(node)
         self._results = None
         self._children = None
@@ -134,6 +157,8 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
                             comm,
                             worker_comm,
                             convergence_checker):
+        """Calls the notify_solve_begins() method on the
+        user-provided problem and prepares for a solve."""
         self._best_objective = None
         self._best_node = None
         self._convergence_checker = convergence_checker
@@ -146,6 +171,9 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
             convergence_checker)
 
     def notify_new_best_node(self, node, current):
+        """Calls the notify_new_best_node() method on the
+        user-provided problem and stores the best node for
+        use in the next nested solve."""
         self._best_objective = self._convergence_checker.\
             best_objective(self._best_objective,
                            node.objective)
@@ -156,6 +184,9 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
                               comm,
                               worker_comm,
                               results):
+        """Calls the notify_solve_finished() method on the
+        user-provided problem and does some final
+        cleanup."""
         while len(self._log.handlers) > 0:
             self._log.removeHandler(self._log.handlers[0])
         self._problem.notify_solve_finished(
