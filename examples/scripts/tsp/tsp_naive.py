@@ -139,7 +139,6 @@ class TSP_Naive(pybnb.Problem):
 
 if __name__ == "__main__":
     import argparse
-    import os
 
     parser = argparse.ArgumentParser(
         description=("Run parallel branch and bound "
