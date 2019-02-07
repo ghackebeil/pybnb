@@ -104,7 +104,8 @@ def test_example(example_name, procs):
                         "test_range_reduction_pyomo"):
         if not (pyomo_available and ipopt_available):
             pytest.skip("Pyomo or Ipopt is not available")
-    if example_name in ("test_simple","test_tsp_naive"):
+    if (example_name == "test_simple") or \
+       ("tsp_naive" in example_name):
         if not mpi4py_available:
             pytest.skip("MPI is not available")
     if (not mpi4py_available) and (procs > 1):
