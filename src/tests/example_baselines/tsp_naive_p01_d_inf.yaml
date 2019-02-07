@@ -1,0 +1,6 @@
+solution_status: infeasible
+termination_condition: optimality
+objective: .inf
+bound: .inf
+absolute_gap: null
+relative_gap: null

@@ -144,14 +144,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=("Run parallel branch and bound "
                      "to solve an instance of TSP."))
+    parser.add_argument("data_filename", type=str,
+                        help=("The name of a file that stores a "
+                              "dense adjacency matrix."))
     parser.add_argument("--results-filename", type=str, default=None,
-                        help=("When set, saves the solver results into a "
-                              "YAML-formated file with the given name."))
+                        help=("When set, saves the solver results "
+                              "into a YAML-formated file with the "
+                              "given name."))
     args = parser.parse_args()
 
-    # data source: https://people.sc.fsu.edu/~jburkardt/datasets/tsp/tsp.html
-    thisdir = os.path.dirname(os.path.abspath(__file__))
-    adj = parse_dense_adjacency(os.path.join(thisdir, 'p01_d.txt'))
+    adj = parse_dense_adjacency(args.data_filename)
     problem = TSP_Naive(adj)
     solver = pybnb.Solver()
 

@@ -45,9 +45,12 @@ topdir = os.path.dirname(
             os.path.dirname(thisdir))
 exdir = os.path.join(topdir, "examples")
 examples = []
-examples.extend(glob.glob(os.path.join(exdir,"command_line_problems","*.py")))
-examples.extend(glob.glob(os.path.join(exdir,"scripts","*.py")))
-examples.extend(glob.glob(os.path.join(exdir,"scripts","tsp","tsp_naive.py")))
+examples.extend(glob.glob(
+    os.path.join(exdir,"command_line_problems","*.py")))
+examples.extend(glob.glob(
+    os.path.join(exdir,"scripts","*.py")))
+examples.extend(glob.glob(
+    os.path.join(exdir,"scripts","tsp","tsp_naive.py")))
 baselinedir = os.path.join(thisdir, "example_baselines")
 
 assert os.path.exists(exdir)
@@ -59,10 +62,21 @@ for fname in examples:
     assert basename.endswith(".py")
     assert len(basename) >= 3
     basename = basename[:-3]
-    tname = "test_"+basename
-    bname = os.path.join(baselinedir,basename+".yaml")
-    tdict[tname] = (fname,bname,None)
-assert len(tdict) == len(examples)
+    if basename == "tsp_naive":
+        for datafile in ('p01_d',
+                         'p01_d_inf'):
+            tname = "test_"+basename+"_"+datafile
+            bname = os.path.join(baselinedir,
+                                 basename+"_"+datafile+".yaml")
+            tdict[tname] = (fname,
+                            bname,
+                            [os.path.join(exdir,"scripts","tsp",
+                                          datafile+".txt")])
+    else:
+        tname = "test_"+basename
+        bname = os.path.join(baselinedir,basename+".yaml")
+        tdict[tname] = (fname,bname,None)
+assert len(tdict) == len(examples) + 1
 
 assert "test_binary_knapsack" in tdict
 assert len(tdict["test_binary_knapsack"]) == 3
@@ -71,7 +85,7 @@ tdict["test_binary_knapsack_nested"] = \
     (tdict["test_binary_knapsack"][0],
      tdict["test_binary_knapsack"][1],
      ["--nested-solver",
-      "--nested-node-limit=10",
+      "--nested-node-limit=100",
       "--nested-queue-strategy=random"])
 
 scenarios = []
@@ -97,25 +111,27 @@ def test_example(example_name, procs):
         pytest.skip("MPI is not available")
     filename, baseline_filename, options = tdict[example_name]
     cmd = ["python", filename]
-    if options is not None:
-        cmd.extend(options)
+    if options is None:
+        options = []
     assert os.path.exists(filename)
     fid, results_filename = tempfile.mkstemp()
     os.close(fid)
     try:
         if procs == 1:
-            if example_name in ("test_range_reduction_pyomo",
-                                "test_tsp_naive"):
+            if ("range_reduction_pyomo" in example_name) or \
+               ("tsp_naive" in example_name):
                 rc = subprocess.call(cmd + \
                                      ["--results-file",
-                                      results_filename])
+                                      results_filename] + \
+                                     options)
             elif example_name == "test_simple":
-                rc = subprocess.call(cmd)
+                rc = subprocess.call(cmd + options)
             else:
                 rc = subprocess.call(cmd + \
                                      ["--disable-mpi",
                                       "--results-file",
-                                      results_filename])
+                                      results_filename] + \
+                                     options)
         else:
             assert procs > 1
             if subprocess.call(["mpirun",
@@ -126,13 +142,15 @@ def test_example(example_name, procs):
                 rc = subprocess.call(["mpirun","-np", str(procs)] + \
                                      cmd + \
                                      ["--results-file",
-                                      results_filename])
+                                      results_filename] + \
+                                     options)
             else:
                 rc = subprocess.call(["mpirun", "--allow-run-as-root",
                                       "-np", str(procs)] + \
                                      cmd + \
                                      ["--results-file",
-                                      results_filename])
+                                      results_filename] + \
+                                     options)
         assert rc == 0
         if example_name == "test_simple":
             assert not os.path.exists(baseline_filename)
