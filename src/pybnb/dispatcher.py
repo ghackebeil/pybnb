@@ -200,6 +200,10 @@ class StatusPrinter(object):
         """Pass a message to ``log.error``"""
         self._log.error(msg)
 
+    def log_critical(self, msg):
+        """Pass a message to ``log.critical``"""
+        self._log.critical(msg)
+
     def new_objective(self, report=True):
         """Indicate that a new objective has been found
 
@@ -525,6 +529,11 @@ class DispatcherBase(object):
         """Pass a message to ``log.error``"""
         if self.journalist is not None:
             self.journalist.log_error(msg)
+
+    def log_critical(self, msg):
+        """Pass a message to ``log.critical``"""
+        if self.journalist is not None:
+            self.journalist.log_critical(msg)
 
     def save_dispatcher_queue(self):
         """Saves the current dispatcher queue. The result can
@@ -1188,6 +1197,9 @@ class DispatcherDistributed(DispatcherBase):
             elif tag == DispatcherAction.log_error:
                 msg.recv(mpi4py.MPI.CHAR)
                 self.log_error(msg.data)
+            elif tag == DispatcherAction.log_critical:
+                msg.recv(mpi4py.MPI.CHAR)
+                self.log_critical(msg.data)
             elif tag == DispatcherAction.stop_listen:
                 msg.recv()
                 assert msg.data is None

@@ -40,6 +40,7 @@ _DispatcherAction = collections.namedtuple(
      "log_warning",
      "log_debug",
      "log_error",
+     "log_critical",
      "stop_listen"])
 
 DispatcherAction = _DispatcherAction(
@@ -49,7 +50,8 @@ DispatcherAction = _DispatcherAction(
     log_warning               = 411,
     log_debug                 = 511,
     log_error                 = 611,
-    stop_listen               = 711)
+    log_critical              = 711,
+    stop_listen               = 811)
 """A namespace of typecodes that are used to categorize
 messages received by the dispatcher from workers."""
 
@@ -202,6 +204,12 @@ class DispatcherProxy(object):
         self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
                         self.dispatcher_rank,
                         tag=DispatcherAction.log_error)
+
+    def log_critical(self, msg):
+        """A proxy to :func:`pybnb.dispatcher.Dispatcher.log_critical`."""
+        self.comm.Ssend([msg.encode("utf8"),mpi4py.MPI.CHAR],
+                        self.dispatcher_rank,
+                        tag=DispatcherAction.log_critical)
 
     def stop_listen(self):
         """Tell the dispatcher to abruptly stop the listen loop."""

@@ -20,13 +20,15 @@ def _get_logging_baseline(size):
 """[DEBUG] 0: debug
 [INFO] 0: info
 [WARNING] 0: warning
-[ERROR] 0: error"""
+[ERROR] 0: error
+[CRITICAL] 0: critical"""
     for i in range(1,size):
         out += ("""
 [DEBUG] %d: debug
 [INFO] %d: info
 [WARNING] %d: warning
-[ERROR] %d: error""") % (i,i,i,i)
+[ERROR] %d: error
+[CRITICAL] %d: critical""") % (i,i,i,i,i)
     return out
 
 class DummyProblem(Problem):
@@ -69,6 +71,7 @@ def _logging_check(comm):
         opt._disp.log_info("0: info")
         opt._disp.log_warning("0: warning")
         opt._disp.log_error("0: error")
+        opt._disp.log_critical("0: critical")
         if (comm is not None) and (comm.size > 1):
             opt._disp.serve()
     else:
@@ -80,6 +83,7 @@ def _logging_check(comm):
                     opt._disp.log_info(str(comm.rank)+": info")
                     opt._disp.log_warning(str(comm.rank)+": warning")
                     opt._disp.log_error(str(comm.rank)+": error")
+                    opt._disp.log_critical(str(comm.rank)+": critical")
                 opt.worker_comm.Barrier()
             if opt.worker_comm.rank == 0:
                 opt._disp.stop_listen()

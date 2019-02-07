@@ -19,11 +19,13 @@ from runtests.mpi import MPITest
 def _get_logging_baseline(size):
     out = \
 """[WARNING] 0: warning
-[ERROR] 0: error"""
+[ERROR] 0: error
+[CRITICAL] 0: critical"""
     for i in range(1,size):
         out += ("""
 [WARNING] %d: warning
-[ERROR] %d: error""") % (i,i)
+[ERROR] %d: error
+[CRITICAL] %d: critical""") % (i,i,i)
     return out
 
 class DummyProblem(Problem):
@@ -69,6 +71,7 @@ def _logging_redirect_check(comm):
         log.info("0: info")
         log.warning("0: warning")
         log.error("0: error")
+        log.critical("0: critical")
         if (comm is not None) and (comm.size > 1):
             opt._disp.serve()
     else:
@@ -80,6 +83,7 @@ def _logging_redirect_check(comm):
                     log.info(str(comm.rank)+": info")
                     log.warning(str(comm.rank)+": warning")
                     log.error(str(comm.rank)+": error")
+                    log.critical(str(comm.rank)+": critical")
                 opt.worker_comm.Barrier()
             if opt.worker_comm.rank == 0:
                 opt._disp.stop_listen()
