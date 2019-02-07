@@ -103,10 +103,10 @@ class SolverResults(object):
         processes.
     best_node : :class:`Node <pybnb.node.Node>`
         The node with the best objective obtained during the
-        solve. If an initial best_objective was provided to
-        the solver, this may result in a best node with an
-        objective different from (worse than) the optimal
-        objective stored on the results.
+        solve. Note that if the best_objective solver option
+        was used, the best_node on the results object may
+        have an objective that is worse than the objective
+        stored on the results.
     """
 
     def __init__(self):
@@ -807,16 +807,24 @@ class Solver(object):
             objective. Both this and the best_node option
             can be set to different values on all
             processes. The dispatcher will collect all
-            values and use the best. (default: None)
+            values and use the best. Note that setting this
+            option at, or too close to, the true optimal
+            objective value may prevent the solver from
+            collecting a node that stores the optimal user
+            state information, so use this option with
+            care. The recommended way to re-continue a solve
+            from a known candidate solution is to assign the
+            best_node attribute of a results object to the
+            best_node solve option. (default: None)
         best_node : :class:`Node <pybnb.node.Node>`, optional
             Initializes the solve with an assumed best node.
-            This option can be used in place of the
-            best_objective option when a best node from a
-            previous solve has been collected. It can also
+            This option can (and should) be used in place of
+            the best_objective option when a best node from
+            a previous solve has been collected. It can also
             be assigned a node object that was created
             manually by the user. The objective attribute is
-            the only property of this object that will
-            affect the solve. It must be set to a numeric
+            the only property of the node that will affect
+            the solve. It must be set to a numeric
             value. (default: None)
         disable_objective_call : bool, optional
             **(W)** Disables requests for an objective value from

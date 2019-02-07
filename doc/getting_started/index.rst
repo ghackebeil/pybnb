@@ -405,17 +405,18 @@ Continuing a Solve After Stopping
 ---------------------------------
 
 It is possible to continue a solve with new termination
-criteria, starting with the nodes remaining in the queue
-from a previous solve. The following code block shows how
+criteria, starting with the candidate solution and remaining queued
+nodes from a previous solve. The following code block shows how
 this can be done.
 
 .. code-block:: python
 
     solver = pybnb.Solver()
-    solver.solve(problem,
-                 node_limit=10)
+    results = solver.solve(problem,
+                           node_limit=10)
     queue = solver.save_dispatcher_queue()
     solver.solve(problem,
+                 best_node=results.best_node,
                  initialize_queue=queue)
 
 For the dispatcher process, the :func:`save_dispatcher_queue
@@ -426,7 +427,11 @@ assigned to the `initialize_queue` keyword of the
 :func:`solve <pybnb.solver.Solver.solve>` method. For
 processes that are not the dispatcher, this function returns
 `None`, which is the default value of the `initialize_queue`
-keyword.
+keyword. The :attr:`best_node
+<pybnb.solver.SolverResults.best_node>` attribute of the
+results object will be identical for all processes (possible
+equal to None), and can be directly assigned to the
+`best_node` solver option.
 
 .. _configuration:
 
