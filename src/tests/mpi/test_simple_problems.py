@@ -260,7 +260,7 @@ def _test_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = -inf
     baseline.nodes = 255
-    baseline.best_node = _ignore_value_
+    baseline.best_node = None
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
     for queue_strategy in _queue_strategies:
@@ -271,6 +271,25 @@ def _test_infeasible_max(comm):
             baseline,
             solver=solver,
             queue_strategy=queue_strategy)
+
+    baseline = SolverResults()
+    baseline.solution_status = "invalid"
+    baseline.termination_condition = "optimality"
+    baseline.objective = -100000000
+    baseline.bound = -inf
+    baseline.nodes = _ignore_value_
+    baseline.best_node = None
+    baseline.wall_time = _ignore_value_
+    problem = infeasible_max.InfeasibleMax()
+    for queue_strategy in _queue_strategies:
+        if queue_strategy == "custom":
+            continue
+        _execute_single_test(
+            problem,
+            baseline,
+            solver=solver,
+            queue_strategy=queue_strategy,
+            best_objective=-100000000)
 
 def _test_infeasible_min(comm):
     solver = None
@@ -431,7 +450,7 @@ def _test_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = inf
     baseline.nodes = 255
-    baseline.best_node = _ignore_value_
+    baseline.best_node = None
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
     for queue_strategy in _queue_strategies:
@@ -442,6 +461,25 @@ def _test_infeasible_min(comm):
             baseline,
             solver=solver,
             queue_strategy=queue_strategy)
+
+    baseline = SolverResults()
+    baseline.solution_status = "invalid"
+    baseline.termination_condition = "optimality"
+    baseline.objective = 100000000
+    baseline.bound = inf
+    baseline.nodes = _ignore_value_
+    baseline.best_node = None
+    baseline.wall_time = _ignore_value_
+    problem = infeasible_min.InfeasibleMin()
+    for queue_strategy in _queue_strategies:
+        if queue_strategy == "custom":
+            continue
+        _execute_single_test(
+            problem,
+            baseline,
+            solver=solver,
+            queue_strategy=queue_strategy,
+            best_objective=100000000)
 
 def _test_root_infeasible_max(comm):
     solver = Solver(comm=comm)

@@ -182,27 +182,29 @@ class Solver(object):
         return updated
 
     def _fill_results(self, results, convergence_checker):
-        if results.bound == convergence_checker.infeasible_objective:
-            assert results.objective == \
-                convergence_checker.infeasible_objective, \
-                str(results.objective)
-            results.solution_status = SolutionStatus.infeasible
-        elif results.objective == \
-             convergence_checker.infeasible_objective:
+        infeasible_objective = \
+            convergence_checker.infeasible_objective
+        unbounded_objective = \
+            convergence_checker.unbounded_objective
+        if results.bound == infeasible_objective:
+            if results.objective == infeasible_objective:
+                results.solution_status = SolutionStatus.infeasible
+            else:
+                results.solution_status = SolutionStatus.invalid
+        elif results.objective == infeasible_objective:
             results.solution_status = SolutionStatus.unknown
-        elif results.objective == \
-             convergence_checker.unbounded_objective:
-            assert results.bound == \
-                convergence_checker.unbounded_objective, \
-                str(results.bound)
+        elif results.objective == unbounded_objective:
+            assert results.bound == unbounded_objective
             results.solution_status = SolutionStatus.unbounded
         else:
             results.absolute_gap = convergence_checker.\
-                                   compute_absolute_gap(results.bound,
-                                                        results.objective)
+                compute_absolute_gap(
+                    results.bound,
+                    results.objective)
             results.relative_gap = convergence_checker.\
-                                   compute_relative_gap(results.bound,
-                                                        results.objective)
+                compute_relative_gap(
+                    results.bound,
+                    results.objective)
             if convergence_checker.objective_is_optimal(
                     results.objective,
                     results.bound):
