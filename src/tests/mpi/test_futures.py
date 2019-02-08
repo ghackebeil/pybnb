@@ -1,7 +1,5 @@
 import logging
 
-import pytest
-
 from pybnb.common import minimize
 from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.node import Node
