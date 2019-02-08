@@ -11,8 +11,7 @@ __doctest_requires__ = {'SolverResults.write': ['yaml']}
 import sys
 import base64
 
-from pybnb.misc import (MPI_InterruptHandler,
-                        time_format,
+from pybnb.misc import (time_format,
                         as_stream)
 from pybnb.node import dumps
 
