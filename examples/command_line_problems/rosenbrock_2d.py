@@ -84,11 +84,9 @@ class SquaredEnvelope(pmo.constraint_tuple):
 
 class Rosenbrock2D(PyomoProblem):
 
-    def __init__(self, xL, xU, yL, yU, branch_abstol=1e-3):
-        assert branch_abstol > 0
+    def __init__(self, xL, xU, yL, yU):
         assert xL <= xU
         assert yL <= yU
-        self._branch_abstol = branch_abstol
         self._model = pmo.block()
         x = self._model.x = pmo.variable(lb=xL, ub=xU)
         y = self._model.y = pmo.variable(lb=yL, ub=yU)
@@ -252,8 +250,6 @@ class Rosenbrock2D(PyomoProblem):
             dist = ydist
             L = yL
             U = yU
-        if dist/2.0 < self._branch_abstol:
-            return ()
         # branch
         mid = 0.5*(L + U)
         left = pybnb.Node()
