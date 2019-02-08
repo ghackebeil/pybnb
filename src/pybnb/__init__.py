@@ -25,6 +25,6 @@ from pybnb.priority_queue import (CustomPriorityQueue,
                                   register_queue_type)
 from pybnb.node import Node
 from pybnb.problem import Problem
-from pybnb.solver import (SolverResults,
-                          Solver,
+from pybnb.solver_results import SolverResults
+from pybnb.solver import (Solver,
                           solve)

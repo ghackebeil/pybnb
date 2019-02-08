@@ -191,7 +191,7 @@ class Problem(object):
             The MPI communicator that includes only worker
             processes. Will be None if MPI has been
             disabled.
-        results : :class:`pybnb.solver.SolverResults`
+        results : :class:`SolverResults <pybnb.solver_results.SolverResults>`
             The fully populated results container that will
             be returned from the solver.
         """

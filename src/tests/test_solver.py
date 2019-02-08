@@ -12,8 +12,8 @@ from pybnb.common import (minimize,
                           TerminationCondition)
 from pybnb.node import (Node, loads)
 from pybnb.problem import Problem
+from pybnb.solver_results import SolverResults
 from pybnb.solver import (Solver,
-                          SolverResults,
                           summarize_worker_statistics,
                           solve)
 
