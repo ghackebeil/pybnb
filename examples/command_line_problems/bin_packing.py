@@ -208,7 +208,7 @@ class BinPacking(pybnb.Problem):
             if assigned == 1:
                 for i in N:
                     if self.model.x[i,j].value == 1:
-                        assert model.y[i].ub == 1
+                        assert self.model.y[i].ub == 1
                         self.model.y[i].value = 1
             else:
                 assert assigned == 0
@@ -233,7 +233,7 @@ class BinPacking(pybnb.Problem):
             for i in bins:
                 if self.model.x[i,j].ub == 1:
                     if self.model.y[i].value == 0:
-                        assert model.y.ub == 1
+                        assert self.model.y[i].ub == 1
                         self.model.y[i].value = 1
                     if bin_weight[i] + self.W[j] <= self.V:
                         assert self.model.x[i,j].value == 0
