@@ -74,16 +74,6 @@ class BinPacking(pybnb.Problem):
             pyomo_solver,
             solver_io=pyomo_solver_io)
 
-    def _check_feasible(self):
-        """Check if the currently loaded solution
-        is feasible for the true (binary) model."""
-        for V in (self.model.x, self.model.y):
-            for v in V.components():
-                if (abs(v.value) > self._integer_tolerance) and \
-                   (abs(v.value - 1) > self._integer_tolerance):
-                    return False
-        return True
-
     def _branch_y(self):
 
         N = range(len(self.W))
@@ -259,7 +249,6 @@ class BinPacking(pybnb.Problem):
             else:
                 return self.infeasible_objective()
 
-        assert self._check_feasible()
         return self.model.objective()
 
     def bound(self):
