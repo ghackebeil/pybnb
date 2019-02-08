@@ -208,10 +208,8 @@ class BinPacking(pybnb.Problem):
             if assigned == 1:
                 for i in N:
                     if self.model.x[i,j].value == 1:
-                        if self.model.y[i].ub == 0:
-                            return self.infeasible_objective()
-                        else:
-                            self.model.y[i].value = 1
+                        assert model.y[i].ub == 1
+                        self.model.y[i].value = 1
             else:
                 assert assigned == 0
                 item_order.append(j)
@@ -235,10 +233,8 @@ class BinPacking(pybnb.Problem):
             for i in bins:
                 if self.model.x[i,j].ub == 1:
                     if self.model.y[i].value == 0:
-                        if self.model.y[i].ub == 1:
-                            self.model.y[i].value = 1
-                        else:
-                            continue
+                        assert model.y.ub == 1
+                        self.model.y[i].value = 1
                     if bin_weight[i] + self.W[j] <= self.V:
                         assert self.model.x[i,j].value == 0
                         assert self.model.x[i,j].lb == 0
