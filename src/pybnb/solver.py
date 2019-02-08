@@ -236,22 +236,26 @@ class SolverResults(object):
                                  % (name))
             for name in names:
                 val = getattr(self, name)
-                if val is None:
-                    stream.write(prefix+'%s: null\n'
-                                 % (name))
-                else:
-                    val_ = "%r" % (val)
-                    if type(val) is float:
-                        if val_ == 'inf':
-                            val_ = '.inf'
-                        elif val_ == '-inf':
-                            val_ = "-.inf"
-                        elif val_ == 'nan':
-                            val_ = ".nan"
-                    val = val_
-                    del val_
-                    stream.write(prefix+'%s: %s\n'
+                if pretty:
+                    stream.write(prefix+'%s: %r\n'
                                  % (name, val))
+                else:
+                    if val is None:
+                        stream.write(prefix+'%s: null\n'
+                                     % (name))
+                    else:
+                        val_ = "%r" % (val)
+                        if type(val) is float:
+                            if val_ == 'inf':
+                                val_ = '.inf'
+                            elif val_ == '-inf':
+                                val_ = "-.inf"
+                            elif val_ == 'nan':
+                                val_ = ".nan"
+                        val = val_
+                        del val_
+                        stream.write(prefix+'%s: %s\n'
+                                     % (name, val))
 
     def __str__(self):
         """Represents the results as a string."""

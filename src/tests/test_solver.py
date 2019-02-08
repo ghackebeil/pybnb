@@ -91,6 +91,16 @@ class TestSolverResults(object):
         results.best_node = Node()
         results.best_node.tree_depth = 3
         results.best_node.objective = 4
+        results.junk0 = 1.0
+        results.junk1 = 1
+        results.junk2 = inf
+        results.junk3 = -inf
+        results.junk4 = nan
+        results.junk5 = 'inf'
+        results.junk6 = '-inf'
+        results.junk7 = 'nan'
+        results.junk8 = None
+        results.junk9 = 'None'
         out = StringIO()
         results.pprint(stream=out)
         assert out.getvalue() == \
@@ -104,6 +114,16 @@ class TestSolverResults(object):
  - nodes: 1
  - wall_time: 1.00 m
  - best_node: Node(objective=4)
+ - junk0: 1.0
+ - junk1: 1
+ - junk2: inf
+ - junk3: -inf
+ - junk4: nan
+ - junk5: 'inf'
+ - junk6: '-inf'
+ - junk7: 'nan'
+ - junk8: None
+ - junk9: 'None'
 """
 
     def test_write(self):
