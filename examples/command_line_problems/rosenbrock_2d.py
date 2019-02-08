@@ -242,12 +242,10 @@ class Rosenbrock2D(PyomoProblem):
         branch_var = None
         if xdist > ydist:
             branch_var = self._model.x
-            dist = xdist
             L = xL
             U = xU
         else:
             branch_var = self._model.y
-            dist = ydist
             L = yL
             U = yU
         # branch
