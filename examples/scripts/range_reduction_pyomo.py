@@ -66,11 +66,9 @@ class Rosenbrock2D_RangeReduction(RangeReductionProblem):
         to perform range reduction solves"""
         vlist = []
         x, y = self.problem._model.x, self.problem._model.y
-        if (y.ub - y.lb) > \
-           self.problem._branch_abstol:
+        if (y.ub - y.lb) > self.improved_abstol:
             vlist.append(y)
-        if (x.ub - x.lb) > \
-           self.problem._branch_abstol:
+        if (x.ub - x.lb) > self.improved_abstol:
             vlist.append(x)
         return vlist
 
