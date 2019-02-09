@@ -11,6 +11,8 @@ __doctest_requires__ = {'SolverResults.write': ['yaml']}
 import sys
 import base64
 
+from pybnb.common import (SolutionStatus,
+                          TerminationCondition)
 from pybnb.misc import (time_format,
                         as_stream)
 from pybnb.node import dumps
@@ -22,39 +24,15 @@ class SolverResults(object):
 
     Attributes
     ----------
-    solution_status : :class:`SolutionStatus <pybnb.common.SolutionStatus>`
-        The solution status. This attribute is comparable
-        with strings as well as attributes of the
-        :class:`SolutionStatus <pybnb.common.SolutionStatus>`
-        enum.
-
-        Example
-        -------
-
-        >>> import pybnb
-        >>> results = pybnb.SolverResults()
-        >>> results.solution_status = pybnb.SolutionStatus.optimal
-        >>> assert results.solution_status == 'optimal'
-        >>> assert results.solution_status == pybnb.SolutionStatus.optimal
-        >>> assert results.solution_status.value == 'optimal'
-
-    termination_condition : :class:`TerminationCondition <pybnb.common.TerminationCondition>`
-        The solve termination condition, as
-        determined by the dispatcher. This attribute is comparable
-        with strings as well as attributes of the
-        :class:`TerminationCondition <pybnb.common.TerminationCondition>`
-        enum.
-
-        Example
-        -------
-
-        >>> import pybnb
-        >>> results = pybnb.SolverResults()
-        >>> results.termination_condition = pybnb.TerminationCondition.optimality
-        >>> assert results.termination_condition == 'optimality'
-        >>> assert results.termination_condition == pybnb.TerminationCondition.optimality
-        >>> assert results.termination_condition.value == 'optimality'
-
+    solution_status : string
+        The solution status will be set to one of the strings
+        documented by the :class:`SolutionStatus
+        <pybnb.common.SolutionStatus>` enum.
+    termination_condition : string
+        The solve termination condition, as determined by
+        the dispatcher, will be set to one of the strings
+        documented by the :class:`TerminationCondition
+        <pybnb.common.TerminationCondition>` enum.
     objective : float
         The best objective found.
     bound : float
@@ -155,7 +133,9 @@ class SolverResults(object):
                 if val is not None:
                     if name in ("solution_status",
                                 "termination_condition"):
-                        val = val.value
+                        if (val in SolutionStatus) or \
+                           (val in TerminationCondition):
+                            val = val.value
                     elif pretty:
                         if name == 'wall_time':
                             val = time_format(val,

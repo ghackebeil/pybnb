@@ -223,8 +223,7 @@ class Solver(object):
                best_objective,
                best_node,
                disable_objective_call,
-               convergence_checker,
-               results):
+               convergence_checker):
         from pybnb.futures import NestedSolver
         is_nested_solver = False
         if isinstance(problem, NestedSolver):
@@ -886,8 +885,7 @@ class Solver(object):
                                       best_objective,
                                       best_node,
                                       disable_objective_call,
-                                      convergence_checker,
-                                      results)
+                                      convergence_checker)
             (results.objective,
              results.best_node,
              results.bound,
@@ -909,6 +907,10 @@ class Solver(object):
             str(results)
         assert results.termination_condition in TerminationCondition,\
             str(results)
+
+        # convert to simple string types
+        results.solution_status = results.solution_status.value
+        results.termination_condition = results.termination_condition.value
 
         problem.notify_solve_finished(self.comm,
                                       self.worker_comm,

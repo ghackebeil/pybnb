@@ -36,6 +36,8 @@ _queue_strategies.append((QueueStrategy.bound,
                           QueueStrategy.objective,
                           'breadth'))
 
+import six
+
 def _execute_single_test(problem,
                          baseline,
                          solver=None,
@@ -55,7 +57,10 @@ def _execute_single_test(problem,
     orig = Node()
     problem.save_state(orig)
     results = solver.solve(problem, **kwds)
-
+    assert isinstance(results.solution_status,
+                      six.string_types)
+    assert isinstance(results.termination_condition,
+                      six.string_types)
     current = Node()
     problem.save_state(current)
     assert current.state == orig.state
