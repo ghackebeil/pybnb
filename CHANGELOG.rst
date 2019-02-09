@@ -13,10 +13,12 @@ Changelog
   should be created using `pybnb.Node()` as opposed to
   `node.new_child()`.
 * Removing `tree_id` and `parent_tree_id` attributes from
-  the Node class.
+  the Node class. These were simply adding unnecessary
+  complexity to the code while serving no real purpose.
 * Adding a helper class for performing a nested
   branch-and-bound solve and adding command-line options
-  that allow it to be used with the command-line examples.
+  that allow it to be used with the command-line
+  examples. Also, incorporating it into the TSP example.
 
 0.4.0 - 2019-01-31
 ~~~~~~~~~~~~~~~~~~
