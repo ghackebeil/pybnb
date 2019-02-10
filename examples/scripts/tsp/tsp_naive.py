@@ -64,10 +64,14 @@ def compute_route_cost(dist, route):
 
 def run_2opt(dist, cost, route):
     """Runs the 2-opt local search heuristic for TSP. Does
-    not assume the distance matrix is symmetric."""
+    not assume the distance matrix is symmetric. This
+    function makes a copy of the route argument before
+    running the heuristic, so the input list is not
+    modified."""
     N = len(route)
     assert N == len(dist)+1
     assert route[0] == route[-1]
+    route = list(route)
     while (1):
         start_over = False
         for i in range(1,N-1):
@@ -196,10 +200,10 @@ if __name__ == "__main__":
                      "to solve an instance of TSP."))
     parser.add_argument("data_filename", type=str,
                         help=("The name of a file that stores a "
-                              "dense distacency matrix."))
+                              "dense distance matrix."))
     parser.add_argument("--results-filename", type=str, default=None,
                         help=("When set, saves the solver results "
-                              "into a YAML-formated file with the "
+                              "into a YAML-formatted file with the "
                               "given name."))
     args = parser.parse_args()
 
@@ -212,13 +216,13 @@ if __name__ == "__main__":
     #      branch-and-bound strategy until any improvement
     #      to the previous best cost is made (objective_stop)
     #  (2) If the solution status from (1) is feasible, run
-    #      the 2opt heuristic to attempt to improve the
+    #      the 2-opt heuristic to attempt to improve the
     #      solution. For any other solution status (e.g.,
     #      optimal, infeasible), exit the solve loop.
     #  (3) Go to step (1), initializing the solve with the
     #      remaining queue items from the previous solve
     #      (initialize_queue), a potentially new best node
-    #      created with the solution returned from the 2opt
+    #      created with the solution returned from the 2-opt
     #      heuristic (best_node), and a new objective_stop
     #      value of one less than the current best cost (so
     #      we can go to step (2) if a new solution is
