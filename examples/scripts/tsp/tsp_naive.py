@@ -239,7 +239,7 @@ if __name__ == "__main__":
                                        time_limit=1),
             absolute_gap=0,
             relative_gap=None,
-            queue_strategy='bound',
+            queue_strategy='depth',
             initialize_queue=queue,
             best_node=best_node,
             objective_stop=objective_stop)
