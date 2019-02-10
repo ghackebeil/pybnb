@@ -38,7 +38,8 @@ shown in the example below.
     'optimal'
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     getting_started/index.rst
+    advanced_usage/index.rst
     reference/index.rst

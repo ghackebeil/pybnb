@@ -31,3 +31,5 @@ indices
 prepended
 config
 serializer
+GHz
+CPython

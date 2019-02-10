@@ -1,8 +1,8 @@
 #
 # This example defines a script that solves the Traveling
 # Salesperson Problem using a naive branching and bounding
-# strategy. It highlights a number of advanced features,
-# including:
+# strategy. It highlights a number of advanced pybnb
+# features, including:
 #  (1) the use of pybnb.futures.NestedSolver
 #  (2) re-continuing a solve after early termination
 #
