@@ -37,3 +37,4 @@ Modules
     mpi_utils
     misc
     pyomo/index.rst
+    futures
