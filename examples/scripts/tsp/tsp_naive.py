@@ -192,7 +192,6 @@ class TSP_Naive(pybnb.Problem):
         results.tour = tour
 
 if __name__ == "__main__":
-    import pybnb.futures
     import argparse
 
     parser = argparse.ArgumentParser(

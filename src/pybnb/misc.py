@@ -357,7 +357,6 @@ def get_simple_logger(filename=None,
 
 def _run_command_line_solver(problem, args):
     import pybnb
-    import pybnb.futures
     if args.nested_solver:
         problem = pybnb.futures.NestedSolver(
             problem,
@@ -623,7 +622,6 @@ def create_command_line_solver(problem, parser=None):
     parser.add_argument('--version',
                         action='version',
                         version='pybnb '+str(pybnb.__version__))
-    import pybnb.futures
     nested_solver_defaults = get_default_args(
         pybnb.futures.NestedSolver.__init__)
     nested_solver_docs = get_keyword_docs(

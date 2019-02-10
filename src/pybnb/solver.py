@@ -30,6 +30,7 @@ from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (DispatcherLocal,
                               DispatcherDistributed,
                               DispatcherQueueData)
+from pybnb.futures import NestedSolver
 
 try:
     import mpi4py
@@ -224,7 +225,6 @@ class Solver(object):
                best_node,
                disable_objective_call,
                convergence_checker):
-        from pybnb.futures import NestedSolver
         is_nested_solver = False
         if isinstance(problem, NestedSolver):
             is_nested_solver = True

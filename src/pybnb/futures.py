@@ -3,7 +3,6 @@ import logging
 import math
 
 from pybnb.dispatcher import DispatcherQueueData
-from pybnb.solver import Solver
 from pybnb.problem import _ProblemWithSolveInfoCollection
 
 class _RedirectHandler(logging.Handler):
@@ -51,6 +50,9 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
                  node_limit=None,
                  time_limit=5,
                  queue_strategy="depth"):
+        # we import from pybnb.solver here to avoid a
+        # circular import reference
+        from pybnb.solver import Solver
         self._problem = problem
         self._node_limit = node_limit
         self._time_limit = time_limit
