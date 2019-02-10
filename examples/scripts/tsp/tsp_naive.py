@@ -243,7 +243,8 @@ if __name__ == "__main__":
             initialize_queue=queue,
             best_node=best_node,
             objective_stop=objective_stop)
-        if results.solution_status == "feasible":
+        if (results.solution_status == "feasible") and \
+           (results.termination_condition != "interrupted"):
            assert results.best_node is not None
            assert results.tour is not None
            cost, route = run_2opt(dist,
@@ -266,7 +267,9 @@ if __name__ == "__main__":
                       +str(results.solution_status))
             break
 
+    stats = solver.collect_worker_statistics()
     if solver.is_dispatcher:
+        pybnb.solver.summarize_worker_statistics(stats)
         # save results to a file
         # (mainly used for testing this example)
         if args.results_filename is not None:
