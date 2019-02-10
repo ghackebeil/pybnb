@@ -1,8 +1,13 @@
 Changelog
 =========
 
-0.5.0 - `master`_
+0.6.0 - `master`_
 ~~~~~~~~~~~~~~~~~
+
+* TODO
+
+0.5.0 - 2019-02-10
+~~~~~~~~~~~~~~~~~~
 
 * Tracking the best node and storing it on the results
   object (#1, #3, #7)
