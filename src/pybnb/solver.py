@@ -601,7 +601,14 @@ class Solver(object):
             care. The recommended way to re-continue a solve
             from a known candidate solution is to assign the
             best_node attribute of a results object to the
-            best_node solve option. (default: None)
+            best_node solve option. Also note that the best
+            node will be tracked separately from the given
+            initial best objective until a node is found
+            that improves upon the best objective. If this
+            never happens, the best_node attribute on the
+            solver results may be None or may have an
+            objective that is worse than the objective
+            attribute of the solver results. (default: None)
         best_node : :class:`Node <pybnb.node.Node>`, optional
             Initializes the solve with an assumed best node.
             This option can (and should) be used in place of

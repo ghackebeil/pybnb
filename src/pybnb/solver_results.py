@@ -52,7 +52,7 @@ class SolverResults(object):
         solve. Note that if the best_objective solver option
         was used, the best_node on the results object may
         have an objective that is worse than the objective
-        stored on the results.
+        stored on the results (or may be None).
     """
 
     def __init__(self):
