@@ -19,6 +19,11 @@ Changelog
   branch-and-bound solve and adding command-line options
   that allow it to be used with the command-line
   examples. Also, incorporating it into the TSP example.
+* Replacing both the notify_new_best_objective and
+  notify_new_best_objective_received Problem callbacks with
+  a single notify_new_best_node callback. This new callback
+  includes an additional argument indicating if the
+  currently loaded node is the new best.
 
 0.4.0 - 2019-01-31
 ~~~~~~~~~~~~~~~~~~
