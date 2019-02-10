@@ -133,8 +133,8 @@ class SolverResults(object):
                 if val is not None:
                     if name in ("solution_status",
                                 "termination_condition"):
-                        if (val in SolutionStatus) or \
-                           (val in TerminationCondition):
+                        if type(val) in (SolutionStatus,
+                                         TerminationCondition):
                             val = val.value
                     elif pretty:
                         if name == 'wall_time':
