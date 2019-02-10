@@ -11,4 +11,4 @@ class UnboundedMax(pybnb.Problem):
     def bound(self): return self.unbounded_objective()
     def save_state(self, node): pass
     def load_state(self, node): pass
-    def branch(self, node): raise NotImplementedError()
+    def branch(self): raise NotImplementedError()

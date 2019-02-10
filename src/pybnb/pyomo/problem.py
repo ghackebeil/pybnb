@@ -4,8 +4,12 @@ on a pyomo.kernel model.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-from pybnb import Problem
+from pybnb import (minimize,
+                   maximize,
+                   Problem)
 from pybnb.pyomo.misc import generate_cids
+
+import pyomo.kernel as pmo
 
 class PyomoProblem(Problem):
     """An extension of the :class:`pybnb.Problem
@@ -64,3 +68,15 @@ class PyomoProblem(Problem):
         user.
         """
         raise NotImplementedError()               #pragma:nocover
+
+    #
+    # Implements a few problem methods
+    #
+
+    def sense(self):
+        obj = self.pyomo_model_objective
+        if obj.sense == pmo.minimize:
+            return minimize
+        else:
+            assert obj.sense == pmo.maximize
+            return maximize

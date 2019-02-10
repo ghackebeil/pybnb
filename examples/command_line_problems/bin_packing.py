@@ -74,17 +74,7 @@ class BinPacking(pybnb.Problem):
             pyomo_solver,
             solver_io=pyomo_solver_io)
 
-    def _check_feasible(self):
-        """Check if the currently loaded solution
-        is feasible for the true (binary) model."""
-        for V in (self.model.x, self.model.y):
-            for v in V.components():
-                if (abs(v.value) > self._integer_tolerance) and \
-                   (abs(v.value - 1) > self._integer_tolerance):
-                    return False
-        return True
-
-    def _branch_y(self, node):
+    def _branch_y(self):
 
         N = range(len(self.W))
         for i in N:
@@ -115,8 +105,8 @@ class BinPacking(pybnb.Problem):
         orig_bounds.update((xij, xij.bounds)
                            for xij in self.model.x.components())
 
-        children = [node.new_child(),
-                    node.new_child()]
+        children = [pybnb.Node(),
+                    pybnb.Node()]
 
         # first branch: fix this bin on
         self.model.y[i].lb = self.model.y[i].ub = 1
@@ -137,7 +127,7 @@ class BinPacking(pybnb.Problem):
 
         return children
 
-    def _branch_x(self, node):
+    def _branch_x(self):
         N = range(len(self.W))
         orig_bounds = pmo.ComponentMap()
         orig_bounds.update((yi, yi.bounds)
@@ -179,8 +169,8 @@ class BinPacking(pybnb.Problem):
             return ()
 
         assert bv is not None
-        children = [node.new_child(),
-                    node.new_child()]
+        children = [pybnb.Node(),
+                    pybnb.Node()]
         bv.lb = bv.ub = 1
         self.save_state(children[0])
         bv.lb = bv.ub = 0
@@ -218,10 +208,8 @@ class BinPacking(pybnb.Problem):
             if assigned == 1:
                 for i in N:
                     if self.model.x[i,j].value == 1:
-                        if self.model.y[i].ub == 0:
-                            return self.infeasible_objective()
-                        else:
-                            self.model.y[i].value = 1
+                        assert self.model.y[i].ub == 1
+                        self.model.y[i].value = 1
             else:
                 assert assigned == 0
                 item_order.append(j)
@@ -245,10 +233,8 @@ class BinPacking(pybnb.Problem):
             for i in bins:
                 if self.model.x[i,j].ub == 1:
                     if self.model.y[i].value == 0:
-                        if self.model.y[i].ub == 1:
-                            self.model.y[i].value = 1
-                        else:
-                            continue
+                        assert self.model.y[i].ub == 1
+                        self.model.y[i].value = 1
                     if bin_weight[i] + self.W[j] <= self.V:
                         assert self.model.x[i,j].value == 0
                         assert self.model.x[i,j].lb == 0
@@ -259,7 +245,6 @@ class BinPacking(pybnb.Problem):
             else:
                 return self.infeasible_objective()
 
-        assert self._check_feasible()
         return self.model.objective()
 
     def bound(self):
@@ -300,13 +285,13 @@ class BinPacking(pybnb.Problem):
                 vi.bounds = node.state[k]
                 k += 1
 
-    def branch(self, node):
+    def branch(self):
         # try to branch on y
-        children = self._branch_y(node)
+        children = self._branch_y()
         if len(children):
             return children
         # otherwise, branch on x
-        return self._branch_x(node)
+        return self._branch_x()
 
 if __name__ == "__main__":
     import pybnb.misc

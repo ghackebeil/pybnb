@@ -66,7 +66,7 @@ del _val
 class SolutionStatus(str, enum.Enum):
     """Possible values assigned to the
     :attr:`solution_status` attribute of a
-    :class:`SolverResults <pybnb.solver.SolverResults>`
+    :class:`SolverResults <pybnb.solver_results.SolverResults>`
     object returned from a solve."""
 
     optimal = "optimal"
@@ -105,7 +105,7 @@ del _val
 class TerminationCondition(str, enum.Enum):
     """Possible values assigned to the
     :attr:`termination_condition` attribute of a
-    :class:`SolverResults <pybnb.solver.SolverResults>`
+    :class:`SolverResults <pybnb.solver_results.SolverResults>`
     object returned from a solve."""
 
     optimality = "optimality"

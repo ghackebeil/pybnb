@@ -23,6 +23,15 @@ from pybnb.priority_queue import \
      PriorityQueueFactory,
      register_queue_type)
 
+def _new_child(node):
+    child = Node()
+    child.objective = node.objective
+    child.bound = node.bound
+    child.tree_depth = node.tree_depth + 1
+    assert child.queue_priority is None
+    assert child.state is None
+    return child
+
 def assert_isheap(x):
     for k in range(len(x)):
         if ((2*k) + 1) < len(x):
@@ -541,13 +550,14 @@ class TestCustomPriorityQueue(object):
     def test_missing_queue_priority(self):
         q = CustomPriorityQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         assert node.queue_priority is None
         with pytest.raises(ValueError):
             q.put(node)
         node.queue_priority = 1
         q.put(node)
-        child = node.new_child()
+        child = _new_child(node)
         assert child.queue_priority is None
         with pytest.raises(ValueError):
             q.put(child)
@@ -689,13 +699,14 @@ class TestBestObjectiveFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         q = BestObjectiveFirstPriorityQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = -1
         assert node.queue_priority is None
         node.objective = 1
         assert q.put(node) == 0
         assert node.objective == 1
         assert node.queue_priority == -1
-        child = node.new_child()
+        child = _new_child(node)
         assert child.objective == 1
         child.objective = 0
         assert child.queue_priority is None
@@ -714,13 +725,14 @@ class TestBestObjectiveFirstPriorityQueue(object):
 
         q = BestObjectiveFirstPriorityQueue(maximize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 3
         assert node.queue_priority is None
         node.objective = 1
         assert q.put(node) == 0
         assert node.objective == 1
         assert node.queue_priority == 1
-        child = node.new_child()
+        child = _new_child(node)
         assert child.objective == 1
         child.objective = 2
         assert child.queue_priority is None
@@ -742,21 +754,23 @@ class TestBreadthFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         q = BreadthFirstPriorityQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.tree_depth == 0
         assert node.queue_priority == 0
-        child = node.new_child()
+        child = _new_child(node)
         assert child.tree_depth == 1
         assert child.queue_priority is None
         assert q.put(child) == 1
         assert child.queue_priority == -child.tree_depth
 
         l1 = Node()
+        l1.tree_depth = 0
         l1.bound = 1
-        l2 = l1.new_child()
-        l3 = l2.new_child()
+        l2 = _new_child(l1)
+        l3 = _new_child(l2)
         q = BreadthFirstPriorityQueue(minimize)
         q.put(l2)
         cnt = q.put(l1)
@@ -774,21 +788,23 @@ class TestDepthFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         q = DepthFirstPriorityQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.tree_depth == 0
         assert node.queue_priority == 0
-        child = node.new_child()
+        child = _new_child(node)
         assert child.tree_depth == 1
         assert child.queue_priority is None
         assert q.put(child) == 1
         assert child.queue_priority == child.tree_depth
 
         l1 = Node()
+        l1.tree_depth = 0
         l1.bound = 1
-        l2 = l1.new_child()
-        l3 = l2.new_child()
+        l2 = _new_child(l1)
+        l3 = _new_child(l2)
         q = DepthFirstPriorityQueue(minimize)
         q.put(l2)
         cnt = q.put(l3)
@@ -806,19 +822,21 @@ class TestFIFOQueue(object):
     def test_overwrites_queue_priority(self):
         q = FIFOQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority == 0
-        child = node.new_child()
+        child = _new_child(node)
         assert child.queue_priority is None
         assert q.put(child) == 1
         assert child.queue_priority == -1
 
         l1 = Node()
+        l1.tree_depth = 0
         l1.bound = 1
-        l2 = l1.new_child()
-        l3 = l2.new_child()
+        l2 = _new_child(l1)
+        l3 = _new_child(l2)
         q = FIFOQueue(minimize)
         cnt = q.put(l2)
         node_ = q.get()
@@ -841,19 +859,21 @@ class TestLIFOQueue(object):
     def test_overwrites_queue_priority(self):
         q = LIFOQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority == 0
-        child = node.new_child()
+        child = _new_child(node)
         assert child.queue_priority is None
         assert q.put(child) == 1
         assert child.queue_priority == 1
 
         l1 = Node()
+        l1.tree_depth = 0
         l1.bound = 1
-        l2 = l1.new_child()
-        l3 = l2.new_child()
+        l2 = _new_child(l1)
+        l3 = _new_child(l2)
         q = LIFOQueue(minimize)
         cnt = q.put(l2)
         node_ = q.get()
@@ -875,21 +895,23 @@ class TestRandomPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         q = RandomPriorityQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority is not None
         assert 0 <= node.queue_priority <= 1
-        child = node.new_child()
+        child = _new_child(node)
         assert child.queue_priority is None
         assert q.put(child) == 1
         assert child.queue_priority is not None
         assert 0 <= child.queue_priority <= 1
 
         l1 = Node()
+        l1.tree_depth = 0
         l1.bound = 1
-        l2 = l1.new_child()
-        l3 = l2.new_child()
+        l2 = _new_child(l1)
+        l3 = _new_child(l2)
         q = RandomPriorityQueue(minimize)
         assert l2.queue_priority is None
         cnt = q.put(l2)
@@ -914,13 +936,14 @@ class TestLocalGapPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         q = LocalGapPriorityQueue(minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = -inf
         node.objective = inf
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority is not None
         assert node.queue_priority == inf
-        child = node.new_child()
+        child = _new_child(node)
         assert child.bound == -inf
         assert child.objective == inf
         child.bound = 0
@@ -928,7 +951,7 @@ class TestLocalGapPriorityQueue(object):
         assert q.put(child) == 1
         assert child.queue_priority is not None
         assert child.queue_priority == inf
-        child = child.new_child()
+        child = _new_child(child)
         assert child.bound == 0
         assert child.objective == inf
         child.objective = 1
@@ -938,10 +961,11 @@ class TestLocalGapPriorityQueue(object):
         assert child.queue_priority == 1
 
         l1 = Node()
+        l1.tree_depth = 0
         l1.bound = 1
         l1.objective = 5
-        l2 = l1.new_child()
-        l3 = l2.new_child()
+        l2 = _new_child(l1)
+        l3 = _new_child(l2)
         q = LocalGapPriorityQueue(minimize)
         assert l2.queue_priority is None
         cnt = q.put(l2)
@@ -963,13 +987,14 @@ class TestLocalGapPriorityQueue(object):
 
         q = LocalGapPriorityQueue(maximize)
         node = Node()
+        node.tree_depth = 0
         node.bound = inf
         node.objective = -inf
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority is not None
         assert node.queue_priority == inf
-        child = node.new_child()
+        child = _new_child(node)
         assert child.bound == inf
         assert child.objective == -inf
         child.bound = 0
@@ -977,7 +1002,7 @@ class TestLocalGapPriorityQueue(object):
         assert q.put(child) == 1
         assert child.queue_priority is not None
         assert child.queue_priority == inf
-        child = child.new_child()
+        child = _new_child(child)
         assert child.bound == 0
         assert child.objective == -inf
         child.objective = -1
@@ -987,10 +1012,11 @@ class TestLocalGapPriorityQueue(object):
         assert child.queue_priority == 1
 
         l1 = Node()
+        l1.tree_depth = 0
         l1.bound = -1
         l1.objective = -5
-        l2 = l1.new_child()
-        l3 = l2.new_child()
+        l2 = _new_child(l1)
+        l3 = _new_child(l2)
         q = LocalGapPriorityQueue(maximize)
         assert l2.queue_priority is None
         cnt = q.put(l2)
@@ -1019,13 +1045,14 @@ class TestLexicographicPriorityQueue(object):
              BestObjectiveFirstPriorityQueue),
             minimize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         node.objective = 2
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority is not None
         assert node.queue_priority == (0,-2)
-        c1 = child = node.new_child()
+        c1 = child = _new_child(node)
         assert child.bound == 0
         assert child.objective == 2
         child.objective = 1
@@ -1033,7 +1060,7 @@ class TestLexicographicPriorityQueue(object):
         assert q.put(child) == 1
         assert child.queue_priority is not None
         assert child.queue_priority == (0,-1)
-        c2 = child = child.new_child()
+        c2 = child = _new_child(child)
         assert child.bound == 0
         assert child.objective == 1
         child.bound = -1
@@ -1042,7 +1069,7 @@ class TestLexicographicPriorityQueue(object):
         assert q.put(child) == 2
         assert child.queue_priority is not None
         assert child.queue_priority == (1,-2)
-        c3 = child = child.new_child()
+        c3 = child = _new_child(child)
         assert child.bound == -1
         assert child.objective == 2
         child.bound = 1
@@ -1063,13 +1090,14 @@ class TestLexicographicPriorityQueue(object):
              BestObjectiveFirstPriorityQueue),
             maximize)
         node = Node()
+        node.tree_depth = 0
         node.bound = 0
         node.objective = -2
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority is not None
         assert node.queue_priority == (0,-2)
-        c1 = child = node.new_child()
+        c1 = child = _new_child(node)
         assert child.bound == 0
         assert child.objective == -2
         child.objective = -1
@@ -1077,7 +1105,7 @@ class TestLexicographicPriorityQueue(object):
         assert q.put(child) == 1
         assert child.queue_priority is not None
         assert child.queue_priority == (0,-1)
-        c2 = child = child.new_child()
+        c2 = child = _new_child(child)
         assert child.bound == 0
         assert child.objective == -1
         child.bound = 1
@@ -1086,7 +1114,7 @@ class TestLexicographicPriorityQueue(object):
         assert q.put(child) == 2
         assert child.queue_priority is not None
         assert child.queue_priority == (1,-2)
-        c3 = child = child.new_child()
+        c3 = child = _new_child(child)
         assert child.bound == 1
         assert child.objective == -2
         child.bound = -1

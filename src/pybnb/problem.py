@@ -78,8 +78,8 @@ class Problem(object):
         """
         raise NotImplementedError()
 
-    def branch(self, node):                #pragma:nocover
-        """Returns a list of :class:`pybnb.node.Node`
+    def branch(self):                #pragma:nocover
+        """Returns a list of :class:`Node <pybnb.node.Node>`
         objects that partition the node state into zero or
         more children. This method can also be defined as a
         generator.
@@ -99,9 +99,8 @@ class Problem(object):
         start of the solve by all processes involved to
         collect the root node problem state, but it may be
         called additional times. When it is called for the
-        root node, the :attr:`node.tree_id <pybnb.node.Node.tree_id>`
-        and :attr:`node.parent_tree_id <pybnb.node.Node.parent_tree_id>`
-        will both be None.
+        root node, the :attr:`node.tree_depth <pybnb.node.Node.tree_depth>`
+        will be zero.
 
         Note
         ----
@@ -151,33 +150,24 @@ class Problem(object):
         """
         pass
 
-    def notify_new_best_objective_received(self,
-                                           objective):
+    def notify_new_best_node(self,
+                             node,
+                             current):
         """Called when a branch-and-bound solver receives a
-        new finite best objective. The :class:`Problem
-        <pybnb.problem.Problem>` base class provides a
-        default implementation for this method that does
-        nothing.
-
-        Parameters
-        ----------
-        objective : float
-            The new best objective value.
-        """
-        pass
-
-    def notify_new_best_objective(self,
-                                  objective):
-        """Called when a branch-and-bound solver locally
-        computes a new finite best objective. The
+        new best node from the dispatcher. The
         :class:`Problem <pybnb.problem.Problem>` base class
         provides a default implementation for this method
         that does nothing.
 
         Parameters
         ----------
-        objective : float
-            The new best objective value.
+        node : :class:`Node <pybnb.node.Node>`
+            The new best node.
+        current : bool
+            Indicates whether or not the node argument is
+            the currently loaded node (from the most recent
+            :func:`load_state <pybnb.problem.load_state>`
+            call).
         """
         pass
 
@@ -201,7 +191,7 @@ class Problem(object):
             The MPI communicator that includes only worker
             processes. Will be None if MPI has been
             disabled.
-        results : :class:`pybnb.solver.SolverResults`
+        results : :class:`SolverResults <pybnb.solver_results.SolverResults>`
             The fully populated results container that will
             be returned from the solver.
         """
@@ -332,7 +322,6 @@ class _SolveInfo(object):
 class _ProblemWithSolveInfoCollection(Problem):
     """A Problem objects that keeps track of statistics used
     by the solver"""
-
     def __init__(self):
         self._clock = None
         self._solve_info = None
@@ -347,7 +336,6 @@ class _ProblemWithSolveInfoCollection(Problem):
 class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
     """A wrapper for Problem objects that collects statistics
     on methods called during the solve."""
-
     def __init__(self, problem):
         self._problem = problem
         super(_SimpleSolveInfoCollector, self).__init__()
@@ -373,9 +361,9 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         self._solve_info._increment_bound_stat(stop-start, 1)
         return tmp
 
-    def branch(self, node):
+    def branch(self):
         start = self._clock()
-        for item in self._problem.branch(node):
+        for item in self._problem.branch():
             yield item
         stop = self._clock()
         self._solve_info._increment_branch_stat(stop-start, 1)
@@ -398,15 +386,11 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
             worker_comm,
             convergence_checker)
 
-    def notify_new_best_objective_received(self,
-                                           objective):
-        self._problem.notify_new_best_objective_received(
-            objective)
-
-    def notify_new_best_objective(self,
-                                  objective):
-        self._problem.notify_new_best_objective(
-            objective)
+    def notify_new_best_node(self,
+                             node,
+                             current):
+        self._problem.notify_new_best_node(node,
+                                           current)
 
     def notify_solve_finished(self,
                               comm,

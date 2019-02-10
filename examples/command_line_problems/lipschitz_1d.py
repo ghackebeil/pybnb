@@ -21,15 +21,15 @@ class Lipschitz1D(pybnb.Problem):
 
     _LC = 12.0
 
-    def __init__(self, xL, xU,  branch_abstol=1e-5):
-        assert branch_abstol > 0
+    def __init__(self, xL, xU):
         assert xL <= xU
-        self._branch_abstol = branch_abstol
         self._xL = xL
+        self._xM = 0.5*(xL+xU)
         self._xU = xU
-        self._fL_cached = self._f(self._xL)
-        self._fU_cached = self._f(self._xU)
-        self._fmid_cached = self._f(0.5*(self._xL + self._xU))
+        assert self._xL <= self._xM <= self._xU
+        self._fL_cached = None
+        self._fM_cached = None
+        self._fU_cached = None
 
     @jit
     def _f(self, x):
@@ -49,12 +49,15 @@ class Lipschitz1D(pybnb.Problem):
         return pybnb.maximize
 
     def objective(self):
-        if self._fmid_cached is None:
-            mid = 0.5 * (self._xL + self._xU)
-            self._fmid_cached = self._f(mid)
-        return self._fmid_cached
+        if self._fM_cached is None:
+            self._fM_cached = self._f(self._xM)
+        return self._fM_cached
 
     def bound(self):
+        if self._fL_cached is None:
+            self._fL_cached = self._f(self._xL)
+        if self._fU_cached is None:
+            self._fU_cached = self._f(self._xU)
         return 0.5*self._fL_cached + \
                0.5*self._fU_cached + \
                0.5*self._LC*(self._xU-self._xL)
@@ -63,52 +66,30 @@ class Lipschitz1D(pybnb.Problem):
         node.state = (self._xL,
                       self._xU,
                       self._fL_cached,
-                      self._fU_cached,
-                      self._fmid_cached)
+                      self._fU_cached)
 
     def load_state(self, node):
         (self._xL,
          self._xU,
          self._fL_cached,
-         self._fU_cached,
-         self._fmid_cached) = node.state
+         self._fU_cached) = node.state
+        self._xM = 0.5*(self._xL+self._xU)
+        self._fM_cached = None
+        assert self._xL <= self._xM <= self._xU
 
-    def branch(self, node):
-        dist = float(self._xU - self._xL)
-        if 0.5*dist < self._branch_abstol:
-            return ()
-
-        # save the current state in the argument node, so we
-        # can easily reset
-        self.save_state(node)
-
-        # branch
-        xL, xU = self._xL, self._xU
-        fL, fU = self._fL_cached, self._fU_cached
-        fmid = self._fmid_cached
-        children = [node.new_child() for i in range(2)]
-        mid = 0.5*(xL + xU)
-
-        # left child
-        self._xL = xL
-        self._xU = mid
-        self._fL_cached = fL
-        self._fU_cached = fmid
-        self._fmid_cached = None
-        self.save_state(children[0])
-
-        # right child
-        self._xL = mid
-        self._xU = xU
-        self._fL_cached = fmid
-        self._fU_cached = fU
-        self._fmid_cached = None
-        self.save_state(children[1])
-
-        # reset the current state
-        self.load_state(node)
-
-        return children
+    def branch(self):
+        child = pybnb.Node()
+        child.state = (self._xL,
+                       self._xM,
+                       self._fL_cached,
+                       self._fM_cached)
+        yield child
+        child = pybnb.Node()
+        child.state = (self._xM,
+                       self._xU,
+                       self._fM_cached,
+                       self._fU_cached)
+        yield child
 
 if __name__ == "__main__":
     import pybnb.misc

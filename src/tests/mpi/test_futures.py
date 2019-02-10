@@ -1,7 +1,5 @@
 import logging
 
-import pytest
-
 from pybnb.common import minimize
 from pybnb.convergence_checker import ConvergenceChecker
 from pybnb.node import Node
@@ -9,6 +7,7 @@ from pybnb.solver import Solver
 from pybnb.problem import Problem
 from pybnb.dispatcher import DispatcherQueueData
 from pybnb.misc import get_simple_logger
+from pybnb.futures import _RedirectHandler
 
 from .common import mpi_available
 
@@ -17,18 +16,14 @@ from runtests.mpi import MPITest
 
 def _get_logging_baseline(size):
     out = \
-"""[DEBUG] 0: debug
-[INFO] 0: info
-[WARNING] 0: warning
+"""[WARNING] 0: warning
 [ERROR] 0: error
 [CRITICAL] 0: critical"""
     for i in range(1,size):
         out += ("""
-[DEBUG] %d: debug
-[INFO] %d: info
 [WARNING] %d: warning
 [ERROR] %d: error
-[CRITICAL] %d: critical""") % (i,i,i,i,i)
+[CRITICAL] %d: critical""") % (i,i,i)
     return out
 
 class DummyProblem(Problem):
@@ -40,9 +35,12 @@ class DummyProblem(Problem):
     def load_state(self, node): pass
     def branch(self): return ()
 
-def _logging_check(comm):
+def _logging_redirect_check(comm):
     opt = Solver(comm=comm)
     p = DummyProblem()
+    log = logging.Logger(None,
+                         level=logging.WARNING)
+    log.addHandler(_RedirectHandler(opt._disp))
     if opt.is_dispatcher:
         assert (comm is None) or (comm.rank == 0)
         root = Node()
@@ -67,11 +65,11 @@ def _logging_check(comm):
                                                formatter=formatter),
                              0.0,
                              True)
-        opt._disp.log_debug("0: debug")
-        opt._disp.log_info("0: info")
-        opt._disp.log_warning("0: warning")
-        opt._disp.log_error("0: error")
-        opt._disp.log_critical("0: critical")
+        log.debug("0: debug")
+        log.info("0: info")
+        log.warning("0: warning")
+        log.error("0: error")
+        log.critical("0: critical")
         if (comm is not None) and (comm.size > 1):
             opt._disp.serve()
     else:
@@ -79,11 +77,11 @@ def _logging_check(comm):
         if comm.size > 1:
             for i in range(1, comm.size):
                 if comm.rank == i:
-                    opt._disp.log_debug(str(comm.rank)+": debug")
-                    opt._disp.log_info(str(comm.rank)+": info")
-                    opt._disp.log_warning(str(comm.rank)+": warning")
-                    opt._disp.log_error(str(comm.rank)+": error")
-                    opt._disp.log_critical(str(comm.rank)+": critical")
+                    log.debug(str(comm.rank)+": debug")
+                    log.info(str(comm.rank)+": info")
+                    log.warning(str(comm.rank)+": warning")
+                    log.error(str(comm.rank)+": error")
+                    log.critical(str(comm.rank)+": critical")
                 opt.worker_comm.Barrier()
             if opt.worker_comm.rank == 0:
                 opt._disp.stop_listen()
@@ -93,21 +91,11 @@ def _logging_check(comm):
         assert ('\n'.join(out.getvalue().splitlines()[7:])) == \
                 _get_logging_baseline(comm.size if comm is not None else 1)
 
-def test_logging_nocomm():
-    _logging_check(None)
+def test_logging_redirect_nocomm():
+    _logging_redirect_check(None)
 
 if mpi_available:
 
     @MPITest(commsize=[1, 2, 3])
-    def test_bad_dispatcher_rank(comm):
-        with pytest.raises(ValueError):
-            Solver(comm=comm, dispatcher_rank=-1)
-        with pytest.raises(ValueError):
-            Solver(comm=comm, dispatcher_rank=comm.size)
-        with pytest.raises(ValueError):
-            Solver(comm=comm, dispatcher_rank=comm.size - 1.1)
-        Solver(comm=comm, dispatcher_rank=comm.size - 1)
-
-    @MPITest(commsize=[1, 2, 3])
-    def test_logging(comm):
-        _logging_check(comm)
+    def test_logging_redirect(comm):
+        _logging_redirect_check(comm)

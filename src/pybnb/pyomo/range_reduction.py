@@ -4,6 +4,7 @@ reduction on a PyomoProblem during a branch-and-bound solve.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+import math
 import array
 
 from pybnb import (inf, Problem)
@@ -30,12 +31,15 @@ class RangeReductionProblem(Problem):
 
     def __init__(self,
                  problem,
-                 best_objective,
+                 best_objective=None,
                  comm=None):
         assert isinstance(problem, PyomoProblem)
         self.problem = problem
         assert best_objective != self.unbounded_objective
-        self._best_objective = float(best_objective)
+        self._best_objective = best_objective
+        if self._best_objective is None:
+            self._best_objective = self.problem.infeasible_objective()
+        assert not math.isnan(self._best_objective)
         self._comm = comm
         if self._comm is not None:
             import mpi4py.MPI
@@ -224,7 +228,7 @@ class RangeReductionProblem(Problem):
         return self.problem.sense()
 
     def objective(self):
-        return self._best_objective
+        return self.problem.objective()
 
     def bound(self):
         # tell the listeners to start bounds tightening
@@ -246,16 +250,13 @@ class RangeReductionProblem(Problem):
     def load_state(self, node):
         self.problem.load_state(node)
 
-    def branch(self, node):
-        return self.problem.branch(node)
+    def branch(self):
+        return self.problem.branch()
 
-    def notify_new_best_objective_received(self,
-                                           objective):
-        self._best_objective = objective
-
-    def notify_new_best_objective(self,
-                                  objective):
-        self.notify_new_best_objective_received(objective)
+    def notify_new_best_node(self,
+                             node,
+                             current):
+        self._best_objective = node.objective
 
     def notify_solve_finished(self,
                               comm,

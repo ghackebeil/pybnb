@@ -338,38 +338,46 @@ class ConvergenceChecker(object):
         comparison tolerance."""
         return self._check_delta(new, old)
 
-    def worst_bound(self, *bounds):
+    def worst_bound(self, *args, **kwds):
         """Returns the worst bound, as defined by the
         objective sense, from a given iterable of bound
-        values."""
+        values. This function passes all keywords and
+        arguments directly to the built-ins `min` and
+        `max`."""
         if self.sense == minimize:
-            return min(*bounds)
+            return min(*args)
         else:
-            return max(*bounds)
+            return max(*args)
 
-    def best_bound(self, *bounds):
+    def best_bound(self, *args, **kwds):
         """Returns the best bound, as defined by the
         objective sense, from a given iterable of bound
-        values."""
+        values. This function passes all keywords and
+        arguments directly to the built-ins `min` and
+        `max`."""
         if self.sense == minimize:
-            return max(*bounds)
+            return max(*args, **kwds)
         else:
-            return min(*bounds)
+            return min(*args, **kwds)
 
-    def worst_objective(self, *objectives):
+    def worst_objective(self, *args, **kwds):
         """Returns the worst objective, as defined by the
         objective sense, from a given iterable of objective
-        values."""
+        values. This function passes all keywords and
+        arguments directly to the built-ins `min` and
+        `max`."""
         if self.sense == minimize:
-            return max(*objectives)
+            return max(*args, **kwds)
         else:
-            return min(*objectives)
+            return min(*args, **kwds)
 
-    def best_objective(self, *objectives):
+    def best_objective(self, *args, **kwds):
         """Returns the best objective, as defined by the
         objective sense, from a given iterable of objective
-        values."""
+        values. This function passes all keywords and
+        arguments directly to the built-ins `min` and
+        `max`."""
         if self.sense == minimize:
-            return min(*objectives)
+            return min(*args, **kwds)
         else:
-            return max(*objectives)
+            return max(*args, **kwds)

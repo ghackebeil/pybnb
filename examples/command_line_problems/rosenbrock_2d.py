@@ -34,7 +34,8 @@ class McCormickEnvelope(pmo.constraint_tuple):
         self.update_constraints()
 
     def update_constraints(self):
-        """Rebuild constraints using current domain variable bounds"""
+        """Rebuild constraints using current domain variable
+        bounds"""
         x, y, z = self.x, self.y, self.z
         assert x.has_lb() and x.has_ub()
         assert y.has_lb() and y.has_ub()
@@ -63,7 +64,8 @@ class SquaredEnvelope(pmo.constraint_tuple):
         self.update_constraints()
 
     def update_constraints(self):
-        """Rebuild constraints using current domain variable bounds"""
+        """Rebuild constraints using current domain variable
+        bounds"""
         x, z = self.x, self.z
         assert x.has_lb() and x.has_ub()
         self[1].body = z - (x.lb + x.ub)*x
@@ -82,11 +84,9 @@ class SquaredEnvelope(pmo.constraint_tuple):
 
 class Rosenbrock2D(PyomoProblem):
 
-    def __init__(self, xL, xU, yL, yU, branch_abstol=1e-3):
-        assert branch_abstol > 0
+    def __init__(self, xL, xU, yL, yU):
         assert xL <= xU
         assert yL <= yU
-        self._branch_abstol = branch_abstol
         self._model = pmo.block()
         x = self._model.x = pmo.variable(lb=xL, ub=xU)
         y = self._model.y = pmo.variable(lb=yL, ub=yU)
@@ -164,7 +164,8 @@ class Rosenbrock2D(PyomoProblem):
         # constraints for x2y. After that, they are no
         # longer needed as they are enforced by the
         # SquaredEnvelope constraints.
-        self._model.x2.bounds = self._model.x2_c.derived_output_bounds()
+        self._model.x2.bounds = \
+            self._model.x2_c.derived_output_bounds()
         self._model.x2y_c.update_constraints()
         self._model.x2.bounds = (-pybnb.inf,
                                  pybnb.inf)
@@ -185,8 +186,7 @@ class Rosenbrock2D(PyomoProblem):
     # Implement Problem abstract methods
     #
 
-    def sense(self):
-        return pybnb.minimize
+    #def sense(self): # implemented by PyomoProblem base class
 
     def objective(self):
         self.setup_model_for_objective()
@@ -232,7 +232,7 @@ class Rosenbrock2D(PyomoProblem):
         self.rebuild_convex_envelopes()
         self._last_bound_was_feasible = False
 
-    def branch(self, node):
+    def branch(self):
         if self._last_bound_was_feasible:
             return ()
         xL, xU = self._model.x.bounds
@@ -242,22 +242,18 @@ class Rosenbrock2D(PyomoProblem):
         branch_var = None
         if xdist > ydist:
             branch_var = self._model.x
-            dist = xdist
             L = xL
             U = xU
         else:
             branch_var = self._model.y
-            dist = ydist
             L = yL
             U = yU
-        if dist/2.0 < self._branch_abstol:
-            return ()
         # branch
         mid = 0.5*(L + U)
-        left = node.new_child()
+        left = pybnb.Node()
         branch_var.bounds = (L, mid)
         self.save_state(left)
-        right = node.new_child()
+        right = pybnb.Node()
         branch_var.bounds = (mid, U)
         self.save_state(right)
         # reset the variable bounds

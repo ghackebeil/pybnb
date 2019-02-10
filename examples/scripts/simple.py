@@ -30,13 +30,13 @@ class Simple(pybnb.Problem):
         node.state = (self._xL, self._xU)
     def load_state(self, node):
         (self._xL, self._xU) = node.state
-    def branch(self, node):
+    def branch(self):
         xL, xU = self._xL, self._xU
         xM = 0.5 * (xL + xU)
-        child = node.new_child()
+        child = pybnb.Node()
         child.state = (xL, xM)
         yield child
-        child = node.new_child()
+        child = pybnb.Node()
         child.state = (xM, xU)
         yield child
     #
@@ -47,11 +47,9 @@ class Simple(pybnb.Problem):
                             worker_comm,
                             convergence_checker):
         pass
-    def notify_new_best_objective_received(self,
-                                           objective):
-        pass
-    def notify_new_best_objective(self,
-                                  objective):
+    def notify_new_best_node(self,
+                             node,
+                             current):
         pass
     def notify_solve_finished(self,
                               comm,

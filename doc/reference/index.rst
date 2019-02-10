@@ -10,7 +10,7 @@ Quick Links
 
  - :class:`pybnb.Solver <pybnb.solver.Solver>`
 
- - :class:`pybnb.SolverResults <pybnb.solver.SolverResults>`
+ - :class:`pybnb.SolverResults <pybnb.solver_results.SolverResults>`
 
  - :class:`pybnb.SolutionStatus <pybnb.common.SolutionStatus>`
 
@@ -28,6 +28,7 @@ Modules
     common
     problem
     node
+    solver_results
     solver
     convergence_checker
     priority_queue
@@ -36,3 +37,4 @@ Modules
     mpi_utils
     misc
     pyomo/index.rst
+    futures

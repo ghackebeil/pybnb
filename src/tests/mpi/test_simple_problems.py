@@ -36,6 +36,8 @@ _queue_strategies.append((QueueStrategy.bound,
                           QueueStrategy.objective,
                           'breadth'))
 
+import six
+
 def _execute_single_test(problem,
                          baseline,
                          solver=None,
@@ -55,7 +57,10 @@ def _execute_single_test(problem,
     orig = Node()
     problem.save_state(orig)
     results = solver.solve(problem, **kwds)
-
+    assert isinstance(results.solution_status,
+                      six.string_types)
+    assert isinstance(results.termination_condition,
+                      six.string_types)
     current = Node()
     problem.save_state(current)
     assert current.state == orig.state
@@ -76,9 +81,10 @@ def _execute_single_test(problem,
                  str(getattr(baseline, name))+")")
     if solver.is_dispatcher:
         q = solver.save_dispatcher_queue()
-        assert len(q) == 2
-        assert q.next_tree_id >= 0
         assert len(q.nodes) == solver._disp.queue.size()
+        assert q.sense == solver._disp.converger.sense
+        assert q.worst_terminal_bound == solver._disp.worst_terminal_bound
+        assert q.bound() == results.bound
 
 def _execute_tests(comm, problem, baseline, **kwds):
     assert 'log_interval_second' not in kwds
@@ -109,6 +115,7 @@ def _test_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = -inf
     baseline.nodes = 255
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
     if comm is None:
@@ -127,6 +134,7 @@ def _test_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = -16
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(branching_abstol=0.1)
     if comm is None:
@@ -144,6 +152,7 @@ def _test_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = -16
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(branching_abstol=0.1)
     if comm is None:
@@ -165,6 +174,7 @@ def _test_infeasible_max(comm):
     baseline.absolute_gap = 4
     baseline.relative_gap = 0.2
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(branching_abstol=0.1,
                                            fixed_objective=-20)
@@ -185,6 +195,7 @@ def _test_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = -16
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
     if comm is None:
@@ -209,6 +220,7 @@ def _test_infeasible_max(comm):
     baseline.absolute_gap = 1.0
     baseline.relative_gap = 1.0/17
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax(fixed_objective=-17)
     if comm is None:
@@ -231,6 +243,7 @@ def _test_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = inf
     baseline.nodes = 0
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
     if comm is None:
@@ -252,6 +265,7 @@ def _test_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = -inf
     baseline.nodes = 255
+    baseline.best_node = None
     baseline.wall_time = _ignore_value_
     problem = infeasible_max.InfeasibleMax()
     for queue_strategy in _queue_strategies:
@@ -263,6 +277,25 @@ def _test_infeasible_max(comm):
             solver=solver,
             queue_strategy=queue_strategy)
 
+    baseline = SolverResults()
+    baseline.solution_status = "invalid"
+    baseline.termination_condition = "optimality"
+    baseline.objective = -100000000
+    baseline.bound = -inf
+    baseline.nodes = _ignore_value_
+    baseline.best_node = None
+    baseline.wall_time = _ignore_value_
+    problem = infeasible_max.InfeasibleMax()
+    for queue_strategy in _queue_strategies:
+        if queue_strategy == "custom":
+            continue
+        _execute_single_test(
+            problem,
+            baseline,
+            solver=solver,
+            queue_strategy=queue_strategy,
+            best_objective=-100000000)
+
 def _test_infeasible_min(comm):
     solver = None
     if comm is not None:
@@ -273,6 +306,7 @@ def _test_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = inf
     baseline.nodes = 255
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
     if comm is None:
@@ -290,6 +324,7 @@ def _test_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = 16
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(branching_abstol=0.1)
     if comm is None:
@@ -307,6 +342,7 @@ def _test_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = 16
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(branching_abstol=0.1)
     if comm is None:
@@ -328,6 +364,7 @@ def _test_infeasible_min(comm):
     baseline.absolute_gap = 4
     baseline.relative_gap = 0.2
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(branching_abstol=0.1,
                                            fixed_objective=20)
@@ -348,6 +385,7 @@ def _test_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = 16
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
     if comm is None:
@@ -372,6 +410,7 @@ def _test_infeasible_min(comm):
     baseline.absolute_gap = 1
     baseline.relative_gap = 1.0/17
     baseline.nodes = 31
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin(fixed_objective=17)
     if comm is None:
@@ -394,6 +433,7 @@ def _test_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = -inf
     baseline.nodes = 0
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
     if comm is None:
@@ -415,6 +455,7 @@ def _test_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = inf
     baseline.nodes = 255
+    baseline.best_node = None
     baseline.wall_time = _ignore_value_
     problem = infeasible_min.InfeasibleMin()
     for queue_strategy in _queue_strategies:
@@ -426,6 +467,25 @@ def _test_infeasible_min(comm):
             solver=solver,
             queue_strategy=queue_strategy)
 
+    baseline = SolverResults()
+    baseline.solution_status = "invalid"
+    baseline.termination_condition = "optimality"
+    baseline.objective = 100000000
+    baseline.bound = inf
+    baseline.nodes = _ignore_value_
+    baseline.best_node = None
+    baseline.wall_time = _ignore_value_
+    problem = infeasible_min.InfeasibleMin()
+    for queue_strategy in _queue_strategies:
+        if queue_strategy == "custom":
+            continue
+        _execute_single_test(
+            problem,
+            baseline,
+            solver=solver,
+            queue_strategy=queue_strategy,
+            best_objective=100000000)
+
 def _test_root_infeasible_max(comm):
     solver = Solver(comm=comm)
     baseline = SolverResults()
@@ -434,6 +494,7 @@ def _test_root_infeasible_max(comm):
     baseline.objective = -inf
     baseline.bound = -inf
     baseline.nodes = 1
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = root_infeasible_max.RootInfeasibleMax()
     _execute_single_test(problem,
@@ -456,6 +517,7 @@ def _test_root_infeasible_min(comm):
     baseline.objective = inf
     baseline.bound = inf
     baseline.nodes = 1
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = root_infeasible_min.RootInfeasibleMin()
     _execute_single_test(problem,
@@ -478,6 +540,7 @@ def _test_unbounded_max(comm):
     baseline.objective = inf
     baseline.bound = inf
     baseline.nodes = 1
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = unbounded_max.UnboundedMax()
     _execute_single_test(problem,
@@ -500,6 +563,7 @@ def _test_unbounded_min(comm):
     baseline.objective = -inf
     baseline.bound = -inf
     baseline.nodes = 1
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = unbounded_min.UnboundedMin()
     _execute_single_test(problem,
@@ -524,6 +588,7 @@ def _test_zero_objective_max(comm):
     baseline.absolute_gap = 0.0078125
     baseline.relative_gap = 0.0078125
     baseline.nodes = 255
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_max.ZeroObjectiveMax()
     _execute_single_test(problem,
@@ -550,6 +615,7 @@ def _test_zero_objective_max(comm):
     baseline.absolute_gap = 0.0009765625
     baseline.relative_gap = 0.0009765625
     baseline.nodes = 2047
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_max.ZeroObjectiveMax()
     _execute_single_test(problem,
@@ -576,6 +642,7 @@ def _test_zero_objective_max(comm):
     baseline.absolute_gap = 0.0009765625
     baseline.relative_gap = 0.0009765625
     baseline.nodes = 2047
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_max.ZeroObjectiveMax()
     _execute_single_test(problem,
@@ -602,6 +669,7 @@ def _test_zero_objective_max(comm):
     baseline.absolute_gap = 0.0078125
     baseline.relative_gap = 0.0078125
     baseline.nodes = None
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_max.ZeroObjectiveMax()
     for queue_strategy in _queue_strategies:
@@ -631,6 +699,7 @@ def _test_zero_objective_min(comm):
     baseline.absolute_gap = 0.0078125
     baseline.relative_gap = 0.0078125
     baseline.nodes = 255
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_min.ZeroObjectiveMin()
     _execute_single_test(problem,
@@ -657,6 +726,7 @@ def _test_zero_objective_min(comm):
     baseline.absolute_gap = 0.0009765625
     baseline.relative_gap = 0.0009765625
     baseline.nodes = 2047
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_min.ZeroObjectiveMin()
     _execute_single_test(problem,
@@ -683,6 +753,7 @@ def _test_zero_objective_min(comm):
     baseline.absolute_gap = 0.0009765625
     baseline.relative_gap = 0.0009765625
     baseline.nodes = 2047
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_min.ZeroObjectiveMin()
     _execute_single_test(problem,
@@ -709,6 +780,7 @@ def _test_zero_objective_min(comm):
     baseline.absolute_gap = 0.0078125
     baseline.relative_gap = 0.0078125
     baseline.nodes = None
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = zero_objective_min.ZeroObjectiveMin()
     for queue_strategy in _queue_strategies:
@@ -736,6 +808,7 @@ def _test_delayed_unbounded_max(comm):
     baseline.objective = inf
     baseline.bound = inf
     baseline.nodes = _ignore_value_
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = delayed_unbounded_max.DelayedUnboundedMax()
     _execute_single_test(problem,
@@ -758,6 +831,7 @@ def _test_delayed_unbounded_min(comm):
     baseline.objective = -inf
     baseline.bound = -inf
     baseline.nodes = _ignore_value_
+    baseline.best_node = _ignore_value_
     baseline.wall_time = _ignore_value_
     problem = delayed_unbounded_min.DelayedUnboundedMin()
     _execute_single_test(problem,

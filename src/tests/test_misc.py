@@ -3,6 +3,8 @@ import tempfile
 import logging
 import signal
 
+import pytest
+
 from pybnb.misc import (MPI_InterruptHandler,
                         metric_format,
                         time_format,
@@ -13,6 +15,13 @@ from pybnb.misc import (MPI_InterruptHandler,
                         get_simple_logger)
 
 from six import StringIO
+
+yaml_available = False
+try:
+    import yaml
+    yaml_available = True
+except ImportError:
+    pass
 
 class Test(object):
 
@@ -153,13 +162,16 @@ class Test(object):
         def f(a, b=1):                            #pragma:nocover
             pass
         assert get_default_args(f) == {'b':1}
-        def f(a=[]):
-            a.append(1)
-        assert get_default_args(f) == {'a':[]}
-        f()
-        assert get_default_args(f) == {'a':[1]}
+        def f(a=1):                               #pragma:nocover
+            pass
+        assert get_default_args(f) == {'a':1}
+        def f(a=(1,)):                            #pragma:nocover
+            pass
+        assert get_default_args(f) == {'a':(1,)}
 
     def test_get_keyword_docs(self):
+        if not yaml_available:
+            pytest.skip("yaml is not available")
         import pybnb.solver
         data = get_keyword_docs(pybnb.solver.Solver.solve.__doc__)
         kwds = get_default_args(pybnb.solver.Solver.solve)

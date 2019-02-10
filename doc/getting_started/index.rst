@@ -68,18 +68,16 @@ at least the six required methods shown below.
        def bound(self): ...
        def save_state(self, node): ...
        def load_state(self, node): ...
-       def branch(self, node): ...
+       def branch(self): ...
        # optional methods
        def notify_solve_begins(self,
                                comm,
                                worker_comm,
                                convergence_checker):
            ...
-       def notify_new_best_objective_received(self,
-                                              objective):
-           ...
-       def notify_new_best_objective(self,
-                                     objective):
+       def notify_new_best_node(self,
+                                node,
+                                current):
            ...
        def notify_solve_finished(self,
                                  comm,
@@ -158,11 +156,11 @@ description of each of the required methods.
  - :func:`Problem.load_state(node) <pybnb.problem.Problem.load_state>`
 
    This method should load the problem state stored on the
-   the :attr:`state <pybnb.node.Node.state>` attribute of
-   the node argument. The code block below shows an example
-   pair of :func:`save_state
-   <pybnb.problem.Problem.save_state>` and :func:`load_state
-   <pybnb.problem.Problem.load_state>` implementations.
+   :attr:`state <pybnb.node.Node.state>` attribute of the
+   node argument. The code block below shows an example pair
+   of :func:`save_state <pybnb.problem.Problem.save_state>`
+   and :func:`load_state <pybnb.problem.Problem.load_state>`
+   implementations.
 
    .. code-block:: python
 
@@ -175,36 +173,36 @@ description of each of the required methods.
            def load_state(self, node):
                (self._L, self._U) = node.state
 
- - :func:`Problem.branch(node) <pybnb.problem.Problem.branch>`
+ - :func:`Problem.branch() <pybnb.problem.Problem.branch>`
 
    This method should partition the problem domain defined
-   within the user state on the `node` object into zero or
-   more child states and return them as new node objects. A
-   child node should be created by calling
-   :func:`node.new_child()
-   <pybnb.node.Node.new_child>`. Note that for the branching
-   process to make sense in the context of a
-   branch-and-bound solve, the bound computed from the child
-   node states should improve (or not be worse than) the
-   bound for the parent node. Once the child bound is
-   computed, the solver will issue a warning if it is found
-   to be worse than the bound from the parent node, as this
-   is indicative of a programming error or other numerical
+   by the current user state into zero or more child states
+   and return them on new nodes. A child node can be created
+   by directly instantiating a :class:`pybnb.Node
+   <pybnb.node.Node>` object. Note that for the branching
+   process to make sense, the bound computed from the child
+   states should improve (or not be worse than) the bound
+   for their parent node. Once the child bound is computed,
+   the solver will issue a warning if it is found to be
+   worse than the bound from its parent node, as this is
+   indicative of a programming error or other numerical
    issues.
 
-   When this method is called, the :attr:`node.bound
-   <pybnb.node.Node.bound>` and :attr:`node.objective
-   <pybnb.node.Node.objective>` attributes will have been
-   set to the value returned from :func:`Problem.bound()
-   <pybnb.problem.Problem.bound>` and
-   :func:`Problem.objective()
-   <pybnb.problem.Problem.objective>`, respectively.  Any
-   child nodes returned from :func:`node.new_child()
-   <pybnb.node.Node.new_child>` will inherit this bound and
-   objective, which may affect their prioritization in the
-   global work queue. As user can assign a new value to one
-   or both of these attributes before returning a child
-   node.
+   Note that any child nodes returned from
+   :func:`Problem.branch() <pybnb.problem.Problem.branch>`
+   will automatically be assigned the bound and objective
+   from their parent for potential use in determining their
+   prioritization in the global work queue. Users can
+   override this by manually assigning a value to one or
+   both of these node attributes before yielding them from
+   the branch method.
+
+   Additionally, further control over the prioritization of
+   a child node can be achieved by setting the
+   ``queue_strategy`` solve option to "custom", and then
+   directly assigning a value to the :attr:`queue_priority
+   <pybnb.node.Node.queue_priority>` attribute of the child
+   node before it is yielded.
 
 How the Solver Calls the Problem Methods
 ----------------------------------------
@@ -231,18 +229,23 @@ methods are called.
         # solve loop
         #
         while <solve_not_terminated>:
-            node, best_objective = dispatcher.update(...)
+            node, best_node = dispatcher.update(...)
             if <conditional_1>:
-               problem.notify_new_best_objective_received(...)
+               problem.notify_new_best_node(node=best_node,
+                                            current=False)
             problem.load_state(node)
             bound = problem.bound()
             if <conditional_2>:
                 objective = problem.objective()
                 if <conditional_3>:
-                    best_objective = objective
-                    problem.notify_new_best_objective(...)
+                    problem.notify_new_best_node(node=node,
+                                                 current=True)
                 if <conditional_4>:
-                    problem.branch(node)
+                    children = problem.branch()
+                    for child in children:
+                        if <conditional_5>:
+                            problem.notify_new_best_node(node=child,
+                                                         current=False)
 
         #
         # solve finalization
@@ -402,17 +405,18 @@ Continuing a Solve After Stopping
 ---------------------------------
 
 It is possible to continue a solve with new termination
-criteria, starting with the nodes remaining in the queue
-from a previous solve. The following code block shows how
+criteria, starting with the candidate solution and remaining queued
+nodes from a previous solve. The following code block shows how
 this can be done.
 
 .. code-block:: python
 
     solver = pybnb.Solver()
-    solver.solve(problem,
-                 node_limit=10)
+    results = solver.solve(problem,
+                           node_limit=10)
     queue = solver.save_dispatcher_queue()
     solver.solve(problem,
+                 best_node=results.best_node,
                  initialize_queue=queue)
 
 For the dispatcher process, the :func:`save_dispatcher_queue
@@ -423,47 +427,11 @@ assigned to the `initialize_queue` keyword of the
 :func:`solve <pybnb.solver.Solver.solve>` method. For
 processes that are not the dispatcher, this function returns
 `None`, which is the default value of the `initialize_queue`
-keyword.
-
-Saving the Optimal Solution
----------------------------
-
-At this time, the solver does not attempt to track any node
-data pertaining to the optimal solution. However, the
-following optional problem methods can be used to implement
-this kind of functionality:
-
- - :func:`notify_solve_begins
-   <pybnb.problem.Problem.notify_solve_begins>`
- - :func:`notify_new_best_objective_received
-   <pybnb.problem.Problem.notify_new_best_objective_received>`
- - :func:`notify_new_best_objective
-   <pybnb.problem.Problem.notify_new_best_objective>`
- - :func:`notify_solve_finished
-   <pybnb.problem.Problem.notify_solve_finished>`
-
-The code block below shows these methods being used to save
-a solution to the Traveling Salesperson Problem. The full
-example can be found `here
-<https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_naive.py>`_.
-
-.. literalinclude:: ../../examples/scripts/tsp/tsp_naive.py
-   :language: python
-   :lines: 131-171
-   :dedent: 4
-
-The code shown above saves the path loaded by the most
-recent call to :func:`load_state
-<pybnb.problem.Problem.load_state>` when the solver
-identifies it as a new best
-(:func:`notify_new_best_objective
-<pybnb.problem.Problem.notify_new_best_objective>`). Then,
-when the solve ends, it is determined which process is
-storing the optimal tour so it can be broadcast to everyone
-and placed on the results object that will be returned from
-the :func:`Solver.solve <pybnb.solver.Solver.solve>` method
-(:func:`notify_solve_finished
-<pybnb.problem.Problem.notify_solve_finished>`).
+keyword. The :attr:`best_node
+<pybnb.solver.SolverResults.best_node>` attribute of the
+results object will be identical for all processes (possible
+equal to None), and can be directly assigned to the
+`best_node` solver option.
 
 .. _configuration:
 

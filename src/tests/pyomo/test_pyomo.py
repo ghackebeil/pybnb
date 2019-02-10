@@ -168,6 +168,36 @@ class Test(object):
         assert con.body is model.objective
         assert con.ub == 100
 
+    def test_sense(self):
+        class Max(PyomoProblem):
+            def __init__(self):
+                self._pyomo_model = pmo.block()
+                self._pyomo_model.o = pmo.objective(
+                    sense=pmo.maximize)
+                self._pyomo_model_objective = self._pyomo_model.o
+                super(Max, self).__init__()
+            @property
+            def pyomo_model(self):
+                return self._pyomo_model
+            @property
+            def pyomo_model_objective(self):
+                return self._pyomo_model_objective
+        assert Max().sense() == pybnb.maximize
+        class Min(PyomoProblem):
+            def __init__(self):
+                self._pyomo_model = pmo.block()
+                self._pyomo_model.o = pmo.objective(
+                    sense=pmo.minimize)
+                self._pyomo_model_objective = self._pyomo_model.o
+                super(Min, self).__init__()
+            @property
+            def pyomo_model(self):
+                return self._pyomo_model
+            @property
+            def pyomo_model_objective(self):
+                return self._pyomo_model_objective
+        assert Min().sense() == pybnb.minimize
+
     def test_RangeReductionProblem(self):
         class Junk(PyomoProblem):
             def __init__(self):
@@ -198,9 +228,12 @@ class Test(object):
         assert junk.pyomo_object_to_cid[junk.pyomo_model.r] == ('r',)
         assert junk.cid_to_pyomo_object[('r',)] is junk.pyomo_model.r
 
-        rr_junk = RangeReductionProblem(junk, pybnb.inf)
-        assert rr_junk.objective() == pybnb.inf
-        rr_junk.notify_new_best_objective_received(1)
-        assert rr_junk.objective() == 1
-        rr_junk.notify_new_best_objective(2)
-        assert rr_junk.objective() == 2
+        rr_junk = RangeReductionProblem(junk)
+        assert rr_junk._best_objective == pybnb.inf
+        node_ = pybnb.Node()
+        node_.objective = 1
+        rr_junk.notify_new_best_node(node_, False)
+        assert rr_junk._best_objective == 1
+        node_.objective = 2
+        rr_junk.notify_new_best_node(node_, False)
+        assert rr_junk._best_objective == 2

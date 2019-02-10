@@ -66,11 +66,9 @@ class Rosenbrock2D_RangeReduction(RangeReductionProblem):
         to perform range reduction solves"""
         vlist = []
         x, y = self.problem._model.x, self.problem._model.y
-        if (y.ub - y.lb) > \
-           self.problem._branch_abstol:
+        if (y.ub - y.lb) > self.improved_abstol:
             vlist.append(y)
-        if (x.ub - x.lb) > \
-           self.problem._branch_abstol:
+        if (x.ub - x.lb) > self.improved_abstol:
             vlist.append(x)
         return vlist
 
@@ -137,29 +135,21 @@ if __name__ == "__main__":
     problem = Rosenbrock2D(xL=-25, xU=25,
                            yL=-25 ,yU=25)
 
-    best_objective = None
-    if (comm is None) or (comm.rank == 0):
-        best_objective = problem.objective()
-    if (comm is not None) and (comm.size > 1):
-        best_objective = comm.bcast(best_objective, root=0)
-    assert best_objective != problem.unbounded_objective
-
     # do parallel bounds tightening on the
     # first 7 nodes that are processed
     obrr = Rosenbrock2D_RangeReduction(
         problem,
-        best_objective,
         comm=comm)
 
-    dispatcher_queue = None
+    queue = None
+    best_node = None
     if (comm is None) or (comm.rank == 0):
         opt_obrr = pybnb.Solver(comm=None)
         results = opt_obrr.solve(obrr,
                                  node_limit=7,
-                                 best_objective=best_objective,
                                  log_interval_seconds=0)
-        dispatcher_queue = opt_obrr.save_dispatcher_queue()
-        best_objective = results.objective
+        queue = opt_obrr.save_dispatcher_queue()
+        best_node = results.best_node
     else:
         obrr.listen(root=0)
     del obrr
@@ -169,6 +159,6 @@ if __name__ == "__main__":
     results = pybnb.solve(problem,
                           comm=comm,
                           dispatcher_rank=0,
-                          best_objective=best_objective,
-                          initialize_queue=dispatcher_queue,
+                          best_node=best_node,
+                          initialize_queue=queue,
                           results_filename=args.results_filename)

@@ -4,16 +4,27 @@ import time
 
 import pytest
 
-import pybnb
+from pybnb.common import (minimize,
+                          inf,
+                          nan)
+from pybnb.node import Node
+from pybnb.problem import Problem
 from pybnb.solver import (Solver,
-                          SolverResults,
                           summarize_worker_statistics,
                           solve)
 
 from six import StringIO
 
-class DummyProblem(pybnb.Problem):
-    def sense(self): return pybnb.minimize
+class BadBranchSignatureProblem(Problem):
+    def sense(self): return minimize
+    def objective(self): return 0
+    def bound(self): return 0
+    def save_state(self, node): pass
+    def load_state(self, node): pass
+    def branch(self, node): raise NotImplementedError()
+
+class DummyProblem(Problem):
+    def sense(self): return minimize
     def objective(self): return 0
     def bound(self): return 0
     def save_state(self, node): pass
@@ -22,15 +33,6 @@ class DummyProblem(pybnb.Problem):
 
 class _DummyComm_Size1(object):
     size = 1
-
-class TestSolverResults(object):
-    def test_write(self):
-        results = SolverResults()
-        results.write(StringIO())
-        del results.objective
-        results.write(StringIO())
-        results.junk = 1
-        results.write(StringIO())
 
 class TestSolverSimple(object):
 
@@ -101,3 +103,26 @@ Average Worker Timing:
             solve(DummyProblem(),
                   comm=None,
                   queue_strategy='_not_a_valid_strategy_')
+
+    def test_bad_best_options(self):
+        node = Node()
+        node.objective = None
+        with pytest.raises(ValueError):
+            solve(DummyProblem(),
+                  comm=None,
+                  best_node=node)
+        node.objective = nan
+        with pytest.raises(ValueError):
+            solve(DummyProblem(),
+                  comm=None,
+                  best_node=node)
+        node.objective = 0
+        solve(DummyProblem(),
+              comm=None,
+              best_node=node)
+
+    def test_bad_branch_signature(self):
+        problem = BadBranchSignatureProblem()
+        with pytest.raises(TypeError):
+            solve(problem,
+                  comm=None)

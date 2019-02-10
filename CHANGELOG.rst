@@ -4,7 +4,26 @@ Changelog
 0.5.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
-* TODO
+* Tracking the best node and storing it on the results
+  object (#1, #3, #7)
+* Removing node argument from `branch` method of Problem
+  implementations. This makes it more apparent that
+  branching occurs for the node from the most recent
+  `load_state` and not some arbitrary node. Child nodes
+  should be created using `pybnb.Node()` as opposed to
+  `node.new_child()`.
+* Removing `tree_id` and `parent_tree_id` attributes from
+  the Node class. These were simply adding unnecessary
+  complexity to the code while serving no real purpose.
+* Adding a helper class for performing a nested
+  branch-and-bound solve and adding command-line options
+  that allow it to be used with the command-line
+  examples. Also, incorporating it into the TSP example.
+* Replacing both the notify_new_best_objective and
+  notify_new_best_objective_received Problem callbacks with
+  a single notify_new_best_node callback. This new callback
+  includes an additional argument indicating if the
+  currently loaded node is the new best.
 
 0.4.0 - 2019-01-31
 ~~~~~~~~~~~~~~~~~~
