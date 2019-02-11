@@ -51,11 +51,16 @@ this can be done.
 
     solver = pybnb.Solver()
     results = solver.solve(problem,
-                           node_limit=10)
+                           relative_gap=1e-4,
+                           absolute_gap=None,
+                           time_limit=10)
     queue = solver.save_dispatcher_queue()
-    solver.solve(problem,
-                 best_node=results.best_node,
-                 initialize_queue=queue)
+    results = solver.solve(problem,
+                           best_objective=results.objective,
+                           best_node=results.best_node,
+                           initialize_queue=queue,
+                           relative_gap=1e-8,
+                           absolute_gap=None)
 
 For the dispatcher process, the :func:`save_dispatcher_queue
 <pybnb.solver.Solver.save_dispatcher_queue>` method returns
@@ -70,6 +75,38 @@ keyword. The :attr:`best_node
 the results object will be identical for all processes
 (possibly equal to None), and can be directly assigned to
 the `best_node` solver option.
+
+Assigning the :attr:`objective
+<pybnb.solver_results.SolverResults.objective>` attribute of
+the results object to the `best_objective` solve option is
+only necessary if (1) the initial solve was given a
+`best_objective` and the solver did not obtain a best node
+with a matching objective, or (2) if the initial solve is
+unbounded.  In the latter case, the :attr:`best_node
+<pybnb.solver_results.SolverResults.best_node>` attribute of
+the results object will be None and the dispatcher queue
+will be empty, so the unboundedness of the problem can only
+be communicated to the next solve via the `best_objective`
+solve option.  If one is careful about checking the status
+of the solution and no initial best objective is used (both
+recommended), then the `best_objective` solver option can be
+left unused, as shown below:
+
+.. code-block:: python
+
+    solver = pybnb.Solver()
+    results = solver.solve(problem,
+                           relative_gap=1e-4,
+                           absolute_gap=None,
+                           time_limit=10)
+    if results.solution_status in ("optimal",
+                                   "feasible"):
+        queue = solver.save_dispatcher_queue()
+        results = solver.solve(problem,
+                               best_node=results.best_node,
+                               initialize_queue=queue,
+                               relative_gap=1e-8,
+                               absolute_gap=None)
 
 .. _configuration:
 
@@ -130,13 +167,14 @@ Using a Nested Solve to Improve Parallel Performance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The :class:`NestedSolver <pybnb.futures.NestedSolver>`
 object is a wrapper class for problems that provides an easy
-way to implement a custom two-layer, parallel branch-and-bound
-solve. That is, a branch-and-bound solve where,
-at the top layer, a single dispatcher serves nodes to worker
-processes over MPI, and those workers process each node by
-performing their own limited branch-and-bound solve in
-serial rather than simply evaluating the node bound and
-objective and returning its immediate children.
+way to implement a custom two-layer, parallel
+branch-and-bound solve. That is, a branch-and-bound solve
+where, at the top layer, a single dispatcher serves nodes to
+worker processes over MPI, and those workers process each
+node by performing their own limited branch-and-bound solve
+in serial, rather than simply evaluating the node bound and
+objective and returning its immediate children to the
+dispatcher.
 
 The above strategy can be implemented by simply wrapping the
 problem argument with this class before passing it to the
@@ -161,11 +199,19 @@ when processing a node.
 This kind of scheme can be useful for problems with
 relatively fast bound and objective computations, where the
 overhead of updates to the central dispatcher over MPI is a
-clear bottleneck. Next, we show how this class is used to
-maximize the parallel performance of the `TSP example
+clear bottleneck. It is important to consider, however, that
+assigning large values to the `node_limit` or `time_limit`
+nested solve options may result in more work being performed
+to achieve the same result as the non-nested case. As such,
+the use of this solution scheme may not always result in a
+net benefit for the total solve time.
+
+Next, we show how this class is used to maximize the
+parallel performance of the `TSP example
 <https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_naive.py>`_.
-Tests are run using CPython 3.7 and PyPy3 6.0 (Python 3.5.3) on a laptop with
-a single quad-core 2.6 GHz Intel Core i7 processor.
+Tests are run using CPython 3.7 and PyPy3 6.0 (Python 3.5.3)
+on a laptop with a single quad-core 2.6 GHz Intel Core i7
+processor.
 
 The code block below shows the main call to the solver used
 in the TSP example, except it has been modified so that the
