@@ -223,6 +223,7 @@ class ConvergenceChecker(object):
         otherwise, `None` is returned."""
         result = None
         if (global_bound == self.infeasible_objective) or \
+           (best_objective == self.unbounded_objective) or \
            (self.objective_is_optimal(best_objective, global_bound)):
             result = TerminationCondition.optimality
         elif self.objective_stop is not None:

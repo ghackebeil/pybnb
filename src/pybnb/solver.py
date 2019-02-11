@@ -171,6 +171,7 @@ class Solver(object):
         assert not math.isnan(objective)
         updated = False
         if (objective != convergence_checker.infeasible_objective) and \
+           (objective != convergence_checker.unbounded_objective) and \
            ((self._best_node is None) or \
             convergence_checker.objective_improved(
                 objective,
@@ -248,7 +249,8 @@ class Solver(object):
         while (1):
             update_start = self._time()
             new_best_objective = None
-            if first_update:
+            if first_update or \
+               (self._best_objective == unbounded_objective):
                 new_best_objective = self._best_objective
             new_best_node = None
             if self._best_node_updated:
@@ -300,7 +302,6 @@ class Solver(object):
                     _increment_queue_stat(
                         update_stop-update_start, 1)
 
-
             # we should not be receiving a node that
             # does not satisfy these assertions
             assert convergence_checker.eligible_for_queue(
@@ -313,10 +314,15 @@ class Solver(object):
                 problem._solve()
                 terminal_bound = problem._queue.worst_terminal_bound
                 children = problem._queue.nodes
-                if problem._results.best_node is not None:
+                results_ = problem._results
+                if results_.objective == unbounded_objective:
+                    assert results_.best_node is None
+                    self._best_objective = results_.objective
+                elif results_.best_node is not None:
                     self._check_update_best_node(
                         convergence_checker,
-                        problem._results.best_node)
+                        results_.best_node)
+                del results_
                 continue
             new_bound = problem.bound()
             if convergence_checker.bound_worsened(new_bound,
@@ -346,8 +352,9 @@ class Solver(object):
                 if updated:
                     problem.notify_new_best_node(node=self._best_node,
                                                  current=True)
-                if (working_node.objective != unbounded_objective) and \
-                    convergence_checker.eligible_for_queue(
+                if working_node.objective == unbounded_objective:
+                    self._best_objective = unbounded_objective
+                elif convergence_checker.eligible_for_queue(
                         working_node.bound,
                         self._best_objective) and \
                     convergence_checker.eligible_to_branch(
@@ -918,6 +925,16 @@ class Solver(object):
         # convert to simple string types
         results.solution_status = results.solution_status.value
         results.termination_condition = results.termination_condition.value
+
+        # this is a funky edge case for a test problem that
+        # should rarely crop up in practice (a problem that
+        # returns an unbounded objective on a node other
+        # than the root node)
+        if (results.objective == \
+            convergence_checker.unbounded_objective) and \
+           (results.best_node is not None):
+            assert not math.isinf(results.best_node.objective)
+            results.best_node = None
 
         problem.notify_solve_finished(self.comm,
                                       self.worker_comm,
