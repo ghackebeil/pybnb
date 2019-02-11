@@ -168,7 +168,7 @@ Tests are run using CPython 3.7 and PyPy3 6.0 (Python 3.5.3) on a laptop with
 a single quad-core 2.6 GHz Intel Core i7 processor.
 
 The code block below shows the main call to the solver used
-by the TSP example, except it has been modified so that
+in the TSP example, except it has been modified so that the
 original problem is passed to the solver (no nested solve):
 
 .. code-block:: python
