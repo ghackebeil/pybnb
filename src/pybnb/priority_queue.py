@@ -655,7 +655,6 @@ def PriorityQueueFactory(name, *args, **kwds):
     else:
         names = []
         for n_ in name:
-            print(n_)
             if n_ not in PriorityQueueFactory._types:
                 raise ValueError("invalid queue type: %s"
                                  % (n_))
