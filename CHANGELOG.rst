@@ -6,6 +6,15 @@ Changelog
 
 * TODO
 
+0.5.1 - 2019-02-11
+~~~~~~~~~~~~~~~~~~
+
+* Removing some debugging print statements left around from
+  when the lexicographical queue strategies were added.
+* Fixing some edge case behavior related to unbounded
+  problem.
+* Minor fixes to documentation.
+
 0.5.0 - 2019-02-10
 ~~~~~~~~~~~~~~~~~~
 
