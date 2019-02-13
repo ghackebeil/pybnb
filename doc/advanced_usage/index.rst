@@ -126,6 +126,8 @@ SERIALIZER                  str     "pickle"                | The serializer use
                                                             | and "dill".
 SERIALIZER_PROTOCOL_VERSION int     pickle.HIGHEST_PROTOCOL | The value assigned to the ``protocol`` keyword of
                                                             | the pickle or dill ``dumps`` function.
+COMPRESSION                 bool    False                   | Indicates if serialized node state should be
+                                                            | compressed using zlib.
 MARSHAL_PROTOCOL_VERSION    int     2                       | The value assigned to the ``version`` argument of
                                                             | the ``marshal.dumps`` function. The marshal module
                                                             | is used to serialize all other node attributes

@@ -4,6 +4,7 @@ Branch-and-bound node implementation.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import uuid
+import zlib
 
 from pybnb.configuration import config
 
@@ -36,11 +37,14 @@ def dumps(obj):
                          % (config.SERIALIZER))
     if mod is None:
         mod = _get_dill()
-    return mod.dumps(
+    data = mod.dumps(
         obj,
         protocol=config.SERIALIZER_PROTOCOL_VERSION)
+    if config.COMPRESSION:
+        data = zlib.compress(data)
+    return data
 
-def loads(obj):
+def loads(data):
     """Read and return an object from the given serialized
     data, using the serialization module set in the current
     configuration."""
@@ -52,7 +56,9 @@ def loads(obj):
                          % (config.SERIALIZER))
     if mod is None:
         mod = _get_dill()
-    return mod.loads(obj)
+    if config.COMPRESSION:
+        data = zlib.decompress(data)
+    return mod.loads(data)
 
 class _SerializedNode(object):
     """A helper object used by the distributed dispatcher

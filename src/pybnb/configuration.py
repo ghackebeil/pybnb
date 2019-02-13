@@ -21,12 +21,16 @@ class Configuration(object):
         The protocol argument passed to the `dumps` function
         of the selected serialization module.
         (default: pickle.HIGHEST_PROTOCOL)
+    COMPRESSION : bool
+        Indicates whether or not to compress the serialized
+        node state using zlib. (default: False)
     MARSHAL_PROTOCOL_VERSION : int
         The version argument passed to the
         :func:`marshal.dumps` function. (default: 2)
     """
     __slots__ = ("SERIALIZER",
                  "SERIALIZER_PROTOCOL_VERSION",
+                 "COMPRESSION",
                  "MARSHAL_PROTOCOL_VERSION")
 
     def __init__(self):
@@ -44,15 +48,33 @@ class Configuration(object):
         """
         self.SERIALIZER = "pickle"
         self.SERIALIZER_PROTOCOL_VERSION = pickle.HIGHEST_PROTOCOL
+        self.COMPRESSION = False
         self.MARSHAL_PROTOCOL_VERSION = 2
         if use_environment:
             # process environment variables
-            PREFIX = "PYBNB_"
+            prefix = "PYBNB_"
             for symbol in self.__slots__:
-                if PREFIX+symbol in os.environ:
+                if prefix+symbol in os.environ:
                     default = getattr(self, symbol)
-                    envvalue = type(default)(os.environ[PREFIX+symbol])
-                    setattr(self, symbol, envvalue)
+                    value = os.environ[prefix+symbol]
+                    if symbol == "COMPRESSION":
+                        if value in ("0",
+                                     "off","Off","OFF",
+                                     "no","No","NO",
+                                     "false","False","FALSE"):
+                            value = False
+                        elif value in ("1",
+                                       "on","On","ON",
+                                       "yes","Yes","YES",
+                                       "true","True","TRUE"):
+                            value = True
+                        else:
+                            raise ValueError(
+                                "invalid boolean value: %s%s=%s"
+                                % (prefix, symbol, value))
+                    else:
+                        value = type(default)(value)
+                    setattr(self, symbol, value)
 
     def __str__(self):
         out =  "pybnb version: %s\n" % __version__

@@ -9,25 +9,29 @@ env:
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi DEPLOY=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYTHONOPTIMIZE=1
-    - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYBNB_SERIALIZER='dill'
+    - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYBNB_SERIALIZER='dill' PYBNB_COMPRESSION=true
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYOMO_RELEASE=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi SLIM=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-mpich EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.6-openmpi PYBNB_COMPRESSION=true
     - IMAGE_NAME=python-mpi-builds:python_3.6-mpich EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.5-openmpi EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.5-mpich EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi PYBNB_COMPRESSION=true
     - IMAGE_NAME=python-mpi-builds:python_2.7-mpich EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi
+    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi PYBNB_COMPRESSION=true
     - IMAGE_NAME=python-mpi-builds:pypy_3-mpich
     - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi
+    - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi PYBNB_COMPRESSION=true
     - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
 before_install:
   - docker pull ${DH_ACCT_NAME}/${IMAGE_NAME}
   - export CI_ENV=`bash <(curl -s https://codecov.io/env)`
   - export DOC_ID=`docker run -d -v $(pwd):$(pwd) -w $(pwd) ${DH_ACCT_NAME}/${IMAGE_NAME} sleep 10000000000`
-  - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES -e PYBNB_SERIALIZER -e PYTHONOPTIMIZE ${DOC_ID}"
+  - export DOC="docker exec ${CI_ENV} -e DH_ACCT_NAME -e IMAGE_NAME -e SLIM -e EXAMPLES -e PYBNB_COMPRESSION -e PYBNB_SERIALIZER -e PYTHONOPTIMIZE ${DOC_ID}"
 install:
   - ${DOC} pip install -U pip setuptools wheel
   - ${DOC} python --version

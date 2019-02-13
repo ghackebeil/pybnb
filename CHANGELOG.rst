@@ -4,7 +4,9 @@ Changelog
 0.6.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
-* TODO
+* Adding config.COMPRESSION option to control whether or not
+  serialized node state is compressed before sending it to
+  the dispatcher (default: False).
 
 0.5.1 - 2019-02-11
 ~~~~~~~~~~~~~~~~~~
