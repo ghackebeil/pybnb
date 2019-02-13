@@ -25,7 +25,7 @@ import pybnb
 
 try:
     import numpy
-except ImportError:
+except ImportError:                               #pragma:nocover
     raise ImportError("This example requires numpy")
 
 class TSP_ByEdge(pybnb.Problem):

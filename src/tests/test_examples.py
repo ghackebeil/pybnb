@@ -114,13 +114,13 @@ def test_example(example_name, procs):
                         "test_range_reduction_pyomo"):
         if not (pyomo_available and ipopt_available):
             pytest.skip("Pyomo or Ipopt is not available")
+    if "tsp_byedge" in example_name:
+        if not numpy_available:
+            pytest.skip("NumPy is not available")
     if (example_name == "test_simple") or \
        ("tsp_by" in example_name):
         if not mpi4py_available:
             pytest.skip("MPI is not available")
-    if "tsp_byedge" in example_name:
-        if not numpy_available:
-            pytest.skip("NumPy is not available")
     if (not mpi4py_available) and (procs > 1):
         pytest.skip("MPI is not available")
     filename, baseline_filename, options = tdict[example_name]
