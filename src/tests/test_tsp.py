@@ -11,7 +11,7 @@ tspdir = os.path.join(exdir,"scripts","tsp")
 
 sys.path.insert(0,tspdir)
 try:
-    from tsp_naive import run_2opt
+    from tsp_util import run_2opt
 finally:
     sys.path.remove(tspdir)
 
