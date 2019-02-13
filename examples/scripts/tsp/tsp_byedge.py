@@ -55,23 +55,6 @@ class TSP_ByEdge(pybnb.Problem):
         self._dist[:, mask] -= tmp
         return tmp.sum()
 
-    def _create_child(self, v):
-        assert self._cost is not None
-        u = self._path[-1]
-        dist = self._dist.copy()
-        dist[u,:] = numpy.inf
-        dist[:,v] = numpy.inf
-        dist[v][self._path[0]] = numpy.inf
-        path = self._path + [v]
-        partial_cost = self._cost + self._dist[u][v]
-        cost = None
-        child = pybnb.Node()
-        child.state = (path,
-                       dist,
-                       partial_cost,
-                       cost)
-        return child
-
     #
     # Implement Problem abstract methods
     #
@@ -82,18 +65,25 @@ class TSP_ByEdge(pybnb.Problem):
     def objective(self):
         if len(self._path) == self._N:
             assert self._cost is not None
-            return float(self._cost)
+            return self._cost
         else:
             return self.infeasible_objective()
 
     def bound(self):
         if self._cost is None:
+            assert len(self._path) >= 1
+            if len(self._path) > 1:
+                u = self._path[-2]
+                v = self._path[-1]
+                self._dist[u,:] = numpy.inf
+                self._dist[:,v] = numpy.inf
+                self._dist[v][self._path[0]] = numpy.inf
             row_sum = self._row_reduction()
             col_sum = self._col_reduction()
             self._cost = self._partial_cost
             self._cost += row_sum
             self._cost += col_sum
-        return float(self._cost)
+        return self._cost
 
     def save_state(self, node):
         node.state = (self._path,
@@ -118,13 +108,20 @@ class TSP_ByEdge(pybnb.Problem):
         candidates = numpy.flatnonzero(
             self._dist[u,:] != numpy.inf).tolist()
         if len(candidates) == 0:
+            # this path is infeasible, so return a dummy
+            # child to indicate that
             child = pybnb.Node()
             child.bound = pybnb.inf
             child.objective = pybnb.inf
             yield child
         else:
             for v in candidates:
-                yield self._create_child(v)
+                child = pybnb.Node()
+                child.state = (self._path + [v],
+                               self._dist.copy(),
+                               self._cost + self._dist[u][v],
+                               None)
+                yield child
 
     def notify_solve_finished(self,
                               comm,
