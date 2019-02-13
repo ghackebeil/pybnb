@@ -5,6 +5,21 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import logging
 import signal
+import numbers
+
+def _cast_to_float_or_int(x):
+    """Casts a number to a float or int built-in type. Makes
+    a reasonable attempt to preserve integrality."""
+    if type(x) in (float, int):
+        return x
+    elif isinstance(x, numbers.Integral):
+        x_ = int(x)
+        assert x_ == x
+        return x_
+    else:
+        x_ = float(x)
+        assert x_ == x
+        return x_
 
 class MPI_InterruptHandler(object):
     """A context manager for temporarily assigning a handler

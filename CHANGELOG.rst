@@ -7,6 +7,9 @@ Changelog
 * Adding config.COMPRESSION option to control whether or not
   serialized node state is compressed before sending it to
   the dispatcher (default: False).
+* Fixing issue that occured when the objective() and bound()
+  Problem methods returned numpy scalar types (#8).
+* Adding another TSP implementation to the examples.
 
 0.5.1 - 2019-02-11
 ~~~~~~~~~~~~~~~~~~

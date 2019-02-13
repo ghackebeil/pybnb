@@ -5,7 +5,10 @@ import signal
 
 import pytest
 
-from pybnb.misc import (MPI_InterruptHandler,
+from pybnb.common import (inf,
+                          nan)
+from pybnb.misc import (_cast_to_float_or_int,
+                        MPI_InterruptHandler,
                         metric_format,
                         time_format,
                         get_gap_labels,
@@ -20,6 +23,13 @@ yaml_available = False
 try:
     import yaml
     yaml_available = True
+except ImportError:
+    pass
+
+numpy_available = False
+try:
+    import numpy
+    numpy_available = True
 except ImportError:
     pass
 
@@ -239,3 +249,43 @@ class Test(object):
             assert lines[1].strip() == '[WARNING] warning_line'
         finally:
             os.remove(fname)
+
+    def test_cast_to_float_or_int(self):
+        assert type(_cast_to_float_or_int(inf)) is float
+        assert type(_cast_to_float_or_int(nan)) is float
+        assert type(_cast_to_float_or_int(1.0)) is float
+        assert type(_cast_to_float_or_int(1.1)) is float
+        assert type(_cast_to_float_or_int(1)) is int
+        assert type(_cast_to_float_or_int(True)) is int
+        with pytest.raises(TypeError):
+            _cast_to_float_or_int(None)
+        if numpy_available:
+            numpy_types = []
+            numpy_types.append(('bool', int))
+            numpy_types.append(('bool_', float)) # edge case
+            numpy_types.append(('int_', int))
+            numpy_types.append(('intc', int))
+            numpy_types.append(('intp', int))
+            numpy_types.append(('int8', int))
+            numpy_types.append(('int16', int))
+            numpy_types.append(('int32', int))
+            numpy_types.append(('int64', int))
+            numpy_types.append(('uint8', int))
+            numpy_types.append(('uint16', int))
+            numpy_types.append(('uint32', int))
+            numpy_types.append(('uint64', int))
+            numpy_types.append(('float_', float))
+            numpy_types.append(('float16', float))
+            numpy_types.append(('float32', float))
+            numpy_types.append(('float64', float))
+            numpy_types.append(('float128', float))
+            numpy_types.append(('complex_', float))
+            numpy_types.append(('complex64', float))
+            numpy_types.append(('complex128', float))
+            for name, cast_type in numpy_types:
+                try:
+                    type_ = getattr(numpy, name)
+                except:                           #pragma:nocover
+                    continue
+                assert type(_cast_to_float_or_int(
+                    type_())) is cast_type

@@ -118,12 +118,19 @@ class DispatcherProxy(object):
                best_node,
                previous_bound,
                solve_info,
-               node_list):
+               node_list_):
         """A proxy to :func:`pybnb.dispatcher.Dispatcher.update`."""
         if best_node is not None:
             best_node = _SerializedNode.to_slots(best_node)
-        node_list = [_SerializedNode.to_slots(node_)
-                     for node_ in node_list]
+        node_list = []
+        for node_ in node_list_:
+            # make sure the user-defined queue_priority
+            # can be safely marshaled
+            assert (node_.queue_priority is None) or \
+                node_.queue_priority == marshal.loads(
+                    marshal.dumps(node_.queue_priority,
+                                  config.MARSHAL_PROTOCOL_VERSION))
+            node_list.append(_SerializedNode.to_slots(node_))
         data = marshal.dumps((best_objective,
                               best_node,
                               previous_bound,

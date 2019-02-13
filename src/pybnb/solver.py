@@ -17,7 +17,8 @@ from pybnb.common import (minimize,
 from pybnb.problem import (_SolveInfo,
                            _SimpleSolveInfoCollector,
                            _ProblemWithSolveInfoCollection)
-from pybnb.misc import (MPI_InterruptHandler,
+from pybnb.misc import (_cast_to_float_or_int,
+                        MPI_InterruptHandler,
                         time_format,
                         as_stream,
                         get_simple_logger,
@@ -324,7 +325,7 @@ class Solver(object):
                         results_.best_node)
                 del results_
                 continue
-            new_bound = problem.bound()
+            new_bound = _cast_to_float_or_int(problem.bound())
             if convergence_checker.bound_worsened(new_bound,
                                                   working_node.bound):    #pragma:nocover
                 self._disp.log_warning(
@@ -337,7 +338,8 @@ class Solver(object):
                     working_node.bound,
                     self._best_objective):
                 if not disable_objective_call:
-                    working_node.objective = problem.objective()
+                    working_node.objective = \
+                        _cast_to_float_or_int(problem.objective())
                 if convergence_checker.best_bound(
                         working_node.bound,
                         working_node.objective) != working_node.objective: #pragma:nocover
