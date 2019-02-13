@@ -12,6 +12,13 @@ try:
 except ImportError:
     pass
 
+numpy_available = False
+try:
+    import numpy
+    numpy_available = True
+except ImportError:
+    pass
+
 pyomo_available = False
 try:
     import pyomo.kernel as pmo
@@ -49,8 +56,10 @@ examples.extend(glob.glob(
     os.path.join(exdir,"command_line_problems","*.py")))
 examples.extend(glob.glob(
     os.path.join(exdir,"scripts","*.py")))
-examples.extend(glob.glob(
-    os.path.join(exdir,"scripts","tsp","tsp_byvertex.py")))
+examples.append(
+    os.path.join(exdir,"scripts","tsp","tsp_byvertex.py"))
+examples.append(
+    os.path.join(exdir,"scripts","tsp","tsp_byedge.py"))
 baselinedir = os.path.join(thisdir, "example_baselines")
 
 assert os.path.exists(exdir)
@@ -62,7 +71,8 @@ for fname in examples:
     assert basename.endswith(".py")
     assert len(basename) >= 3
     basename = basename[:-3]
-    if basename == "tsp_byvertex":
+    if basename in ("tsp_byvertex",
+                    "tsp_byedge"):
         for datafile in ('p01_d',
                          'p01_d_inf'):
             tname = "test_"+basename+"_"+datafile
@@ -76,7 +86,7 @@ for fname in examples:
         tname = "test_"+basename
         bname = os.path.join(baselinedir,basename+".yaml")
         tdict[tname] = (fname,bname,None)
-assert len(tdict) == len(examples) + 1
+assert len(tdict) == len(examples) + 2
 
 assert "test_binary_knapsack" in tdict
 assert len(tdict["test_binary_knapsack"]) == 3
@@ -105,9 +115,12 @@ def test_example(example_name, procs):
         if not (pyomo_available and ipopt_available):
             pytest.skip("Pyomo or Ipopt is not available")
     if (example_name == "test_simple") or \
-       ("tsp_byvertex" in example_name):
+       ("tsp_by" in example_name):
         if not mpi4py_available:
             pytest.skip("MPI is not available")
+    if "tsp_byedge" in example_name:
+        if not numpy_available:
+            pytest.skip("NumPy is not available")
     if (not mpi4py_available) and (procs > 1):
         pytest.skip("MPI is not available")
     filename, baseline_filename, options = tdict[example_name]
@@ -120,7 +133,7 @@ def test_example(example_name, procs):
     try:
         if procs == 1:
             if ("range_reduction_pyomo" in example_name) or \
-               ("tsp_byvertex" in example_name):
+               ("tsp_by" in example_name):
                 rc = subprocess.call(cmd + \
                                      ["--results-file",
                                       results_filename] + \

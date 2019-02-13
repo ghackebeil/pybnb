@@ -1,0 +1,6 @@
+solution_status: optimal
+termination_condition: optimality
+objective: 291.0
+bound: 291.0
+absolute_gap: 0.0
+relative_gap: 0.0
