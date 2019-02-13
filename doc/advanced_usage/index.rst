@@ -208,7 +208,7 @@ net benefit for the total solve time.
 
 Next, we show how this class is used to maximize the
 parallel performance of the `TSP example
-<https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_naive.py>`_.
+<https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_byvertex.py>`_.
 Tests are run using CPython 3.7 and PyPy3 6.0 (Python 3.5.3)
 on a laptop with a single quad-core 2.6 GHz Intel Core i7
 processor.
