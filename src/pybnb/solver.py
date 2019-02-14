@@ -768,10 +768,9 @@ class Solver(object):
             be streamed to the console. Setting to None
             disables all output.
         disable_signal_handlers : bool, optional
-            **(D)** Indicates whether or disable the
-            registering of signal handlers that allow
-            gracefully terminating a solve early.
-            (default: False)
+            **(D)** Setting to true disables the registering
+            of signal handlers that allow gracefully
+            terminating a solve early. (default: False)
 
         Returns
         -------
