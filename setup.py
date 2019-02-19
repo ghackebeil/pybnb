@@ -19,9 +19,6 @@ install_requires = []
 with open(os.path.join(here, "requirements.txt")) as f:
     install_requires.extend([ln.strip() for ln in f
                              if ln.strip() != ""])
-if sys.version_info < (3, 4):
-    # Backport of Python 3.4 enums to earlier versions
-    install_requires.append('enum34')
 
 tests_require = []
 with open(os.path.join(here, "test_requirements.txt")) as f:
