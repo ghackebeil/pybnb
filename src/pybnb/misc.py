@@ -183,7 +183,10 @@ class _NullCM:
     def __exit__(self, *args):
         pass
 
-def as_stream(stream, **kwds):
+def as_stream(stream,
+              *,
+              mode="w",
+              **kwds):
     """A utility for handling function arguments that can be
     a filename or a file object. This function is meant to be
     used in the context of a with statement.
@@ -193,9 +196,13 @@ def as_stream(stream, **kwds):
     stream : file-like object or string
         An existing file-like object or the name of a file
         to open.
+    mode : string
+        Assigned to the mode keyword of the built-in
+        function ``open`` when the `stream` argument is a
+        filename. (default: "w")
     **kwds
         Additional keywords passed to the built-in function
-        ``open`` when the `stream` keyword is a filename.
+        ``open`` when the `stream` argument is a filename.
 
     Returns
     -------
@@ -222,7 +229,7 @@ def as_stream(stream, **kwds):
 
     """
     if isinstance(stream, str):
-        return open(stream,"w")
+        return open(stream, mode=mode, **kwds)
     else:
         return _NullCM(stream)
 
