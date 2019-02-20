@@ -7,7 +7,7 @@ from pybnb.common import (minimize,
                           TerminationCondition)
 from pybnb.convergence_checker import ConvergenceChecker
 
-class TestConvergenceChecker(object):
+class TestConvergenceChecker:
 
     def test_sense(self):
         # min

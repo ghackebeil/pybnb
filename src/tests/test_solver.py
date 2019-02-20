@@ -30,10 +30,10 @@ class DummyProblem(Problem):
     def load_state(self, node): pass
     def branch(self): raise NotImplementedError()
 
-class _DummyComm_Size1(object):
+class _DummyComm_Size1:
     size = 1
 
-class TestSolverSimple(object):
+class TestSolverSimple:
 
     def test_bad_dispatcher_rank(self):
         with pytest.raises(ValueError):

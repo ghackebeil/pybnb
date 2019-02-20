@@ -17,7 +17,7 @@ from pybnb.misc import (time_format,
                         as_stream)
 from pybnb.node import dumps
 
-class SolverResults(object):
+class SolverResults:
     """Stores the results of a branch-and-bound solve.
 
     Attributes

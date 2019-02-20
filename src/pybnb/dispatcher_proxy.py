@@ -63,7 +63,7 @@ DispatcherResponse = _DispatcherResponse(
 """A namespace of typecodes that are used to categorize
 responses received by workers from the dispatcher."""
 
-class DispatcherProxy(object):
+class DispatcherProxy:
     """A proxy class for interacting with the central
     dispatcher via message passing."""
 

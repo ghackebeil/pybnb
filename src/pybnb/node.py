@@ -55,7 +55,7 @@ def loads(data):
         data = zlib.decompress(data)
     return mod.loads(data)
 
-class _SerializedNode(object):
+class _SerializedNode:
     """A helper object used by the distributed dispatcher
     for lightweight handling of serialized nodes."""
     __slots__ = ("objective",
@@ -109,7 +109,7 @@ class _SerializedNode(object):
         node.state = loads(node.state)
         return node
 
-class Node(object):
+class Node:
     """A branch-and-bound node that stores problem state.
 
     Attributes

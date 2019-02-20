@@ -14,7 +14,7 @@ from pybnb.common import (minimize,
 
 from sortedcontainers import SortedList
 
-class _NoThreadingMaxPriorityFirstQueue(object):
+class _NoThreadingMaxPriorityFirstQueue:
     """A simple priority queue implementation that is not
     thread safe. When the queue is not empty, the item with
     the highest priority is next.
@@ -118,7 +118,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         for _,_,item in self._heap:
             yield item
 
-class _NoThreadingFIFOQueue(object):
+class _NoThreadingFIFOQueue:
     """A simple first-in, first-out queue implementation
     that is not thread safe.
 
@@ -212,7 +212,7 @@ class _NoThreadingFIFOQueue(object):
         for _,item in self._deque:
             yield item
 
-class _NoThreadingLIFOQueue(object):
+class _NoThreadingLIFOQueue:
     """A simple last-in, first-out queue implementation
     that is not thread safe.
 
@@ -300,7 +300,7 @@ class _NoThreadingLIFOQueue(object):
         for _,item in self._items:
             yield item
 
-class IPriorityQueue(object):
+class IPriorityQueue:
     """The abstract interface for priority queues that store
     node data for the dispatcher."""
 

@@ -68,7 +68,7 @@ def compute_relative_gap(sense,
                                                     objective),
                                scale(bound, objective))
 
-class ConvergenceChecker(object):
+class ConvergenceChecker:
     """A class used to check convergence.
 
     Parameters

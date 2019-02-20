@@ -21,7 +21,7 @@ def _cast_to_float_or_int(x):
         assert x_ == x
         return x_
 
-class MPI_InterruptHandler(object):
+class MPI_InterruptHandler:
     """A context manager for temporarily assigning a handler
     to SIGINT and SIGUSR1, depending on the availability of
     these signals in the current OS."""
@@ -163,7 +163,7 @@ def get_gap_labels(gap,
                      str(gap_digits)+format+"}"
     return gap_length, gap_label_str, gap_number_str
 
-class _NullCM(object):
+class _NullCM:
     """A context manager that does nothing"""
     def __init__(self, obj):
         self.obj = obj
@@ -294,12 +294,12 @@ def get_keyword_docs(doc):
 
     return data
 
-class _simple_stdout_filter(object):
+class _simple_stdout_filter:
     def filter(self, record):
         # only show WARNING or below
         return record.levelno <= logging.WARNING
 
-class _simple_stderr_filter(object):
+class _simple_stderr_filter:
     def filter(self, record):
         # only show ERROR or above
         return record.levelno >= logging.ERROR
@@ -502,7 +502,7 @@ def create_command_line_solver(problem, parser=None):
                 assert all(v in solve_docs["queue_strategy"]["choices"]
                            for v in vals)
                 namespace.queue_strategy = vals
-    class _QueueStrategyChoices(object):          #pragma:nocover
+    class _QueueStrategyChoices:          #pragma:nocover
         def __contains__(self, val):
             if val in solve_docs["queue_strategy"]["choices"]:
                 return True

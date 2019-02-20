@@ -39,7 +39,7 @@ def assert_isheap(x):
         if ((2*k) + 2) < len(x):
             assert x[k] <= x[2*k+2]
 
-class TestFactory(object):
+class TestFactory:
 
     def test_factory(self):
         assert type(PriorityQueueFactory('bound', minimize)) is \
@@ -95,7 +95,7 @@ class TestFactory(object):
         finally:
             PriorityQueueFactory._types.pop('_not_a_type_',None)
 
-class Test_NoThreadingMaxPriorityFirstQueue(object):
+class Test_NoThreadingMaxPriorityFirstQueue:
 
     def test_size(self):
         q = _NoThreadingMaxPriorityFirstQueue()
@@ -188,7 +188,7 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
                 check.append(item)
             assert sorted(correct) == sorted(check)
 
-class Test_NoThreadingFIFOQueue(object):
+class Test_NoThreadingFIFOQueue:
 
     def test_size(self):
         q = _NoThreadingFIFOQueue()
@@ -290,7 +290,7 @@ class Test_NoThreadingFIFOQueue(object):
                 check.append(item)
             assert sorted(correct) == sorted(check)
 
-class Test_NoThreadingLIFOQueue(object):
+class Test_NoThreadingLIFOQueue:
 
     def test_size(self):
         q = _NoThreadingLIFOQueue()
@@ -402,7 +402,7 @@ def _check_items(q, items):
         found[id(queue_item)] = True
     assert all(found.values())
 
-class TestWorstBoundFirstPriorityQueue(object):
+class TestWorstBoundFirstPriorityQueue:
 
     def test_overwrites_queue_priority(self):
         q = WorstBoundFirstPriorityQueue(minimize)
@@ -545,7 +545,7 @@ class TestWorstBoundFirstPriorityQueue(object):
         assert node_ is node
         assert q.size() == 1
 
-class TestCustomPriorityQueue(object):
+class TestCustomPriorityQueue:
 
     def test_missing_queue_priority(self):
         q = CustomPriorityQueue(minimize)
@@ -694,7 +694,7 @@ class TestCustomPriorityQueue(object):
         assert q.size() == 1
         assert q.bound() == 1
 
-class TestBestObjectiveFirstPriorityQueue(object):
+class TestBestObjectiveFirstPriorityQueue:
 
     def test_overwrites_queue_priority(self):
         q = BestObjectiveFirstPriorityQueue(minimize)
@@ -749,7 +749,7 @@ class TestBestObjectiveFirstPriorityQueue(object):
         assert node_ is node
         assert q.bound() == 3
 
-class TestBreadthFirstPriorityQueue(object):
+class TestBreadthFirstPriorityQueue:
 
     def test_overwrites_queue_priority(self):
         q = BreadthFirstPriorityQueue(minimize)
@@ -783,7 +783,7 @@ class TestBreadthFirstPriorityQueue(object):
         assert node_ is l2
         assert q.bound() == 1
 
-class TestDepthFirstPriorityQueue(object):
+class TestDepthFirstPriorityQueue:
 
     def test_overwrites_queue_priority(self):
         q = DepthFirstPriorityQueue(minimize)
@@ -817,7 +817,7 @@ class TestDepthFirstPriorityQueue(object):
         assert node_ is l2
         assert q.bound() == 1
 
-class TestFIFOQueue(object):
+class TestFIFOQueue:
 
     def test_overwrites_queue_priority(self):
         q = FIFOQueue(minimize)
@@ -854,7 +854,7 @@ class TestFIFOQueue(object):
         assert node_ is l3
         assert q.bound() == 1
 
-class TestLIFOQueue(object):
+class TestLIFOQueue:
 
     def test_overwrites_queue_priority(self):
         q = LIFOQueue(minimize)
@@ -890,7 +890,7 @@ class TestLIFOQueue(object):
         assert node_ is l2
         assert q.bound() is None
 
-class TestRandomPriorityQueue(object):
+class TestRandomPriorityQueue:
 
     def test_overwrites_queue_priority(self):
         q = RandomPriorityQueue(minimize)
@@ -931,7 +931,7 @@ class TestRandomPriorityQueue(object):
         assert node_ is max([l2, l3],
                             key=lambda x_: x_.queue_priority)
 
-class TestLocalGapPriorityQueue(object):
+class TestLocalGapPriorityQueue:
 
     def test_overwrites_queue_priority(self):
         q = LocalGapPriorityQueue(minimize)
@@ -1036,7 +1036,7 @@ class TestLocalGapPriorityQueue(object):
         assert l3.queue_priority == 5
         assert node_ is l3
 
-class TestLexicographicPriorityQueue(object):
+class TestLexicographicPriorityQueue:
 
     def test_overwrites_queue_priority(self):
         # min

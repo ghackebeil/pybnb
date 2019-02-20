@@ -9,7 +9,7 @@ import pickle
 
 from pybnb import __version__
 
-class Configuration(object):
+class Configuration:
     """The main configuration object.
 
     Attributes

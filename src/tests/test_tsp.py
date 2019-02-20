@@ -15,7 +15,7 @@ try:
 finally:
     sys.path.remove(tspdir)
 
-class TestHeuristics(object):
+class TestHeuristics:
 
     def _generate_random_matrix(self, size, symmetric=False):
         assert size > 1

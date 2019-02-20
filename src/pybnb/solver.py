@@ -38,13 +38,13 @@ try:
 except ImportError:                               #pragma:nocover
     pass
 
-class _notset(object):
+class _notset:
     pass
 
 # this is defined at the bottom of this file
 _solve_defaults = None
 
-class Solver(object):
+class Solver:
     """A branch-and-bound solver.
 
     Parameters

@@ -6,7 +6,7 @@ from pybnb.node import (loads,
                         _SerializedNode,
                         Node)
 
-class TestNode(object):
+class TestNode:
 
     def test_bad_serializer(self):
         orig = config.SERIALIZER

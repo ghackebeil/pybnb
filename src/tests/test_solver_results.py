@@ -17,7 +17,7 @@ try:
 except ImportError:
     pass
 
-class TestSolverResults(object):
+class TestSolverResults:
 
     def test_pprint(self):
         results = SolverResults()

@@ -19,7 +19,7 @@ from pybnb.priority_queue import (WorstBoundFirstPriorityQueue,
                                   LocalGapPriorityQueue,
                                   LexicographicPriorityQueue)
 
-class TestDispatcherQueueData(object):
+class TestDispatcherQueueData:
 
     def test_bound(self):
 
@@ -50,7 +50,7 @@ class TestDispatcherQueueData(object):
                 (-2 if (sense == minimize) else 2)
             assert queue.bound() == (-2 if (sense == minimize) else 2)
 
-class TestDispatcherSimple(object):
+class TestDispatcherSimple:
 
     def test_queue_strategy(self):
         node_limit = None

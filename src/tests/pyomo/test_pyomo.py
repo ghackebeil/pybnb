@@ -23,7 +23,7 @@ class MaxProblem(pybnb.Problem):
 
 @pytest.mark.skipif(not pyomo_available,
                     reason="Pyomo is not available")
-class Test(object):
+class Test:
 
     def test_correct_integer_lb(self):
         # it is important that we use floating point numbers

@@ -15,7 +15,7 @@ def _array_to_string(out):
     else:
         return out.tostring().decode("utf8")
 
-class Message(object):
+class Message:
     """A helper class for probing for and receiving
     messages. A single instance of this class is meant to be
     reused.

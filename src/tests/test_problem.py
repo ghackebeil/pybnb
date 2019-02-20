@@ -14,7 +14,7 @@ class MinProblem(Problem):
 class MaxProblem(Problem):
     def sense(self): return maximize
 
-class TestProblem(object):
+class TestProblem:
 
     def test_infeasible_objective(self):
         p = MinProblem()
@@ -44,7 +44,7 @@ class TestProblem(object):
         p.notify_new_best_node(None, None)
         p.notify_solve_finished(None, None, None)
 
-class Test_SolveInfo(object):
+class Test_SolveInfo:
 
     def test_methods(self):
         info = _SolveInfo()

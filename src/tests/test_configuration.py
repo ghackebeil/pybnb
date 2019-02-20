@@ -6,7 +6,7 @@ from pybnb.configuration import Configuration
 
 import pytest
 
-class TestConfiguration(object):
+class TestConfiguration:
 
     def test_str(self):
         print(_config_)

@@ -14,7 +14,7 @@ from pybnb.common import (minimize,
                           _termination_condition_to_int,
                           _int_to_termination_condition)
 
-class Test(object):
+class Test:
 
     def test_minimize(self):
         assert minimize == 1

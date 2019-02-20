@@ -9,7 +9,7 @@ try:
 except ImportError:
     is_pypy = False
 
-class Test(object):
+class Test:
 
     # See what Python versions the combined
     # coverage report includes

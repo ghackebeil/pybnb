@@ -32,7 +32,7 @@ try:
 except ImportError:
     pass
 
-class Test(object):
+class Test:
 
     def test_MPI_InterruptHandler(self):
         assert len(MPI_InterruptHandler._sigs) > 0

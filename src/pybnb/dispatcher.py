@@ -36,7 +36,7 @@ except ImportError:                               #pragma:nocover
 
 from sortedcontainers import SortedList
 
-class DispatcherQueueData(object):
+class DispatcherQueueData:
     """A namedtuple storing data that can be used to
     initialize a dispatcher queue.
 
@@ -85,7 +85,7 @@ class DispatcherQueueData(object):
                 bound = self.worst_terminal_bound
         return bound
 
-class StatusPrinter(object):
+class StatusPrinter:
     """Logs status information about the branch-and-bound
     solve.
 
@@ -305,7 +305,7 @@ class StatusPrinter(object):
         self._print_count += 1
         self._last_print_time = current_time
 
-class DispatcherBase(object):
+class DispatcherBase:
     """The base dispatcher implementation with some core
     functionality shared by the distributed and local
     implementations."""

@@ -9,7 +9,7 @@ from pybnb.common import (minimize,
                           maximize,
                           inf)
 
-class Problem(object):
+class Problem:
     """The abstract base class used for defining
     branch-and-bound problems."""
     __slots__ = ()
@@ -197,7 +197,7 @@ class Problem(object):
         """
         pass
 
-class _SolveInfo(object):
+class _SolveInfo:
     __slots__ = ("data")
     _data_size = 11
     def __init__(self):
