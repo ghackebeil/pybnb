@@ -154,12 +154,8 @@ class SolverResults(object):
                     else:
                         if name == "best_node":
                             val = dumps(val)
-                            if hasattr(base64, 'encodebytes'):
-                                val = base64.encodebytes(val).\
-                                    decode("ascii")
-                            else:
-                                val = base64.encodestring(val).\
-                                    decode("ascii")
+                            val = base64.encodebytes(val).\
+                                decode("ascii")
                             val = ('\n  '.join(
                                 val.splitlines()))
                             val = ("!!binary |\n  %s"

@@ -6,15 +6,6 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
 import array
 
-# avoids generating a deprecation warning in python 3.7
-def _array_to_string(out):
-    """converts an array of bytes to a string"""
-    if hasattr(out, 'tobytes'):
-        # array.tobytes was added in python 3.2
-        return out.tobytes().decode("utf8")
-    else:
-        return out.tostring().decode("utf8")
-
 class Message(object):
     """A helper class for probing for and receiving
     messages. A single instance of this class is meant to be
@@ -168,5 +159,6 @@ def recv_data(comm, status, datatype, out=None):
               status=status)
     assert not status.Get_error()
     if datatype == mpi4py.MPI.CHAR:
-        out = _array_to_string(out)
+        # convert to a string
+        out = out.tobytes().decode("utf8")
     return out
