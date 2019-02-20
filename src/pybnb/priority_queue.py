@@ -37,7 +37,7 @@ class _NoThreadingMaxPriorityFirstQueue:
         """Returns the size of the queue."""
         return len(self._heap)
 
-    def put(self, item, priority, _push_=heapq.heappush):
+    def put(self, item, priority, *, _push_=heapq.heappush):
         """Puts an item into the queue with the given
         priority. Items placed in the queue may not be
         None. This method returns a unique counter associated
@@ -49,7 +49,7 @@ class _NoThreadingMaxPriorityFirstQueue:
         _push_(self._heap, (self._negate(priority), cnt, item))
         return cnt
 
-    def get(self, _pop_=heapq.heappop):
+    def get(self, *, _pop_=heapq.heappop):
         """Removes and returns the highest priority item in
         the queue, where ties are broken by the order items
         were placed in the queue. If the queue is empty,
@@ -59,7 +59,7 @@ class _NoThreadingMaxPriorityFirstQueue:
         else:
             return None
 
-    def put_get(self, item, priority, _push_pop_=heapq.heappushpop):
+    def put_get(self, item, priority, *, _push_pop_=heapq.heappushpop):
         """Combines a put and get call, which can be more
         efficient than two separate put and get
         calls. Returns a tuple containing the put and get
@@ -91,7 +91,7 @@ class _NoThreadingMaxPriorityFirstQueue:
         except IndexError:
             raise IndexError("The queue is empty")
 
-    def filter(self, func, include_counters=False):
+    def filter(self, func, *, include_counters=False):
         """Removes items from the queue for which
         `func(item)` returns False. The list of items
         removed is returned. If `include_counters` is set to
@@ -186,7 +186,7 @@ class _NoThreadingFIFOQueue:
         except IndexError:
             raise IndexError("The queue is empty")
 
-    def filter(self, func, include_counters=False):
+    def filter(self, func, *, include_counters=False):
         """Removes items from the queue for which
         `func(item)` returns False. The list of items
         removed is returned. If `include_counters` is set to
@@ -274,7 +274,7 @@ class _NoThreadingLIFOQueue:
         except IndexError:
             raise IndexError("The queue is empty")
 
-    def filter(self, func, include_counters=False):
+    def filter(self, func, *, include_counters=False):
         """Removes items from the queue for which
         `func(item)` returns False. The list of items
         removed is returned. If `include_counters` is set to
@@ -402,6 +402,7 @@ class CustomPriorityQueue(IPriorityQueue):
 
     def __init__(self,
                  sense,
+                 *,
                  _queue_type_=_NoThreadingMaxPriorityFirstQueue):
         assert sense in (minimize, maximize)
         self._sense = sense

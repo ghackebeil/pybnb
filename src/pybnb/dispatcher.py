@@ -106,6 +106,7 @@ class StatusPrinter:
     def __init__(self,
                  dispatcher,
                  log,
+                 *,
                  log_interval_seconds=1.0):
         assert log_interval_seconds >= 0
         self._dispatcher = dispatcher
@@ -202,7 +203,7 @@ class StatusPrinter:
         """Pass a message to ``log.critical``"""
         self._log.critical(msg)
 
-    def new_objective(self, report=True):
+    def new_objective(self, *, report=True):
         """Indicate that a new objective has been found
 
         Parameters
@@ -214,7 +215,7 @@ class StatusPrinter:
         self._new_objective = True
         self._report_new_objective = report
 
-    def tic(self, force=False):
+    def tic(self, *, force=False):
         """Provide an opportunity to log output if certain
         criteria are met.
 
@@ -1180,19 +1181,19 @@ class DispatcherDistributed(DispatcherBase):
                             ret[3][1],  # termination_condition
                             ret[3][2])  # global_solve_info
             elif tag == DispatcherAction.log_info:
-                msg.recv(mpi4py.MPI.CHAR)
+                msg.recv(datatype=mpi4py.MPI.CHAR)
                 self.log_info(msg.data)
             elif tag == DispatcherAction.log_warning:
-                msg.recv(mpi4py.MPI.CHAR)
+                msg.recv(datatype=mpi4py.MPI.CHAR)
                 self.log_warning(msg.data)
             elif tag == DispatcherAction.log_debug:
-                msg.recv(mpi4py.MPI.CHAR)
+                msg.recv(datatype=mpi4py.MPI.CHAR)
                 self.log_debug(msg.data)
             elif tag == DispatcherAction.log_error:
-                msg.recv(mpi4py.MPI.CHAR)
+                msg.recv(datatype=mpi4py.MPI.CHAR)
                 self.log_error(msg.data)
             elif tag == DispatcherAction.log_critical:
-                msg.recv(mpi4py.MPI.CHAR)
+                msg.recv(datatype=mpi4py.MPI.CHAR)
                 self.log_critical(msg.data)
             elif tag == DispatcherAction.stop_listen:
                 msg.recv()

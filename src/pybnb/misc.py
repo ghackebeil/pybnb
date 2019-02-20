@@ -33,7 +33,10 @@ class MPI_InterruptHandler:
                  "_original_handlers",
                  "_handler",
                  "_disable")
-    def __init__(self, handler, disable=False):
+    def __init__(self,
+                 handler,
+                 *,
+                 disable=False):
         self._released = True
         self._original_handlers = None
         self._handler = handler
@@ -62,7 +65,11 @@ class MPI_InterruptHandler:
                 signal.signal(signum, handler)
             self._released = True
 
-def metric_format(num, unit="s", digits=1, align_unit=False):
+def metric_format(num,
+                  *,
+                  unit="s",
+                  digits=1,
+                  align_unit=False):
     """Format and scale output with metric prefixes.
 
     Example
@@ -103,7 +110,10 @@ def metric_format(num, unit="s", digits=1, align_unit=False):
     else:
         return ("%."+str(digits)+"f %s%s") % (num, prefix, unit)
 
-def time_format(num, digits=1, align_unit=False):
+def time_format(num,
+                *,
+                digits=1,
+                align_unit=False):
     """Format and scale output according to standard time
     units.
 
@@ -148,6 +158,7 @@ def time_format(num, digits=1, align_unit=False):
         return ("%."+str(digits)+"f %s") % (num, unit)
 
 def get_gap_labels(gap,
+                   *,
                    key="gap",
                    format="f"):
     """Get format strings with enough size and precision to print
@@ -304,7 +315,8 @@ class _simple_stderr_filter:
         # only show ERROR or above
         return record.levelno >= logging.ERROR
 
-def get_simple_logger(filename=None,
+def get_simple_logger(*,
+                      filename=None,
                       stream=None,
                       console=True,
                       level=logging.INFO,
@@ -404,7 +416,9 @@ def _run_command_line_solver(problem, args):
         results = pybnb.solve(problem, **solve_kwds)
     return results
 
-def create_command_line_solver(problem, parser=None):
+def create_command_line_solver(problem,
+                               *,
+                               parser=None):
     """Convert a given problem implementation to a
     command-line example by exposing the
     :func:`pybnb.solver.solve` function arguments using

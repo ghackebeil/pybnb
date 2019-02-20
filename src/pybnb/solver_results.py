@@ -64,7 +64,7 @@ class SolverResults:
         self.wall_time = None
         self.best_node = None
 
-    def pprint(self, stream=sys.stdout):
+    def pprint(self, *, stream=sys.stdout):
         """Prints a nicely formatted representation of the
         results.
 
@@ -78,7 +78,7 @@ class SolverResults:
             stream.write("solver results:\n")
             self.write(stream, prefix=" - ", pretty=True)
 
-    def write(self, stream, prefix="", pretty=False):
+    def write(self, stream, *, prefix="", pretty=False):
         """Writes results in YAML format to a stream or
         file. Changing the parameter values from their
         defaults may result in the output becoming

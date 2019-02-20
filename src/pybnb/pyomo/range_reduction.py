@@ -31,6 +31,7 @@ class RangeReductionProblem(Problem):
 
     def __init__(self,
                  problem,
+                 *,
                  best_objective=None,
                  comm=None):
         assert isinstance(problem, PyomoProblem)
@@ -185,7 +186,7 @@ class RangeReductionProblem(Problem):
     # Interface
     #
 
-    def listen(self, root=0):
+    def listen(self, *, root=0):
         """Listen for requests to run range reduction. All
         processes within the communicator, except for the
         root process, should call this method.

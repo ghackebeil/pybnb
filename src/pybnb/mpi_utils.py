@@ -26,7 +26,7 @@ class Message:
         """Perform a blocking test for a message"""
         self.comm.Probe(status=self.status)
         self.data = None
-    def recv(self, datatype=None, data=None):
+    def recv(self, *, datatype=None, data=None):
         """Complete the receive for the most recent message
         probe and return the data as a numeric array or a
         string, depending on the datatype keyword.
@@ -97,7 +97,7 @@ def recv_nothing(comm, status):
     return status
 recv_nothing._nothing = None
 
-def send_nothing(comm, dest, tag=0):
+def send_nothing(comm, dest, *, tag=0):
     """A helper function for sending an empty message
     with a given tag. This function is not thread safe.
 
@@ -119,7 +119,7 @@ def send_nothing(comm, dest, tag=0):
          tag=tag)
 send_nothing._nothing = None
 
-def recv_data(comm, status, datatype, out=None):
+def recv_data(comm, status, datatype, *, out=None):
     """A helper function for receiving numeric or string
     data sent using the lower-level buffer-based mpi4py
     routines.

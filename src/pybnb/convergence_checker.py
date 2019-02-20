@@ -59,6 +59,7 @@ def _default_scale(bound, objective):
 def compute_relative_gap(sense,
                          bound,
                          objective,
+                         *,
                          scale=_default_scale):
     """Returns the relative gap between the bound and
     the objective, respecting the sign relative to the
@@ -158,6 +159,7 @@ class ConvergenceChecker:
 
     def __init__(self,
                  sense,
+                 *,
                  absolute_gap=1e-8,
                  relative_gap=1e-4,
                  scale_function=_default_scale,

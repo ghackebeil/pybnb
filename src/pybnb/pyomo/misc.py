@@ -31,7 +31,7 @@ def add_tmp_component(model, name, obj):
     setattr(model, name, obj)
     return name
 
-def mpi_partition(comm, items, root=0):
+def mpi_partition(comm, items, *, root=0):
     """A generator that partitions the list of items across
     processes in the communicator. If the communicator size
     is greater than 1, the root process iterates over no
@@ -136,6 +136,7 @@ def create_optimality_bound(problem,
     return optbound
 
 def generate_cids(model,
+                  *,
                   prefix=(),
                   **kwds):
     """Generate forward and reverse mappings between model

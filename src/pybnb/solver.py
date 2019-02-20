@@ -84,6 +84,7 @@ class Solver:
                             "'pybnb.Node()'." % (argname, argname))
 
     def __init__(self,
+                 *,
                  comm=_notset,
                  dispatcher_rank=0):
         mpi = True
@@ -547,6 +548,7 @@ class Solver:
 
     def solve(self,
               problem,
+              *,
               best_objective=None,
               best_node=None,
               disable_objective_call=False,
@@ -967,7 +969,7 @@ class Solver:
 
         return results
 
-def _nonzero_avg(items, div=None):
+def _nonzero_avg(items, *, div=None):
     """Returns the average of a list of items, excluding
     zeros. The optional div argument can be set to a list of
     values to divide each item by when computing the
@@ -986,7 +988,7 @@ def _nonzero_avg(items, div=None):
         return 0
     return s/float(c)
 
-def summarize_worker_statistics(stats, stream=sys.stdout):
+def summarize_worker_statistics(stats, *, stream=sys.stdout):
     """Writes a summary of workers statistics to an
     output stream.
 
@@ -1088,6 +1090,7 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
                         queue_count_str))
 
 def solve(problem,
+          *,
           comm=_notset,
           dispatcher_rank=0,
           log_filename=None,

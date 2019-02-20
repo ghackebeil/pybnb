@@ -36,7 +36,7 @@ class Configuration:
     def __init__(self):
         self.reset()
 
-    def reset(self, use_environment=True):
+    def reset(self, *, use_environment=True):
         """Reset the configuration to default settings.
 
         Parameters

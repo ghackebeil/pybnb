@@ -47,6 +47,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
 
     def __init__(self,
                  problem,
+                 *,
                  node_limit=None,
                  time_limit=5,
                  queue_strategy="depth"):
@@ -172,7 +173,9 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
             worker_comm,
             convergence_checker)
 
-    def notify_new_best_node(self, node, current):
+    def notify_new_best_node(self,
+                             node,
+                             current):
         """Calls the notify_new_best_node() method on the
         user-provided problem and stores the best node for
         use in the next nested solve."""
@@ -180,7 +183,8 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
             best_objective(self._best_objective,
                            node.objective)
         self._best_node = node
-        self._problem.notify_new_best_node(node, current)
+        self._problem.notify_new_best_node(node,
+                                           current)
 
     def notify_solve_finished(self,
                               comm,
