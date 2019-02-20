@@ -1,3 +1,4 @@
+import io
 import logging
 
 from pybnb.common import minimize
@@ -11,7 +12,6 @@ from pybnb.futures import _RedirectHandler
 
 from .common import mpi_available
 
-from six import StringIO
 from runtests.mpi import MPITest
 
 def _get_logging_baseline(size):
@@ -51,7 +51,7 @@ def _logging_redirect_check(comm):
             nodes=[root],
             worst_terminal_bound=None,
             sense=p.sense())
-        out = StringIO()
+        out = io.StringIO()
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         opt._disp.initialize(p.infeasible_objective(),
                              None,

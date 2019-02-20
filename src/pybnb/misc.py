@@ -210,8 +210,7 @@ def as_stream(stream, **kwds):
     ...     assert g.closed
 
     """
-    import six
-    if isinstance(stream, six.string_types):
+    if isinstance(stream, str):
         return open(stream,"w")
     else:
         return _NullCM(stream)
@@ -230,17 +229,10 @@ def get_default_args(func):
 
     """
     import inspect
-    import six
-    if six.PY3:
-        signature = inspect.signature(func)
-        return {k: v.default
-                for k, v in signature.parameters.items()
-                if v.default is not inspect.Parameter.empty}
-    else:
-        a = inspect.getargspec(func)
-        if a.defaults is None:
-            return {}
-        return dict(zip(a.args[-len(a.defaults):],a.defaults))
+    signature = inspect.signature(func)
+    return {k: v.default
+            for k, v in signature.parameters.items()
+            if v.default is not inspect.Parameter.empty}
 
 def get_keyword_docs(doc):
     """Parses a numpy-style docstring to summarize

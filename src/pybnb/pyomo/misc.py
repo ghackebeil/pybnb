@@ -10,9 +10,6 @@ import hashlib
 
 import pybnb
 
-import six
-from six.moves import xrange as range
-
 import pyomo.kernel as pmo
 if getattr(pmo,'version_info',(0,)*3) < (5,4,3):   #pragma:nocover
     raise ImportError(
@@ -156,7 +153,7 @@ def generate_cids(model,
         fn(return_key=True)
     except TypeError:
         traversal = fn(**kwds)
-        obj_ = six.next(traversal)
+        obj_ = next(traversal)
         assert obj_ is model
         object_to_cid[model] = prefix
         cid_to_object[prefix] = model
@@ -167,7 +164,7 @@ def generate_cids(model,
             cid_to_object[cid_] = obj
     else:                                         #pragma:nocover
         traversal = fn(return_key=True, **kwds)
-        obj_ = six.next(traversal)[1]
+        obj_ = next(traversal)[1]
         assert obj_ is model
         object_to_cid[model] = prefix
         cid_to_object[prefix] = model

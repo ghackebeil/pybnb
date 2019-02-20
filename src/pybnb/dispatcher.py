@@ -36,8 +36,6 @@ except ImportError:                               #pragma:nocover
 
 from sortedcontainers import SortedList
 
-import six
-
 class DispatcherQueueData(object):
     """A namedtuple storing data that can be used to
     initialize a dispatcher queue.
@@ -1154,15 +1152,11 @@ class DispatcherDistributed(DispatcherBase):
                 req = update_requests[msg.status.Get_source()]
                 req.Start()
                 req.Wait()
-                if six.PY2:
-                    data_ = str(data)
-                else:
-                    data_ = data
                 (best_objective,
                  best_node,
                  terminal_bound,
                  solve_info_data,
-                 node_list) = marshal.loads(data_)
+                 node_list) = marshal.loads(data)
                 solve_info_.data = array.array('d',solve_info_data)
                 if best_node is not None:
                     best_node = _SerializedNode(best_node)

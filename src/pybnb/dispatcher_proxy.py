@@ -20,8 +20,6 @@ try:
 except ImportError:                               #pragma:nocover
     pass
 
-import six
-
 _ProcessType = collections.namedtuple(
     "_ProcessType",
     ["worker",
@@ -150,15 +148,11 @@ class DispatcherProxy(object):
                   datatype=mpi4py.MPI.BYTE,
                   out=data)
         if tag == DispatcherResponse.nowork:
-            if six.PY2:
-                data_ = str(data)
-            else:
-                data_ = data
             (best_objective,
              best_node_slots,
              global_bound,
              termination_condition_int,
-             solve_info_data) = marshal.loads(data_)
+             solve_info_data) = marshal.loads(data)
             best_node = None
             if best_node_slots is not None:
                 best_node = _SerializedNode.restore_node(
@@ -174,13 +168,9 @@ class DispatcherProxy(object):
                      solve_info))
         else:
             assert tag == DispatcherResponse.work
-            if six.PY2:
-                data_ = str(data)
-            else:
-                data_ = data
             (best_objective,
              best_node_slots,
-             node_slots) = marshal.loads(data_)
+             node_slots) = marshal.loads(data)
             best_node = None
             if best_node_slots is not None:
                 best_node = _SerializedNode.restore_node(

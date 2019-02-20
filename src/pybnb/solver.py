@@ -3,7 +3,7 @@ Branch-and-bound solver implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
+import io
 import sys
 import time
 import array
@@ -38,8 +38,6 @@ try:
 except ImportError:                               #pragma:nocover
     pass
 
-import six
-
 class _notset(object):
     pass
 
@@ -70,16 +68,10 @@ class Solver(object):
             return
         import inspect
         argname = None
-        if not six.PY2:
-            # py3 does not include selse argument of class methods
-            sig = inspect.signature(problem.branch)
-            if len(sig.parameters) == 1:
-                argname = list(sig.parameters.keys())[0]
-        else:
-            # py2 includes self argument of class methods
-            sig = inspect.getargspec(problem.branch)
-            if len(sig.args) == 2:
-                argname = sig.args[1]
+        # py3 does not include self argument of class methods
+        sig = inspect.signature(problem.branch)
+        if len(sig.parameters) == 1:
+            argname = list(sig.parameters.keys())[0]
         if argname is not None:
             raise TypeError("The pybnb solver has detected that "
                             "the 'branch' method on your problem "
@@ -816,8 +808,7 @@ class Solver(object):
                 if log is _notset:
                     log = get_simple_logger()
                 if not isinstance(queue_strategy,
-                                  (six.string_types,
-                                   QueueStrategy)):
+                                  (str,QueueStrategy)):
                     queue_strategy = tuple(qs.value \
                         if isinstance(qs, QueueStrategy) else qs
                         for qs in queue_strategy)
@@ -1160,7 +1151,7 @@ def solve(problem,
 
     stats = opt.collect_worker_statistics()
     if opt.is_dispatcher:
-        tmp = six.StringIO()
+        tmp = io.StringIO()
         summarize_worker_statistics(stats, stream=tmp)
         opt._disp.log_info(tmp.getvalue())
 

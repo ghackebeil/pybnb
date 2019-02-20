@@ -13,7 +13,6 @@ from pybnb.common import (minimize,
                           maximize)
 
 from sortedcontainers import SortedList
-import six
 
 class _NoThreadingMaxPriorityFirstQueue(object):
     """A simple priority queue implementation that is not
@@ -646,7 +645,7 @@ class LexicographicPriorityQueue(CustomPriorityQueue):
 def PriorityQueueFactory(name, *args, **kwds):
     """Returns a new instance of the priority queue type
     registered under the given name."""
-    if isinstance(name, six.string_types):
+    if isinstance(name, str):
         if name not in PriorityQueueFactory._types:
             raise ValueError("invalid queue type: %s"
                              % (name))

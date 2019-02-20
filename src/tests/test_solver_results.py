@@ -1,3 +1,4 @@
+import io
 import math
 
 import pytest
@@ -8,8 +9,6 @@ from pybnb.common import (inf,
                           TerminationCondition)
 from pybnb.node import (Node, loads)
 from pybnb.solver_results import SolverResults
-
-from six import StringIO
 
 yaml_available = False
 try:
@@ -22,7 +21,7 @@ class TestSolverResults(object):
 
     def test_pprint(self):
         results = SolverResults()
-        out = StringIO()
+        out = io.StringIO()
         results.pprint(stream=out)
         assert out.getvalue() == \
             """solver results:
@@ -37,7 +36,7 @@ class TestSolverResults(object):
  - best_node: None
 """
         results.best_node = Node()
-        out = StringIO()
+        out = io.StringIO()
         results.pprint(stream=out)
         assert out.getvalue() == \
             """solver results:
@@ -72,7 +71,7 @@ class TestSolverResults(object):
         results.junk7 = 'nan'
         results.junk8 = None
         results.junk9 = 'None'
-        out = StringIO()
+        out = io.StringIO()
         results.pprint(stream=out)
         assert out.getvalue() == \
             """solver results:
@@ -119,7 +118,7 @@ class TestSolverResults(object):
         results.junk7 = 'nan'
         results.junk8 = None
         results.junk9 = 'None'
-        out = StringIO()
+        out = io.StringIO()
         results.pprint(stream=out)
         assert out.getvalue() == \
             """solver results:
@@ -148,7 +147,7 @@ class TestSolverResults(object):
         if not yaml_available:
             pytest.skip("yaml is not available")
         results = SolverResults()
-        out = StringIO()
+        out = io.StringIO()
         results.write(out)
         x = yaml.load(out.getvalue())
         assert len(x) == 9
@@ -183,7 +182,7 @@ class TestSolverResults(object):
         results.junk5 = 'inf'
         results.junk6 = '-inf'
         results.junk7 = 'nan'
-        out = StringIO()
+        out = io.StringIO()
         results.write(out)
         x = yaml.load(out.getvalue())
         assert len(x) == 16
@@ -218,7 +217,7 @@ class TestSolverResults(object):
         results.relative_gap = 'nan'
         results.nodes = None
         results.junk0 = None
-        out = StringIO()
+        out = io.StringIO()
         results.write(out)
         x = yaml.load(out.getvalue())
         assert len(x) == 16

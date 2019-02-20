@@ -1,3 +1,4 @@
+import io
 import os
 import tempfile
 import time
@@ -12,8 +13,6 @@ from pybnb.problem import Problem
 from pybnb.solver import (Solver,
                           summarize_worker_statistics,
                           solve)
-
-from six import StringIO
 
 class BadBranchSignatureProblem(Problem):
     def sense(self): return minimize
@@ -79,7 +78,7 @@ Average Worker Timing:
  - branch:      0.00% [avg time:   0.0 s , count: 0]
  - other:       0.00% [avg time:   0.0 s , count: 0]
 """
-        tmp = StringIO()
+        tmp = io.StringIO()
         summarize_worker_statistics(stats, stream=tmp)
         assert tmp.getvalue() == out
 

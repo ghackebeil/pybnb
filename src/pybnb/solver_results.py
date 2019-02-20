@@ -7,7 +7,7 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 # recognized pytest-doctestplus plugin,
 # not the standard doctest
 __doctest_requires__ = {'SolverResults.write': ['yaml']}
-
+import io
 import sys
 import base64
 
@@ -16,8 +16,6 @@ from pybnb.common import (SolutionStatus,
 from pybnb.misc import (time_format,
                         as_stream)
 from pybnb.node import dumps
-
-import six
 
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve.
@@ -102,13 +100,13 @@ class SolverResults(object):
         Example
         -------
 
-        >>> import six
+        >>> import io
         >>> import yaml
         >>> import pybnb
         >>> results = pybnb.SolverResults()
         >>> results.best_node = pybnb.Node()
         >>> results.best_node.objective = 123
-        >>> out = six.StringIO()
+        >>> out = io.StringIO()
         >>> # the best_node is serialized
         >>> results.write(out)
         >>> del results
@@ -207,6 +205,6 @@ class SolverResults(object):
 
     def __str__(self):
         """Represents the results as a string."""
-        tmp = six.StringIO()
+        tmp = io.StringIO()
         self.pprint(stream=tmp)
         return tmp.getvalue()

@@ -1,3 +1,4 @@
+import io
 import os
 import tempfile
 import logging
@@ -16,8 +17,6 @@ from pybnb.misc import (_cast_to_float_or_int,
                         get_default_args,
                         get_keyword_docs,
                         get_simple_logger)
-
-from six import StringIO
 
 yaml_available = False
 try:
@@ -222,7 +221,7 @@ class Test(object):
         assert len(log.handlers) == 2
         log.info('junk')
         fid, fname = tempfile.mkstemp()
-        out = StringIO()
+        out = io.StringIO()
         os.close(fid)
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         try:

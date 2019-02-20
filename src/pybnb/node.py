@@ -8,12 +8,7 @@ import zlib
 
 from pybnb.configuration import config
 
-import six
-
-if not six.PY2:
-    import pickle
-else:
-    import cPickle as pickle
+import pickle
 
 _serializer_modules = {}
 _serializer_modules["pickle"] = pickle
