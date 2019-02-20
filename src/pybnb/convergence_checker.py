@@ -3,8 +3,6 @@ Convergence checking implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-from __future__ import division
-
 import math
 
 from pybnb.common import (minimize,
