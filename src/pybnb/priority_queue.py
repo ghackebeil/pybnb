@@ -643,72 +643,58 @@ class LexicographicPriorityQueue(CustomPriorityQueue):
         node.queue_priority = self._generate_priority(node)
         return super(LexicographicPriorityQueue, self).put(node)
 
-class _PriorityQueueFactory:
-
-    def __init__(self):
-        self._types = {}
-
-    def register_type(self, name, cls):
-        """Registers a new priority queue class with the
-        PriorityQueueFactory."""
-        if (name in self._types) and \
-           (self._types[name] is not cls):
-            raise ValueError(
-                "The name '%s' has already been registered"
-                "for priority queue type '%s'"
-                % (name, cls))
-        self._types[name] = cls
-
-    def __call__(self, name: str, *args, **kwds):
-        """Returns a new instance of the priority queue type
-        registered under the given name."""
-        if isinstance(name, str):
-            if name not in self._types:
+def PriorityQueueFactory(name, *args, **kwds):
+    """Returns a new instance of the priority queue type
+    registered under the given name."""
+    if isinstance(name, str):
+        if name not in PriorityQueueFactory._types:
+            raise ValueError("invalid queue type: %s"
+                             % (name))
+        return PriorityQueueFactory._types[name](*args,
+                                                 **kwds)
+    else:
+        names = []
+        for n_ in name:
+            if n_ not in PriorityQueueFactory._types:
                 raise ValueError("invalid queue type: %s"
-                                 % (name))
-            return self._types[name](*args,
-                                     **kwds)
-        else:
-            names = []
-            for n_ in name:
-                if n_ not in self._types:
-                    raise ValueError("invalid queue type: %s"
-                                     % (n_))
-                if n_ == 'custom':
-                    raise ValueError("'custom' queue type not "
-                                     "allowed when defining a "
-                                     "lexicographic queue strategy")
-                names.append(self._types[n_])
-            if len(names) == 0:
-                raise ValueError("Can not define lexicographic queue "
-                                 "strategy with empty list")
-            return LexicographicPriorityQueue(names, *args, **kwds)
-PriorityQueueFactory = _PriorityQueueFactory()
+                                 % (n_))
+            if n_ == 'custom':
+                raise ValueError("'custom' queue type not "
+                                 "allowed when defining a "
+                                 "lexicographic queue strategy")
+            names.append(PriorityQueueFactory._types[n_])
+        if len(names) == 0:
+            raise ValueError("Can not define lexicographic queue "
+                             "strategy with empty list")
+        return LexicographicPriorityQueue(names, *args, **kwds)
+PriorityQueueFactory._types = {}
 
-PriorityQueueFactory.register_type(
-    'bound',
-    WorstBoundFirstPriorityQueue)
-PriorityQueueFactory.register_type(
-    'custom',
-    CustomPriorityQueue)
-PriorityQueueFactory.register_type(
-    'objective',
-    BestObjectiveFirstPriorityQueue)
-PriorityQueueFactory.register_type(
-    'breadth',
-    BreadthFirstPriorityQueue)
-PriorityQueueFactory.register_type(
-    'depth',
-    DepthFirstPriorityQueue)
-PriorityQueueFactory.register_type(
-    'fifo',
-    FIFOQueue)
-PriorityQueueFactory.register_type(
-    'lifo',
-    LIFOQueue)
-PriorityQueueFactory.register_type(
-    'random',
-    RandomPriorityQueue)
-PriorityQueueFactory.register_type(
-    'local_gap',
-    LocalGapPriorityQueue)
+def register_queue_type(name, cls):
+    """Registers a new priority queue class with the
+    PriorityQueueFactory."""
+    if (name in PriorityQueueFactory._types) and \
+       (PriorityQueueFactory._types[name] is not cls):
+        raise ValueError(
+            "The name '%s' has already been registered"
+            "for priority queue type '%s'"
+            % (name, cls))
+    PriorityQueueFactory._types[name] = cls
+
+register_queue_type('bound',
+                    WorstBoundFirstPriorityQueue)
+register_queue_type('custom',
+                    CustomPriorityQueue)
+register_queue_type('objective',
+                    BestObjectiveFirstPriorityQueue)
+register_queue_type('breadth',
+                    BreadthFirstPriorityQueue)
+register_queue_type('depth',
+                    DepthFirstPriorityQueue)
+register_queue_type('fifo',
+                    FIFOQueue)
+register_queue_type('lifo',
+                    LIFOQueue)
+register_queue_type('random',
+                    RandomPriorityQueue)
+register_queue_type('local_gap',
+                    LocalGapPriorityQueue)

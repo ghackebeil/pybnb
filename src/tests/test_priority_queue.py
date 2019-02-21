@@ -20,7 +20,8 @@ from pybnb.priority_queue import \
      RandomPriorityQueue,
      LocalGapPriorityQueue,
      LexicographicPriorityQueue,
-     PriorityQueueFactory)
+     PriorityQueueFactory,
+     register_queue_type)
 
 def _new_child(node):
     child = Node()
@@ -75,22 +76,21 @@ class TestFactory:
         with pytest.raises(ValueError):
             PriorityQueueFactory((), minimize)
 
-    def test_register_type(self):
+    def test_register_queue_type(self):
         assert PriorityQueueFactory._types['bound'] is \
             WorstBoundFirstPriorityQueue
         # its okay to re-register the exact same thing
-        PriorityQueueFactory.register_type(
-            'bound',
-            WorstBoundFirstPriorityQueue)
+        register_queue_type('bound',
+                            WorstBoundFirstPriorityQueue)
         assert PriorityQueueFactory._types['bound'] is \
             WorstBoundFirstPriorityQueue
         with pytest.raises(ValueError):
-            PriorityQueueFactory.register_type('bound', None)
+            register_queue_type('bound', None)
         assert PriorityQueueFactory._types['bound'] is \
             WorstBoundFirstPriorityQueue
         assert '_not_a_type_' not in PriorityQueueFactory._types
         try:
-            PriorityQueueFactory.register_type('_not_a_type_', None)
+            register_queue_type('_not_a_type_', None)
             assert PriorityQueueFactory._types['_not_a_type_'] is None
         finally:
             PriorityQueueFactory._types.pop('_not_a_type_',None)

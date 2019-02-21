@@ -5,15 +5,14 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import uuid
 import zlib
-import typing
 
 from pybnb.configuration import config
 
 import pickle
 
-_serializer_modules: typing.Dict[str, typing.Any] = {}
-_serializer_modules["dill"] = None
+_serializer_modules = {}
 _serializer_modules["pickle"] = pickle
+_serializer_modules["dill"] = None
 
 def _get_dill():
     assert config.SERIALIZER == "dill"
