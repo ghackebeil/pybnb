@@ -22,7 +22,7 @@ from pybnb.common import (minimize,
                           SolutionStatus,
                           TerminationCondition)
 from pybnb.priority_queue import (CustomPriorityQueue,
-                                  register_queue_type)
+                                  PriorityQueueFactory)
 from pybnb.node import Node
 from pybnb.problem import Problem
 from pybnb.solver_results import SolverResults

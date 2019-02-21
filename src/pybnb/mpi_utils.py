@@ -6,6 +6,8 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
 import array
 
+_nothing = array.array("B",[])
+
 class Message:
     """A helper class for probing for and receiving
     messages. A single instance of this class is meant to be
@@ -83,19 +85,15 @@ def recv_nothing(comm, status):
         created will be returned.
     """
     import mpi4py.MPI
-    if recv_nothing._nothing is None:
-        recv_nothing._nothing = [array.array("B",[]),
-                                 mpi4py.MPI.CHAR]
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
-    comm.Recv(recv_nothing._nothing,
+    comm.Recv(_nothing,
               source=status.Get_source(),
               tag=status.Get_tag(),
               status=status)
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
     return status
-recv_nothing._nothing = None
 
 def send_nothing(comm, dest, *, tag=0):
     """A helper function for sending an empty message
@@ -111,13 +109,9 @@ def send_nothing(comm, dest, *, tag=0):
         A valid MPI tag to use for the message. (default: 0)
     """
     import mpi4py.MPI
-    if send_nothing._nothing is None:
-        send_nothing._nothing = [array.array("B",[]),
-                                 mpi4py.MPI.CHAR]
-    comm.Send(send_nothing._nothing,
-         dest,
-         tag=tag)
-send_nothing._nothing = None
+    comm.Send(_nothing,
+              dest,
+              tag=tag)
 
 def recv_data(comm, status, datatype, *, out=None):
     """A helper function for receiving numeric or string

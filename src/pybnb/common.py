@@ -3,19 +3,19 @@ Basic definitions and utilities.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
+import typing
 import enum
 
-minimize = 1
+minimize: int = 1
 """The objective sense defining a minimization problem."""
 
-maximize = -1
+maximize: int = -1
 """The objective sense defining a maximization problem."""
 
-inf = float("inf")
+inf: float = float("inf")
 """A floating point constant set to ``float('inf')``."""
 
-nan = float("nan")
+nan: float = float("nan")
 """A floating point constant set to ``float('nan')``."""
 
 @enum.unique
@@ -53,14 +53,14 @@ class QueueStrategy(str, enum.Enum):
     assign a priority to all nodes returned from the
     :func:`branch <pybnb.problem.Problem.branch>`
     method on their problem."""
-_queue_strategy_to_int = {}
-_int_to_queue_strategy = []
-for _i, _val in enumerate(sorted(QueueStrategy,
-                                 key=lambda v: v.value)):
-    _queue_strategy_to_int[_val] = _i
-    _int_to_queue_strategy.append(_val)
-del _i
-del _val
+_queue_strategy_to_int: typing.Dict[QueueStrategy, int] = {}
+_int_to_queue_strategy: typing.List[QueueStrategy] = []
+def _populate_queue_strategy_maps():
+    for i, val in enumerate(sorted(QueueStrategy,
+                                   key=lambda v: v.value)):
+        _queue_strategy_to_int[val] = i
+        _int_to_queue_strategy.append(val)
+_populate_queue_strategy_maps()
 
 @enum.unique
 class SolutionStatus(str, enum.Enum):
@@ -92,14 +92,14 @@ class SolutionStatus(str, enum.Enum):
     unknown = "unknown"
     """Indicates that the global bound is finite, but no
     feasible (finite) objective was found."""
-_solution_status_to_int = {}
-_int_to_solution_status = []
-for _i, _val in enumerate(sorted(SolutionStatus,
-                                 key=lambda v: v.value)):
-    _solution_status_to_int[_val] = _i
-    _int_to_solution_status.append(_val)
-del _i
-del _val
+_solution_status_to_int: typing.Dict[SolutionStatus, int] = {}
+_int_to_solution_status: typing.List[SolutionStatus] = []
+def _populate_solution_status_maps():
+    for i, val in enumerate(sorted(SolutionStatus,
+                                   key=lambda v: v.value)):
+        _solution_status_to_int[val] = i
+        _int_to_solution_status.append(val)
+_populate_solution_status_maps()
 
 @enum.unique
 class TerminationCondition(str, enum.Enum):
@@ -127,11 +127,11 @@ class TerminationCondition(str, enum.Enum):
     interrupted = "interrupted"
     """Solve termination was initiated by SIGINT or SIGUSR
     signal event."""
-_termination_condition_to_int = {}
-_int_to_termination_condition = []
-for _i, _val in enumerate(sorted(TerminationCondition,
-                                 key=lambda v: v.value)):
-    _termination_condition_to_int[_val] = _i
-    _int_to_termination_condition.append(_val)
-del _i
-del _val
+_termination_condition_to_int: typing.Dict[TerminationCondition, int] = {}
+_int_to_termination_condition: typing.List[TerminationCondition] = []
+def _populate_termination_condition_maps():
+    for i, val in enumerate(sorted(TerminationCondition,
+                                   key=lambda v: v.value)):
+        _termination_condition_to_int[val] = i
+        _int_to_termination_condition.append(val)
+_populate_termination_condition_maps()
