@@ -383,6 +383,7 @@ def _run_command_line_solver(problem, args):
             problem,
             node_limit=args.nested_node_limit,
             time_limit=args.nested_time_limit,
+            queue_limit=args.nested_queue_limit,
             queue_strategy=args.nested_queue_strategy)
     else:
         nested_solver_defaults = get_default_args(
@@ -399,6 +400,12 @@ def _run_command_line_solver(problem, args):
                 "The user-specified --nested-time-limit "
                 "setting will be ignored. Did you forget the "
                 "--nested-solver flag?")
+        if args.nested_queue_limit != \
+           nested_solver_defaults["queue_limit"]:     #pragma:nocover
+            logging.getLogger("pybnb").warning(
+                "The user-specified --nested-queue-limit "
+                "setting will be ignored. Did you forget the "
+                "--nested-solver flag?")
         if args.nested_queue_strategy != \
            nested_solver_defaults["queue_strategy"]: #pragma:nocover
             logging.getLogger("pybnb").warning(
@@ -411,6 +418,7 @@ def _run_command_line_solver(problem, args):
     del solve_kwds["nested_solver"]
     del solve_kwds["nested_node_limit"]
     del solve_kwds["nested_time_limit"]
+    del solve_kwds["nested_queue_limit"]
     del solve_kwds["nested_queue_strategy"]
     if args.disable_mpi:
         results = pybnb.solve(problem, comm=None, **solve_kwds)
@@ -579,6 +587,11 @@ def create_command_line_solver(problem, parser=None):
         type=float,
         default=solve_defaults.pop("time_limit"),
         help=solve_docs["time_limit"]["doc"])
+    parser.add_argument(
+        "--queue-limit",
+        type=int,
+        default=solve_defaults.pop("queue_limit"),
+        help=solve_docs["queue_limit"]["doc"])
     def _float_or_None(val):                      #pragma:nocover
         if val == "None":
             return None
@@ -666,6 +679,11 @@ def create_command_line_solver(problem, parser=None):
         type=float,
         default=nested_solver_defaults.pop("time_limit"),
         help=nested_solver_docs["time_limit"]["doc"])
+    parser.add_argument(
+        "--nested-queue-limit",
+        type=int,
+        default=nested_solver_defaults.pop("queue_limit"),
+        help=nested_solver_docs["queue_limit"]["doc"])
     parser.add_argument(
         "--nested-queue-strategy",
         type=str,
