@@ -31,6 +31,20 @@ def _test_initialize_queue(comm):
     # no initial queue
     for sense in (minimize, maximize):
         problem = DummyProblem(sense)
+        results = solver.solve(problem,
+                               queue_limit=0)
+        assert results.solution_status == "unknown"
+        assert results.termination_condition == "queue_limit"
+        assert results.objective == (inf if (sense == minimize) else -inf)
+        assert results.bound == (-inf if (sense == minimize) else inf)
+        assert results.absolute_gap == None
+        assert results.relative_gap == None
+        assert results.nodes == 0
+        assert results.wall_time is not None
+        assert results.best_node is None
+        assert problem._notify_new_best_node_call_count == 0
+        assert solver._local_solve_info.explored_nodes_count == 0
+        problem = DummyProblem(sense)
         results = solver.solve(problem)
         assert results.solution_status == "optimal"
         assert results.termination_condition == "optimality"
