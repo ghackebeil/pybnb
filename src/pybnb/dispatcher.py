@@ -740,7 +740,7 @@ class DispatcherLocal(DispatcherBase):
         if (self.queue.size() == 0) and \
            (self.termination_condition is None):
             self.termination_condition = \
-                TerminationCondition.no_nodes
+                TerminationCondition.queue_empty
         if self.termination_condition is None:
             node = self._get_work_item()
             self.active_nodes = 1
@@ -937,7 +937,7 @@ class DispatcherDistributed(DispatcherBase):
             if len(self.needs_work_queue) == (self.comm.size-1):
                 if self.termination_condition is None:
                     self.termination_condition = \
-                        TerminationCondition.no_nodes
+                        TerminationCondition.queue_empty
                 requests = []
                 for r_ in self._send_requests.values():
                     if r_ is not None:

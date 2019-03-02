@@ -133,7 +133,7 @@ def _test_infeasible_max(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = -inf
     baseline.bound = -16
     baseline.nodes = 31
@@ -358,7 +358,7 @@ def _test_infeasible_min(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = inf
     baseline.bound = 16
     baseline.nodes = 31
@@ -809,7 +809,7 @@ def _test_zero_objective_max(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = 0.0
     baseline.bound = 0.0009765625
     baseline.absolute_gap = 0.0009765625
@@ -920,7 +920,7 @@ def _test_zero_objective_min(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = 0.0
     baseline.bound = -0.0009765625
     baseline.absolute_gap = 0.0009765625
