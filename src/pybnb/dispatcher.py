@@ -325,6 +325,7 @@ class DispatcherBase(object):
         self.journalist = None
         self.node_limit = None
         self.time_limit = None
+        self.queue_limit = None
         self.served_nodes_count = None
         self.worst_terminal_bound = None
         self.clock = None
@@ -335,6 +336,11 @@ class DispatcherBase(object):
                 bound,
                 self.best_objective):
             self.queue.put(node)
+            if (self.queue_limit is not None) and \
+               (self.queue.size() > self.queue_limit) and \
+               (self.termination_condition is None):
+                self.termination_condition = \
+                    TerminationCondition.queue_limit
             return True
         else:
             self._check_update_worst_terminal_bound(bound)
@@ -426,6 +432,7 @@ class DispatcherBase(object):
                    converger,
                    node_limit,
                    time_limit,
+                   queue_limit,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -455,6 +462,10 @@ class DispatcherBase(object):
             The maximum amount of time to spend processing
             nodes before beginning to terminate the
             solve. If None, no time limit will be enforced.
+        queue_limit : int or None
+            The maximum allowed queue size. If exceeded, the
+            solve will terminate. If None, no size limit on
+            the queue will be enforced.
         log : ``logging.Logger``
             A log object where solver output should be sent.
         log_interval_seconds : float
@@ -476,6 +487,8 @@ class DispatcherBase(object):
              (node_limit == int(node_limit)))
         assert (time_limit is None) or \
             (time_limit >= 0)
+        assert (queue_limit is None) or \
+            (queue_limit >= 0)
         self.start_time = self.clock()
         self.initialized = True
         self.log_new_incumbent = log_new_incumbent
@@ -498,6 +511,9 @@ class DispatcherBase(object):
         self.time_limit = None
         if time_limit is not None:
             self.time_limit = float(time_limit)
+        self.queue_limit = None
+        if queue_limit is not None:
+            self.queue_limit = int(queue_limit)
         self.served_nodes_count = 0
         self.worst_terminal_bound = \
             initialize_queue.worst_terminal_bound
@@ -655,6 +671,7 @@ class DispatcherLocal(DispatcherBase):
                    converger,
                    node_limit,
                    time_limit,
+                   queue_limit,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -671,6 +688,7 @@ class DispatcherLocal(DispatcherBase):
             converger,
             node_limit,
             time_limit,
+            queue_limit,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -989,6 +1007,7 @@ class DispatcherDistributed(DispatcherBase):
                    converger,
                    node_limit,
                    time_limit,
+                   queue_limit,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -1019,6 +1038,7 @@ class DispatcherDistributed(DispatcherBase):
             converger,
             node_limit,
             time_limit,
+            queue_limit,
             log,
             log_interval_seconds,
             log_new_incumbent)

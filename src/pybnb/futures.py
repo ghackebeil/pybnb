@@ -39,6 +39,10 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         The same as the standard solver option, but applied
         to the nested solver to limit the amount of time
         spent processing a work item. (default: 5)
+    queue_limit : int, optional
+        The same as the standard solver option, but applied
+        to the nested solver to limit the size of the queue.
+        (default: None)
     queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>` or tuple
         The same as the standard solver option, but applied
         to the nested solver to control the queue strategy
@@ -49,6 +53,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
                  problem,
                  node_limit=None,
                  time_limit=5,
+                 queue_limit=None,
                  queue_strategy="depth"):
         # we import from pybnb.solver here to avoid a
         # circular import reference
@@ -56,6 +61,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         self._problem = problem
         self._node_limit = node_limit
         self._time_limit = time_limit
+        self._queue_limit = queue_limit
         self._queue_strategy = queue_strategy
         self._solver = Solver(comm=None)
         self._log = logging.Logger(None,
@@ -111,6 +117,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
             disable_objective_call=self._disable_objective_call,
             node_limit=self._node_limit,
             time_limit=self._time_limit,
+            queue_limit=self._queue_limit,
             queue_strategy=self._queue_strategy,
             disable_signal_handlers=True)
         self._queue = self._solver.save_dispatcher_queue()

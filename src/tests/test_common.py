@@ -67,10 +67,11 @@ class Test(object):
         assert TerminationCondition.node_limit == "node_limit"
         assert TerminationCondition.time_limit == "time_limit"
         assert TerminationCondition.queue_empty == "queue_empty"
+        assert TerminationCondition.queue_limit == "queue_limit"
         assert TerminationCondition.interrupted == "interrupted"
-        assert len(TerminationCondition) == 6
-        assert len(_termination_condition_to_int) == 6
-        assert len(_int_to_termination_condition) == 6
+        assert len(TerminationCondition) == 7
+        assert len(_termination_condition_to_int) == 7
+        assert len(_int_to_termination_condition) == 7
         for i, val in enumerate(TerminationCondition):
             assert _int_to_termination_condition[
                 _termination_condition_to_int[val]] is val

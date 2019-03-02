@@ -58,7 +58,7 @@ def _logging_redirect_check(comm):
                              initialize_queue,
                              "bound",
                              ConvergenceChecker(p.sense()),
-                             None, None,
+                             None, None, None,
                              get_simple_logger(console=True,
                                                stream=out,
                                                level=logging.DEBUG,

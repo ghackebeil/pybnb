@@ -568,6 +568,7 @@ class Solver(object):
               bound_stop=None,
               node_limit=None,
               time_limit=None,
+              queue_limit=None,
               initialize_queue=None,
               queue_strategy="bound",
               log_interval_seconds=1.0,
@@ -728,6 +729,16 @@ class Solver(object):
             amount of time, depending how long worker
             processes spend completing their final
             task. (default: None)
+        queue_limit : int, optional
+            **(D)** If provided, the solve will begin to
+            terminate once the size of the dispatcher queue
+            exceeds this amount, and the
+            termination_condition flag on the results object
+            will be set to 'queue_limit'. Note that the
+            queue may become arbitrarily larger than this
+            limit, depending how many child nodes are
+            returned from worker processes on their final
+            update. (default: None)
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
             **(D)** Initializes the dispatcher queue with
             that remaining from a previous solve (obtained
@@ -867,6 +878,7 @@ class Solver(object):
                     convergence_checker,
                     node_limit,
                     time_limit,
+                    queue_limit,
                     log,
                     log_interval_seconds,
                     log_new_incumbent)
