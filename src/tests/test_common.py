@@ -66,7 +66,7 @@ class Test(object):
         assert TerminationCondition.objective_limit == "objective_limit"
         assert TerminationCondition.node_limit == "node_limit"
         assert TerminationCondition.time_limit == "time_limit"
-        assert TerminationCondition.no_nodes == "no_nodes"
+        assert TerminationCondition.queue_empty == "queue_empty"
         assert TerminationCondition.interrupted == "interrupted"
         assert len(TerminationCondition) == 6
         assert len(_termination_condition_to_int) == 6

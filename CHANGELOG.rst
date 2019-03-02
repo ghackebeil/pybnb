@@ -4,7 +4,7 @@ Changelog
 0.6.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
-* TODO
+* Renaming "no_nodes" termination condition to "queue_empty"
 
 0.5.2 - 2019-02-13
 ~~~~~~~~~~~~~~~~~~
