@@ -200,14 +200,6 @@ class Solver(object):
             assert results.bound == unbounded_objective
             results.solution_status = SolutionStatus.unbounded
         else:
-            results.absolute_gap = convergence_checker.\
-                compute_absolute_gap(
-                    results.bound,
-                    results.objective)
-            results.relative_gap = convergence_checker.\
-                compute_relative_gap(
-                    results.bound,
-                    results.objective)
             if convergence_checker.objective_is_optimal(
                     results.objective,
                     results.bound):
@@ -220,6 +212,16 @@ class Solver(object):
                     results.solution_status = SolutionStatus.optimal
             else:
                 results.solution_status = SolutionStatus.feasible
+            if results.solution_status in (SolutionStatus.feasible,
+                                           SolutionStatus.optimal):
+                results.absolute_gap = convergence_checker.\
+                    compute_absolute_gap(
+                        results.bound,
+                        results.objective)
+                results.relative_gap = convergence_checker.\
+                    compute_relative_gap(
+                        results.bound,
+                        results.objective)
 
     def _solve(self,
                problem,
