@@ -121,7 +121,7 @@ class TerminationCondition(str, enum.Enum):
     time_limit = "time_limit"
     """The dispatcher terminated the solve due to the
     user-supplied time limit being surpassed."""
-    no_nodes = "no_nodes"
+    queue_empty = "queue_empty"
     """The dispatcher terminated the solve due to the node
     queue becoming empty."""
     interrupted = "interrupted"
