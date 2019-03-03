@@ -8,6 +8,7 @@ Changelog
 * Adding a `queue_limit` solve option, which causes the
   solve to terminate with the "queue_limit" termination
   condition when the queue size exceeds this value.
+* pep8
 
 0.5.2 - 2019-02-13
 ~~~~~~~~~~~~~~~~~~
