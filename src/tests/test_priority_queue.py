@@ -665,6 +665,41 @@ class TestCustomPriorityQueue(object):
         assert node_ is node
         assert q.size() == 1
         assert q.bound() == 1
+        # no bound tracking
+        q = CustomPriorityQueue(sense=minimize,
+                                track_bound=False)
+        assert q.size() == 0
+        assert q.bound() is None
+        assert len(list(q.items())) == 0
+        assert q.get() is None
+        items = []
+        for i in range(1,11):
+            node = Node()
+            node.bound = i
+            node.queue_priority = -i
+            assert q.put(node) == i-1
+            assert node.queue_priority == -i
+            items.append(node)
+            assert q.size() == i
+            assert q.bound() == -inf
+            _check_items(q, items)
+        assert q.size() == 10
+        assert q.bound() == -inf
+        removed = q.filter(lambda n_: n_.bound >= 5)
+        assert q.size() == 6
+        assert len(removed) == 4
+        for node_ in removed:
+            assert node_.bound < 5
+        assert q.bound() == -inf
+        for i in range(5, 11):
+            node = q.get()
+            assert node.bound == i
+            assert node.queue_priority == -i
+            if i != 10:
+                assert q.bound() == -inf
+            else:
+                assert q.bound() is None
+        assert q.size() == 0
 
     def test_usage_maximize(self):
         q = CustomPriorityQueue(sense=maximize,
@@ -732,6 +767,41 @@ class TestCustomPriorityQueue(object):
         assert node_ is node
         assert q.size() == 1
         assert q.bound() == 1
+        # no bound tracking
+        q = CustomPriorityQueue(sense=maximize,
+                                track_bound=False)
+        assert q.size() == 0
+        assert q.bound() is None
+        assert len(list(q.items())) == 0
+        assert q.get() is None
+        items = []
+        for i in range(1,11):
+            node = Node()
+            node.bound = -i
+            node.queue_priority = i
+            assert q.put(node) == i-1
+            assert node.queue_priority == i
+            items.append(node)
+            assert q.size() == i
+            assert q.bound() == inf
+            _check_items(q, items)
+        assert q.size() == 10
+        assert q.bound() == inf
+        removed = q.filter(lambda n_: n_.bound <= -5)
+        assert q.size() == 6
+        assert len(removed) == 4
+        for node_ in removed:
+            assert node_.bound > -5
+        assert q.bound() == inf
+        for i in range(10, 4, -1):
+            node = q.get()
+            assert node.bound == -i
+            assert node.queue_priority == i
+            if i != 5:
+                assert q.bound() == inf
+            else:
+                assert q.bound() is None
+        assert q.size() == 0
 
 class TestBestObjectiveFirstPriorityQueue(object):
 
