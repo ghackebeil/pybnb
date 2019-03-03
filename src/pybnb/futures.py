@@ -43,6 +43,10 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         The same as the standard solver option, but applied
         to the nested solver to limit the size of the queue.
         (default: None)
+    track_bound : bool, optional
+        The same as the standard solver option, but applied
+        to the nested solver control bound tracking.
+        (default: True)
     queue_strategy : :class:`QueueStrategy <pybnb.common.QueueStrategy>` or tuple
         The same as the standard solver option, but applied
         to the nested solver to control the queue strategy
@@ -54,6 +58,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
                  node_limit=None,
                  time_limit=5,
                  queue_limit=None,
+                 track_bound=True,
                  queue_strategy="depth"):
         # we import from pybnb.solver here to avoid a
         # circular import reference
@@ -62,6 +67,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         self._node_limit = node_limit
         self._time_limit = time_limit
         self._queue_limit = queue_limit
+        self._track_bound = track_bound
         self._queue_strategy = queue_strategy
         self._solver = Solver(comm=None)
         self._log = logging.Logger(None,
@@ -118,6 +124,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
             node_limit=self._node_limit,
             time_limit=self._time_limit,
             queue_limit=self._queue_limit,
+            track_bound=self._track_bound,
             queue_strategy=self._queue_strategy,
             disable_signal_handlers=True)
         self._queue = self._solver.save_dispatcher_queue()

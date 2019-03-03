@@ -42,39 +42,71 @@ def assert_isheap(x):
 class TestFactory(object):
 
     def test_factory(self):
-        assert type(PriorityQueueFactory('bound', minimize)) is \
+        assert type(PriorityQueueFactory('bound',
+                                         minimize,
+                                         True)) is \
             WorstBoundFirstPriorityQueue
-        assert type(PriorityQueueFactory('custom', minimize)) is \
+        assert type(PriorityQueueFactory('custom',
+                                         minimize,
+                                         True)) is \
             CustomPriorityQueue
-        assert type(PriorityQueueFactory('objective', minimize)) is \
+        assert type(PriorityQueueFactory('objective',
+                                         minimize,
+                                         True)) is \
             BestObjectiveFirstPriorityQueue
-        assert type(PriorityQueueFactory('breadth', minimize)) is \
+        assert type(PriorityQueueFactory('breadth',
+                                         minimize,
+                                         True)) is \
             BreadthFirstPriorityQueue
-        assert type(PriorityQueueFactory('depth', minimize)) is \
+        assert type(PriorityQueueFactory('depth',
+                                         minimize,
+                                         True)) is \
             DepthFirstPriorityQueue
-        assert type(PriorityQueueFactory('fifo', minimize)) is \
+        assert type(PriorityQueueFactory('fifo',
+                                         minimize,
+                                         True)) is \
             FIFOQueue
-        assert type(PriorityQueueFactory('lifo', minimize)) is \
+        assert type(PriorityQueueFactory('lifo',
+                                         minimize,
+                                         True)) is \
             LIFOQueue
-        assert type(PriorityQueueFactory('random', minimize)) is \
+        assert type(PriorityQueueFactory('random',
+                                         minimize,
+                                         True)) is \
             RandomPriorityQueue
-        assert type(PriorityQueueFactory('local_gap', minimize)) is \
+        assert type(PriorityQueueFactory('local_gap',
+                                         minimize,
+                                         True)) is \
             LocalGapPriorityQueue
         with pytest.raises(ValueError):
-            PriorityQueueFactory('_not_a_type_', minimize)
+            PriorityQueueFactory('_not_a_type_',
+                                 minimize,
+                                 True)
         # test LexicographicPriorityQueue creation
-        assert type(PriorityQueueFactory(('bound','objective'), minimize)) is \
+        assert type(PriorityQueueFactory(('bound','objective'),
+                                         minimize,
+                                         True)) is \
             LexicographicPriorityQueue
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('_not_a_type_',), minimize)
+            PriorityQueueFactory(('_not_a_type_',),
+                                 minimize,
+                                 True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('custom',), minimize)
+            PriorityQueueFactory(('custom',),
+                                 minimize,
+                                 True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('fifo','custom'), minimize)
+            PriorityQueueFactory(('fifo','custom'),
+                                 minimize,
+                                 True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('custom','fifo'), minimize)
+            PriorityQueueFactory(('custom','fifo'),
+                                 minimize,
+                                 True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory((), minimize)
+            PriorityQueueFactory((),
+                                 minimize,
+                                 True)
 
     def test_register_queue_type(self):
         assert PriorityQueueFactory._types['bound'] is \
@@ -405,14 +437,16 @@ def _check_items(q, items):
 class TestWorstBoundFirstPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = WorstBoundFirstPriorityQueue(minimize)
+        q = WorstBoundFirstPriorityQueue(sense=minimize,
+                                         track_bound=True)
         node = Node()
         node.bound = 1
         assert node.queue_priority is None
         q.put(node)
         assert node.queue_priority == -1
 
-        q = WorstBoundFirstPriorityQueue(maximize)
+        q = WorstBoundFirstPriorityQueue(sense=maximize,
+                                         track_bound=True)
         node = Node()
         node.bound = 1
         assert node.queue_priority is None
@@ -420,7 +454,8 @@ class TestWorstBoundFirstPriorityQueue(object):
         assert node.queue_priority == 1
 
     def test_usage_minimize(self):
-        q = WorstBoundFirstPriorityQueue(minimize)
+        q = WorstBoundFirstPriorityQueue(sense=minimize,
+                                         track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
@@ -483,7 +518,8 @@ class TestWorstBoundFirstPriorityQueue(object):
         assert q.size() == 1
 
     def test_usage_maximize(self):
-        q = WorstBoundFirstPriorityQueue(maximize)
+        q = WorstBoundFirstPriorityQueue(sense=maximize,
+                                         track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
@@ -548,7 +584,8 @@ class TestWorstBoundFirstPriorityQueue(object):
 class TestCustomPriorityQueue(object):
 
     def test_missing_queue_priority(self):
-        q = CustomPriorityQueue(minimize)
+        q = CustomPriorityQueue(sense=minimize,
+                                track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -563,7 +600,8 @@ class TestCustomPriorityQueue(object):
             q.put(child)
 
     def test_usage_minimize(self):
-        q = CustomPriorityQueue(minimize)
+        q = CustomPriorityQueue(sense=minimize,
+                                track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
@@ -629,7 +667,8 @@ class TestCustomPriorityQueue(object):
         assert q.bound() == 1
 
     def test_usage_maximize(self):
-        q = CustomPriorityQueue(maximize)
+        q = CustomPriorityQueue(sense=maximize,
+                                track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
@@ -697,7 +736,8 @@ class TestCustomPriorityQueue(object):
 class TestBestObjectiveFirstPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = BestObjectiveFirstPriorityQueue(minimize)
+        q = BestObjectiveFirstPriorityQueue(sense=minimize,
+                                            track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = -1
@@ -723,7 +763,8 @@ class TestBestObjectiveFirstPriorityQueue(object):
         assert node_ is node
         assert q.bound() == -1
 
-        q = BestObjectiveFirstPriorityQueue(maximize)
+        q = BestObjectiveFirstPriorityQueue(sense=maximize,
+                                            track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 3
@@ -752,7 +793,8 @@ class TestBestObjectiveFirstPriorityQueue(object):
 class TestBreadthFirstPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = BreadthFirstPriorityQueue(minimize)
+        q = BreadthFirstPriorityQueue(sense=minimize,
+                                      track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -771,7 +813,8 @@ class TestBreadthFirstPriorityQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = BreadthFirstPriorityQueue(minimize)
+        q = BreadthFirstPriorityQueue(sense=minimize,
+                                      track_bound=True)
         q.put(l2)
         cnt = q.put(l1)
         node_ = q.get()
@@ -786,7 +829,8 @@ class TestBreadthFirstPriorityQueue(object):
 class TestDepthFirstPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = DepthFirstPriorityQueue(minimize)
+        q = DepthFirstPriorityQueue(sense=minimize,
+                                    track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -805,7 +849,8 @@ class TestDepthFirstPriorityQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = DepthFirstPriorityQueue(minimize)
+        q = DepthFirstPriorityQueue(sense=minimize,
+                                    track_bound=True)
         q.put(l2)
         cnt = q.put(l3)
         node_ = q.get()
@@ -820,7 +865,8 @@ class TestDepthFirstPriorityQueue(object):
 class TestFIFOQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = FIFOQueue(minimize)
+        q = FIFOQueue(sense=minimize,
+                      track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -837,7 +883,8 @@ class TestFIFOQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = FIFOQueue(minimize)
+        q = FIFOQueue(sense=minimize,
+                      track_bound=True)
         cnt = q.put(l2)
         node_ = q.get()
         assert cnt == 0
@@ -857,7 +904,8 @@ class TestFIFOQueue(object):
 class TestLIFOQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = LIFOQueue(minimize)
+        q = LIFOQueue(sense=minimize,
+                      track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -874,7 +922,8 @@ class TestLIFOQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = LIFOQueue(minimize)
+        q = LIFOQueue(sense=minimize,
+                      track_bound=True)
         cnt = q.put(l2)
         node_ = q.get()
         assert cnt == 0
@@ -893,7 +942,8 @@ class TestLIFOQueue(object):
 class TestRandomPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = RandomPriorityQueue(minimize)
+        q = RandomPriorityQueue(sense=minimize,
+                                track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -912,7 +962,8 @@ class TestRandomPriorityQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = RandomPriorityQueue(minimize)
+        q = RandomPriorityQueue(sense=minimize,
+                                track_bound=True)
         assert l2.queue_priority is None
         cnt = q.put(l2)
         node_ = q.get()
@@ -934,7 +985,8 @@ class TestRandomPriorityQueue(object):
 class TestLocalGapPriorityQueue(object):
 
     def test_overwrites_queue_priority(self):
-        q = LocalGapPriorityQueue(minimize)
+        q = LocalGapPriorityQueue(sense=minimize,
+                                  track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = -inf
@@ -966,7 +1018,8 @@ class TestLocalGapPriorityQueue(object):
         l1.objective = 5
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = LocalGapPriorityQueue(minimize)
+        q = LocalGapPriorityQueue(sense=minimize,
+                                  track_bound=True)
         assert l2.queue_priority is None
         cnt = q.put(l2)
         node_ = q.get()
@@ -985,7 +1038,8 @@ class TestLocalGapPriorityQueue(object):
         assert l3.queue_priority == 5
         assert node_ is l3
 
-        q = LocalGapPriorityQueue(maximize)
+        q = LocalGapPriorityQueue(sense=maximize,
+                                  track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = inf
@@ -1017,7 +1071,8 @@ class TestLocalGapPriorityQueue(object):
         l1.objective = -5
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = LocalGapPriorityQueue(maximize)
+        q = LocalGapPriorityQueue(sense=maximize,
+                                  track_bound=True)
         assert l2.queue_priority is None
         cnt = q.put(l2)
         node_ = q.get()
@@ -1043,7 +1098,8 @@ class TestLexicographicPriorityQueue(object):
         q = LexicographicPriorityQueue(
             (WorstBoundFirstPriorityQueue,
              BestObjectiveFirstPriorityQueue),
-            minimize)
+            minimize,
+            True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -1088,7 +1144,8 @@ class TestLexicographicPriorityQueue(object):
         q = LexicographicPriorityQueue(
             (WorstBoundFirstPriorityQueue,
              BestObjectiveFirstPriorityQueue),
-            maximize)
+            maximize,
+            True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0

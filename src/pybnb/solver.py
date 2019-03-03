@@ -571,6 +571,7 @@ class Solver(object):
               node_limit=None,
               time_limit=None,
               queue_limit=None,
+              track_bound=True,
               initialize_queue=None,
               queue_strategy="bound",
               log_interval_seconds=1.0,
@@ -741,6 +742,12 @@ class Solver(object):
             limit, depending how many child nodes are
             returned from worker processes on their final
             update. (default: None)
+        track_bound : bool, optional
+            **(D)** Indicates whether the dispatcher should
+            track the global queue bound while
+            running. Setting this to false can reduce the
+            overhead of dispatcher updates for some priority
+            queue strategies. (default: True)
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
             **(D)** Initializes the dispatcher queue with
             that remaining from a previous solve (obtained
@@ -881,6 +888,7 @@ class Solver(object):
                     node_limit,
                     time_limit,
                     queue_limit,
+                    track_bound,
                     log,
                     log_interval_seconds,
                     log_new_incumbent)

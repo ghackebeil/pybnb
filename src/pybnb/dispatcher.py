@@ -319,6 +319,7 @@ class DispatcherBase(object):
         self.termination_condition = None
         self.converger = None
         self.last_global_bound = None
+        self.track_bound = False
         self.queue = None
         self.best_node = None
         self.best_objective = None
@@ -389,14 +390,15 @@ class DispatcherBase(object):
                 self._check_update_best_objective(objective)
         return best_objective_updated
 
-    def _check_convergence(self):
+    def _check_termination(self):
         # check if we are done
         if self.termination_condition is None:
-            global_bound = self._get_current_bound()
-            self.last_global_bound = global_bound
-            self.termination_condition = self.converger.\
-                check_termination_criteria(global_bound,
-                                           self.best_objective)
+            if self.track_bound:
+                global_bound = self._get_current_bound()
+                self.last_global_bound = global_bound
+                self.termination_condition = self.converger.\
+                    check_termination_criteria(global_bound,
+                                               self.best_objective)
             if self.termination_condition is None:
                 if self.node_limit is not None:
                     (served_nodes_count, explored_nodes_count, _) = \
@@ -433,6 +435,7 @@ class DispatcherBase(object):
                    node_limit,
                    time_limit,
                    queue_limit,
+                   track_bound,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -498,8 +501,11 @@ class DispatcherBase(object):
             raise ValueError("The objective sense does not match "
                              "that of the initial queue.")
         self.last_global_bound = self.converger.unbounded_objective
-        self.queue = PriorityQueueFactory(queue_strategy,
-                                          self.converger.sense)
+        self.track_bound = track_bound
+        self.queue = PriorityQueueFactory(
+            queue_strategy,
+            self.converger.sense,
+            self.track_bound)
         self.best_objective = best_objective
         self.best_node = None
         if best_node is not None:
@@ -672,6 +678,7 @@ class DispatcherLocal(DispatcherBase):
                    node_limit,
                    time_limit,
                    queue_limit,
+                   track_bound,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -689,6 +696,7 @@ class DispatcherLocal(DispatcherBase):
             node_limit,
             time_limit,
             queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -754,7 +762,7 @@ class DispatcherLocal(DispatcherBase):
             self._check_update_worst_terminal_bound(
                     terminal_bound)
         last_global_bound = self.last_global_bound
-        self._check_convergence()
+        self._check_termination()
         if (self.queue.size() == 0) and \
            (self.termination_condition is None):
             self.termination_condition = \
@@ -1008,6 +1016,7 @@ class DispatcherDistributed(DispatcherBase):
                    node_limit,
                    time_limit,
                    queue_limit,
+                   track_bound,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -1039,6 +1048,7 @@ class DispatcherDistributed(DispatcherBase):
             node_limit,
             time_limit,
             queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -1120,7 +1130,7 @@ class DispatcherDistributed(DispatcherBase):
             self._check_update_worst_terminal_bound(
                 terminal_bound)
         last_global_bound = self.last_global_bound
-        self._check_convergence()
+        self._check_termination()
         ret = self._send_work()
         stop = ret[0]
         if not stop:
