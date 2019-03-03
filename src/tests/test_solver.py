@@ -5,7 +5,6 @@ import time
 import pytest
 
 from pybnb.common import (minimize,
-                          inf,
                           nan)
 from pybnb.node import Node
 from pybnb.problem import Problem

@@ -37,8 +37,8 @@ def _test_initialize_queue(comm):
         assert results.termination_condition == "queue_limit"
         assert results.objective == (inf if (sense == minimize) else -inf)
         assert results.bound == (-inf if (sense == minimize) else inf)
-        assert results.absolute_gap == None
-        assert results.relative_gap == None
+        assert results.absolute_gap is None
+        assert results.relative_gap is None
         assert results.nodes == 0
         assert results.wall_time is not None
         assert results.best_node is None
