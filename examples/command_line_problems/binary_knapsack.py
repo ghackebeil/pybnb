@@ -1,6 +1,10 @@
 #
 # This example solves the binary knapsack problem.
 #
+# Recommended usage:
+#
+# $ python binary_knapsack.py
+#
 
 import pybnb
 
@@ -94,9 +98,9 @@ if __name__ == "__main__":
 
     W = 25
     w = [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
-    v = [2.05,2.06,2.07,2.08,2.09,2.10,2.11,
-         2.12,2.13,2.14,2.15,2.16,2.17,2.18,
-         2.19,2.20,2.21,2.22,2.23,2.24]
+    v = [205,206,207,208,209,210,211,
+         212,213,214,215,216,217,218,
+         219,220,221,222,223,224]
 
     problem = BinaryKnapsack(W,v,w)
     pybnb.misc.create_command_line_solver(problem)
