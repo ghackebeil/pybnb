@@ -9,6 +9,10 @@
 # Pyomo version 5.4.3 or later is required to run this
 # example.
 #
+# Recommended usage:
+#
+# $ python bin_packing.py
+#
 
 import math
 import random

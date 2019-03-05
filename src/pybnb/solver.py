@@ -560,8 +560,8 @@ class Solver(object):
               best_objective=None,
               best_node=None,
               disable_objective_call=False,
-              absolute_gap=1e-8,
-              relative_gap=1e-4,
+              absolute_gap=0,
+              relative_gap=None,
               scale_function=_default_scale,
               queue_tolerance=0,
               branch_tolerance=0,
@@ -640,14 +640,15 @@ class Solver(object):
             the global bound and best objective for the
             problem to be considered solved to
             optimality. Setting to `None` will disable this
-            optimality check. (default: 1e-8)
+            optimality check. (default: 0)
         relative_gap : float, optional
-            **(A)** The maximum relative difference (absolute
-            difference scaled by `max{1.0,|objective|}`)
-            between the global bound and best objective for
-            the problem to be considered solved to
-            optimality. Setting to `None` will disable this
-            optimality check. (default: 1e-4)
+            **(A)** The maximum relative difference
+            (absolute difference scaled by
+            `max{1.0,|objective|}`) between the global bound
+            and best objective for the problem to be
+            considered solved to optimality. The default
+            setting of `None` means this optimality check is
+            not used. (default: None)
         scale_function : function, optional
             **(A)** A function with signature `f(bound,
             objective) -> float` that returns a positive

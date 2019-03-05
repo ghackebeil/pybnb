@@ -4,6 +4,9 @@ Changelog
 0.6.0 - `master`_
 ~~~~~~~~~~~~~~~~~
 
+* Changing solver default settings to use an exact
+  optimality check, (no relative gap and absolute gap of
+  zero).
 * Renaming "no_nodes" termination condition to "queue_empty"
 * Adding a `queue_limit` solve option, which causes the
   solve to terminate with the "queue_limit" termination

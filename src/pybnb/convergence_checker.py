@@ -79,10 +79,10 @@ class ConvergenceChecker(object):
         The objective sense for the problem.
     absolute_gap : float, optional
         The absolute difference between the objective and
-        bound that determines optimality. (default: 1e-8)
+        bound that determines optimality. (default: 0)
     relative_gap : float, optional
         The relative difference between the objective and
-        bound that determines optimality. (default: 1e-4)
+        bound that determines optimality. (default: None)
     scale_function : function, optional
         A function with signature `f(bound, objective) ->
         float` that returns a positive scale factor used to
@@ -160,8 +160,8 @@ class ConvergenceChecker(object):
 
     def __init__(self,
                  sense,
-                 absolute_gap=1e-8,
-                 relative_gap=1e-4,
+                 absolute_gap=0,
+                 relative_gap=None,
                  scale_function=_default_scale,
                  queue_tolerance=0,
                  branch_tolerance=0,

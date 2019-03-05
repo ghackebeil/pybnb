@@ -7,6 +7,10 @@
 # The package numba is not required, but it will make
 # this example run faster.
 #
+# Recommended usage:
+#
+# $ python lipschitz_1d.py --relative-gap=1e-4
+#
 
 import math
 

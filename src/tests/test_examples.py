@@ -85,7 +85,11 @@ for fname in examples:
     else:
         tname = "test_"+basename
         bname = os.path.join(baselinedir,basename+".yaml")
-        tdict[tname] = (fname,bname,None)
+        args = None
+        if basename in ("rosenbrock_2d",
+                        "lipschitz_1d"):
+            args = ["--relative-gap=1e-4"]
+        tdict[tname] = (fname,bname,args)
 assert len(tdict) == len(examples) + 2
 
 assert "test_binary_knapsack" in tdict
