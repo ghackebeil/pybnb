@@ -458,14 +458,15 @@ class Solver(object):
         stats = {}
         if (self.comm is not None) and \
            (self.comm.size > 1):
-            num_stats = 12
+            num_stats = 13
             gathered = array.array('d',[0]) * (self.worker_count*num_stats)
             if self.is_worker:
                 assert self.worker_comm is not None
                 assert not self.is_dispatcher
                 solve_info = self._local_solve_info
                 mine = array.array('d',
-                    [self._wall_time,
+                    [self.comm.rank,
+                     self._wall_time,
                      solve_info.total_queue_time,
                      solve_info.queue_call_count,
                      solve_info.total_objective_time,
@@ -490,7 +491,8 @@ class Solver(object):
                 assert self.is_dispatcher
                 self.comm.Recv([gathered, mpi4py.MPI.DOUBLE],
                                tag=11112111)
-            for i, key in enumerate(('wall_time',
+            for i, key in enumerate(('rank',
+                                     'wall_time',
                                      'queue_time',
                                      'queue_call_count',
                                      'objective_time',
@@ -510,6 +512,7 @@ class Solver(object):
             assert self.is_worker
             assert self.is_dispatcher
             solve_info = self._local_solve_info
+            stats['rank'] = [0]
             stats['wall_time'] = [self._wall_time]
             stats['queue_time'] = [solve_info.total_queue_time]
             stats['queue_call_count'] = [solve_info.queue_call_count]
@@ -1033,6 +1036,7 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
     """
     assert all(len(stats[key]) == len(stats['wall_time'])
                for key in stats)
+    rank = stats['rank']
     wall_time = stats['wall_time']
     queue_time = stats['queue_time']
     queue_count = stats['queue_call_count']
@@ -1054,13 +1058,17 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
             stream.write("Load Imbalance:     %6.2f%%\n"
                          % (0.0))
         else:
-            max_enc = max(explored_nodes_count)
-            min_enc = min(explored_nodes_count)
+            max_enc, max_enc_rank = max(zip(explored_nodes_count, rank),
+                                        key=lambda x: x[0])
+            min_enc, min_enc_rank = min(zip(explored_nodes_count, rank),
+                                        key=lambda x: x[0])
             avg_enc = sum_enc/float(len(explored_nodes_count))
             stream.write("Load Imbalance:     %6.2f%%\n"
                          % ((max_enc-min_enc)/avg_enc*100.0))
-            stream.write(" - min: %d\n" % (min_enc))
-            stream.write(" - max: %d\n" % (max_enc))
+            stream.write(" - min: %d (proc rank=%d)\n" % (min_enc,
+                                                          min_enc_rank))
+            stream.write(" - max: %d (proc rank=%d)\n" % (max_enc,
+                                                          max_enc_rank))
         stream.write("Average Worker Timing:\n")
         queue_count_str = "%d" % sum(queue_count)
         tmp = "%"+str(len(queue_count_str))+"d"
