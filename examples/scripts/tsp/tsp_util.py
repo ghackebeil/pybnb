@@ -99,6 +99,7 @@ def run_solve_loop(dist, problem, solver):
         results = solver.solve(
             pybnb.futures.NestedSolver(problem,
                                        queue_strategy='depth',
+                                       track_bound=False,
                                        time_limit=1),
             queue_strategy='depth',
             initialize_queue=queue,
