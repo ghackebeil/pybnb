@@ -9,6 +9,10 @@
 # Pyomo version 5.4.3 or later is required to run this
 # example.
 #
+# Recommended usage:
+#
+# $ python rosenbrock_2d.py --relative-gap=1e-4
+#
 
 import pybnb
 

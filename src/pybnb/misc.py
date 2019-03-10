@@ -384,6 +384,7 @@ def _run_command_line_solver(problem, args):
             node_limit=args.nested_node_limit,
             time_limit=args.nested_time_limit,
             queue_limit=args.nested_queue_limit,
+            track_bound=args.nested_track_bound,
             queue_strategy=args.nested_queue_strategy)
     else:
         nested_solver_defaults = get_default_args(
@@ -406,6 +407,12 @@ def _run_command_line_solver(problem, args):
                 "The user-specified --nested-queue-limit "
                 "setting will be ignored. Did you forget the "
                 "--nested-solver flag?")
+        if args.nested_track_bound != \
+           nested_solver_defaults["track_bound"]:     #pragma:nocover
+            logging.getLogger("pybnb").warning(
+                "The user-specified --nested-disable-track-bound "
+                "setting will be ignored. Did you forget the "
+                "--nested-solver flag?")
         if args.nested_queue_strategy != \
            nested_solver_defaults["queue_strategy"]: #pragma:nocover
             logging.getLogger("pybnb").warning(
@@ -419,6 +426,7 @@ def _run_command_line_solver(problem, args):
     del solve_kwds["nested_node_limit"]
     del solve_kwds["nested_time_limit"]
     del solve_kwds["nested_queue_limit"]
+    del solve_kwds["nested_track_bound"]
     del solve_kwds["nested_queue_strategy"]
     if args.disable_mpi:
         results = pybnb.solve(problem, comm=None, **solve_kwds)
@@ -449,7 +457,8 @@ def create_command_line_solver(problem, parser=None):
     except ImportError:                                #pragma:nocover
         raise ImportError("The PyYAML module is required to "
                           "run the command-line solver.")
-
+    from pybnb.convergence_checker import \
+        _auto_queue_tolerance
     if parser is None:
         import argparse
         parser = argparse.ArgumentParser(
@@ -494,8 +503,13 @@ def create_command_line_solver(problem, parser=None):
     solve_docs.pop("log")
     assert len(solve_defaults) == len(solve_docs)
     for key in solve_defaults:
-        assert solve_defaults[key] == \
-            solve_docs[key]["default"]
+        if key == "queue_tolerance":
+            assert "default" not in solve_docs[key]
+            assert solve_defaults[key] is \
+                _auto_queue_tolerance
+        else:
+            assert solve_defaults[key] == \
+                solve_docs[key]["default"]
         assert "choices" not in solve_docs[key]
         if key == "queue_strategy":
             solve_docs[key]["choices"] = \
@@ -592,6 +606,14 @@ def create_command_line_solver(problem, parser=None):
         type=int,
         default=solve_defaults.pop("queue_limit"),
         help=solve_docs["queue_limit"]["doc"])
+    val = solve_defaults.pop("track_bound")
+    assert val
+    parser.add_argument(
+        "--disable-track-bound",
+        action="store_false",
+        dest="track_bound",
+        default=True,
+        help=solve_docs["track_bound"]["doc"])
     def _float_or_None(val):                      #pragma:nocover
         if val == "None":
             return None
@@ -684,6 +706,14 @@ def create_command_line_solver(problem, parser=None):
         type=int,
         default=nested_solver_defaults.pop("queue_limit"),
         help=nested_solver_docs["queue_limit"]["doc"])
+    val = nested_solver_defaults.pop("track_bound")
+    assert val
+    parser.add_argument(
+        "--nested-disable-track-bound",
+        action="store_false",
+        dest="nested_track_bound",
+        default=True,
+        help=nested_solver_docs["track_bound"]["doc"])
     parser.add_argument(
         "--nested-queue-strategy",
         type=str,

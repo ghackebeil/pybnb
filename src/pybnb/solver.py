@@ -25,7 +25,8 @@ from pybnb.misc import (_cast_to_float_or_int,
                         get_default_args)
 from pybnb.node import Node
 from pybnb.solver_results import SolverResults
-from pybnb.convergence_checker import (_default_scale,
+from pybnb.convergence_checker import (_auto_queue_tolerance,
+                                       _default_scale,
                                        ConvergenceChecker)
 from pybnb.dispatcher_proxy import DispatcherProxy
 from pybnb.dispatcher import (DispatcherLocal,
@@ -458,14 +459,15 @@ class Solver(object):
         stats = {}
         if (self.comm is not None) and \
            (self.comm.size > 1):
-            num_stats = 12
+            num_stats = 13
             gathered = array.array('d',[0]) * (self.worker_count*num_stats)
             if self.is_worker:
                 assert self.worker_comm is not None
                 assert not self.is_dispatcher
                 solve_info = self._local_solve_info
                 mine = array.array('d',
-                    [self._wall_time,
+                    [self.comm.rank,
+                     self._wall_time,
                      solve_info.total_queue_time,
                      solve_info.queue_call_count,
                      solve_info.total_objective_time,
@@ -490,7 +492,8 @@ class Solver(object):
                 assert self.is_dispatcher
                 self.comm.Recv([gathered, mpi4py.MPI.DOUBLE],
                                tag=11112111)
-            for i, key in enumerate(('wall_time',
+            for i, key in enumerate(('rank',
+                                     'wall_time',
                                      'queue_time',
                                      'queue_call_count',
                                      'objective_time',
@@ -510,6 +513,7 @@ class Solver(object):
             assert self.is_worker
             assert self.is_dispatcher
             solve_info = self._local_solve_info
+            stats['rank'] = [0]
             stats['wall_time'] = [self._wall_time]
             stats['queue_time'] = [solve_info.total_queue_time]
             stats['queue_call_count'] = [solve_info.queue_call_count]
@@ -560,10 +564,10 @@ class Solver(object):
               best_objective=None,
               best_node=None,
               disable_objective_call=False,
-              absolute_gap=1e-8,
-              relative_gap=1e-4,
+              absolute_gap=0,
+              relative_gap=None,
               scale_function=_default_scale,
-              queue_tolerance=0,
+              queue_tolerance=_auto_queue_tolerance,
               branch_tolerance=0,
               comparison_tolerance=0,
               objective_stop=None,
@@ -571,6 +575,7 @@ class Solver(object):
               node_limit=None,
               time_limit=None,
               queue_limit=None,
+              track_bound=True,
               initialize_queue=None,
               queue_strategy="bound",
               log_interval_seconds=1.0,
@@ -639,14 +644,18 @@ class Solver(object):
             the global bound and best objective for the
             problem to be considered solved to
             optimality. Setting to `None` will disable this
-            optimality check. (default: 1e-8)
+            optimality check. By default, this option also
+            controls eligibility for the queue. See the
+            "queue_tolerance" setting for more
+            information. (default: 0)
         relative_gap : float, optional
-            **(A)** The maximum relative difference (absolute
-            difference scaled by `max{1.0,|objective|}`)
-            between the global bound and best objective for
-            the problem to be considered solved to
-            optimality. Setting to `None` will disable this
-            optimality check. (default: 1e-4)
+            **(A)** The maximum relative difference
+            (absolute difference scaled by
+            `max{1.0,|objective|}`) between the global bound
+            and best objective for the problem to be
+            considered solved to optimality. The default
+            setting of `None` means this optimality check is
+            not used. (default: None)
         scale_function : function, optional
             **(A)** A function with signature `f(bound,
             objective) -> float` that returns a positive
@@ -664,17 +673,19 @@ class Solver(object):
             deciding if a node is eligible to enter the
             queue. The difference between the node bound and
             the incumbent objective must be greater than
-            this value. The default setting of zero means
-            that nodes whose bound is equal to the incumbent
-            objective are not eligible to enter the
-            queue. Setting this to larger values can be used
-            to control the queue size, but it should be kept
-            small enough to allow absolute and relative
-            optimality tolerances to be met. This option can
-            also be set to `None` to allow nodes with a
-            bound equal to (but not greater than) the
-            incumbent objective to enter the queue.
-            (default: 0)
+            this value. Leaving this argument at its default
+            value indicates that this tolerance should be
+            set equal to the "absolute_gap" setting. Setting
+            this to zero means that nodes whose bound is
+            equal to the incumbent objective are not
+            eligible to enter the queue. Setting this to
+            larger values can be used to limit the queue
+            size, but it should be kept small enough to
+            allow absolute and relative optimality
+            tolerances to be met. This option can also be
+            set to `None` to allow nodes with a bound equal
+            to (but not greater than) the incumbent
+            objective to enter the queue.
         branch_tolerance : float, optional
             **(A)** The absolute tolerance used when
             deciding if the computed objective and bound for
@@ -741,6 +752,12 @@ class Solver(object):
             limit, depending how many child nodes are
             returned from worker processes on their final
             update. (default: None)
+        track_bound : bool, optional
+            **(D)** Indicates whether the dispatcher should
+            track the global queue bound while
+            running. Setting this to false can reduce the
+            overhead of dispatcher updates for some priority
+            queue strategies. (default: True)
         initialize_queue : :class:`pybnb.dispatcher.DispatcherQueueData`, optional
             **(D)** Initializes the dispatcher queue with
             that remaining from a previous solve (obtained
@@ -881,6 +898,7 @@ class Solver(object):
                     node_limit,
                     time_limit,
                     queue_limit,
+                    track_bound,
                     log,
                     log_interval_seconds,
                     log_new_incumbent)
@@ -1024,6 +1042,7 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
     """
     assert all(len(stats[key]) == len(stats['wall_time'])
                for key in stats)
+    rank = stats['rank']
     wall_time = stats['wall_time']
     queue_time = stats['queue_time']
     queue_count = stats['queue_call_count']
@@ -1045,13 +1064,17 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
             stream.write("Load Imbalance:     %6.2f%%\n"
                          % (0.0))
         else:
-            max_enc = max(explored_nodes_count)
-            min_enc = min(explored_nodes_count)
+            max_enc, max_enc_rank = max(zip(explored_nodes_count, rank),
+                                        key=lambda x: x[0])
+            min_enc, min_enc_rank = min(zip(explored_nodes_count, rank),
+                                        key=lambda x: x[0])
             avg_enc = sum_enc/float(len(explored_nodes_count))
             stream.write("Load Imbalance:     %6.2f%%\n"
                          % ((max_enc-min_enc)/avg_enc*100.0))
-            stream.write(" - min: %d\n" % (min_enc))
-            stream.write(" - max: %d\n" % (max_enc))
+            stream.write(" - min: %d (proc rank=%d)\n" % (min_enc,
+                                                          min_enc_rank))
+            stream.write(" - max: %d (proc rank=%d)\n" % (max_enc,
+                                                          max_enc_rank))
         stream.write("Average Worker Timing:\n")
         queue_count_str = "%d" % sum(queue_count)
         tmp = "%"+str(len(queue_count_str))+"d"

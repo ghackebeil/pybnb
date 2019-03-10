@@ -1,4 +1,6 @@
 solution_status: optimal
 termination_condition: optimality
-objective: 26.22
-bound: 26.22
+objective: 2622
+bound: 2622
+relative_gap: 0
+absolute_gap: 0

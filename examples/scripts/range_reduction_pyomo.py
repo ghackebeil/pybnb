@@ -158,6 +158,7 @@ if __name__ == "__main__":
     # tightening on the remaining nodes
     results = pybnb.solve(problem,
                           comm=comm,
+                          relative_gap=1e-4,
                           dispatcher_rank=0,
                           best_node=best_node,
                           initialize_queue=queue,

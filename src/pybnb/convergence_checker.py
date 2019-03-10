@@ -12,6 +12,9 @@ from pybnb.common import (minimize,
                           inf,
                           TerminationCondition)
 
+class _auto_queue_tolerance(object):
+    pass
+
 def compute_absolute_gap(sense, bound, objective):
     """Returns the absolute gap between the bound and
     the objective, respecting the sign relative to the
@@ -79,10 +82,13 @@ class ConvergenceChecker(object):
         The objective sense for the problem.
     absolute_gap : float, optional
         The absolute difference between the objective and
-        bound that determines optimality. (default: 1e-8)
+        bound that determines optimality. By default, this
+        option also controls eligibility for the queue. See
+        the "queue_tolerance" setting for more
+        information. (default: 0)
     relative_gap : float, optional
         The relative difference between the objective and
-        bound that determines optimality. (default: 1e-4)
+        bound that determines optimality. (default: None)
     scale_function : function, optional
         A function with signature `f(bound, objective) ->
         float` that returns a positive scale factor used to
@@ -98,16 +104,18 @@ class ConvergenceChecker(object):
         The absolute tolerance used when deciding if a node
         is eligible to enter the queue. The difference
         between the node bound and the incumbent objective
-        must be greater than this value. The default setting
-        of zero means that nodes whose bound is equal to the
-        incumbent objective are not eligible to enter the
-        queue. Setting this to larger values can be used to
-        control the queue size, but it should be kept small
-        enough to allow absolute and relative optimality
-        tolerances to be met. This option can also be set to
-        `None` to allow nodes with a bound equal to (but not
-        greater than) the incumbent objective to enter the
-        queue. (default: 0)
+        must be greater than this value. Leaving this
+        argument at its default value indicates that this
+        tolerance should be set equal to the "absolute_gap"
+        setting. Setting this to zero means that nodes whose
+        bound is equal to the incumbent objective are not
+        eligible to enter the queue. Setting this to larger
+        values can be used to limit the queue size, but it
+        should be kept small enough to allow absolute and
+        relative optimality tolerances to be met. This
+        option can also be set to `None` to allow nodes with
+        a bound equal to (but not greater than) the
+        incumbent objective to enter the queue.
     branch_tolerance : float, optional
         The absolute tolerance used when deciding if the
         computed objective and bound for a node are
@@ -160,10 +168,10 @@ class ConvergenceChecker(object):
 
     def __init__(self,
                  sense,
-                 absolute_gap=1e-8,
-                 relative_gap=1e-4,
+                 absolute_gap=0,
+                 relative_gap=None,
                  scale_function=_default_scale,
-                 queue_tolerance=0,
+                 queue_tolerance=_auto_queue_tolerance,
                  branch_tolerance=0,
                  comparison_tolerance=0,
                  objective_stop=None,
@@ -187,6 +195,8 @@ class ConvergenceChecker(object):
             assert self.relative_gap >= 0 and \
                 (not math.isinf(self.relative_gap))
         self.scale_function = scale_function
+        if queue_tolerance is _auto_queue_tolerance:
+            queue_tolerance = self.absolute_gap
         self.queue_tolerance = float(queue_tolerance) \
             if (queue_tolerance is not None) else queue_tolerance
         assert (self.queue_tolerance is None) or \

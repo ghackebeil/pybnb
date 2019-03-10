@@ -1,13 +1,33 @@
 Changelog
 =========
 
-0.6.0 - `master`_
-~~~~~~~~~~~~~~~~~
+0.6.dev0 - `master`_
+~~~~~~~~~~~~~~~~~~~~
 
 * Renaming "no_nodes" termination condition to "queue_empty"
+* Changing solver default settings to use an exact
+  optimality check with no relative gap
+  (`relative_gap=None`, `absolute_gap=0`).
+* Changing the default behavior of the `queue_tolerance`
+  setting to be set equal to whatever is assigned to the
+  `absolute_gap` setting (which can be overridden by
+  explicitly assigning a queue tolerance). This results in
+  more desirable behavior when pairing non-default queue
+  strategies (e.g., depth-first) with inexact `absolute_gap`
+  settings. Before this change, it would be necessary to set
+  both the `absolute_gap` and `queue_tolerance` to the same
+  nonzero value to avoid unnecessary processing of nodes.
 * Adding a `queue_limit` solve option, which causes the
   solve to terminate with the "queue_limit" termination
-  condition when the queue size exceeds this value.
+  condition when the queue size exceeds this value. This
+  option is useful for avoiding excessively large updates
+  from a `NestedSolver`.
+* Adding a `track_bound` solve option, which can be set to
+  False to disable online tracking of the global bound to
+  reduce dispatcher overhead for non-default queue
+  strategies (e.g., "depth", "lifo"). Adding a new section
+  to the online docs that discusses this and other methods
+  for reducing dispatcher overhead.
 
 0.5.2 - 2019-02-13
 ~~~~~~~~~~~~~~~~~~
@@ -15,7 +35,7 @@ Changelog
 * Adding config.COMPRESSION option to control whether or not
   serialized node state is compressed before sending it to
   the dispatcher (default: False).
-* Fixing issue that occured when the objective() and bound()
+* Fixing issue that occurred when the objective() and bound()
   Problem methods returned numpy scalar types (#8).
 * Adding another TSP implementation to the examples.
 

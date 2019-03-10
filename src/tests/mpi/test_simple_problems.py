@@ -848,8 +848,6 @@ def _test_zero_objective_max(comm):
     for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
-        if queue_strategy in ("depth","lifo"):
-            baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
         else:
@@ -959,8 +957,6 @@ def _test_zero_objective_min(comm):
     for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
-        if queue_strategy in ("depth","lifo"):
-            baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
         else:

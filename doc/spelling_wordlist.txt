@@ -33,3 +33,5 @@ config
 serializer
 GHz
 CPython
+dev
+lifo
