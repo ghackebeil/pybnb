@@ -34,3 +34,4 @@ serializer
 GHz
 CPython
 dev
+lifo
