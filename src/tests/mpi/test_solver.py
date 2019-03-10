@@ -31,6 +31,20 @@ def _test_initialize_queue(comm):
     # no initial queue
     for sense in (minimize, maximize):
         problem = DummyProblem(sense)
+        results = solver.solve(problem,
+                               queue_limit=0)
+        assert results.solution_status == "unknown"
+        assert results.termination_condition == "queue_limit"
+        assert results.objective == (inf if (sense == minimize) else -inf)
+        assert results.bound == (-inf if (sense == minimize) else inf)
+        assert results.absolute_gap is None
+        assert results.relative_gap is None
+        assert results.nodes == 0
+        assert results.wall_time is not None
+        assert results.best_node is None
+        assert problem._notify_new_best_node_call_count == 0
+        assert solver._local_solve_info.explored_nodes_count == 0
+        problem = DummyProblem(sense)
         results = solver.solve(problem)
         assert results.solution_status == "optimal"
         assert results.termination_condition == "optimality"
@@ -82,7 +96,7 @@ def _test_initialize_queue(comm):
                                best_objective=(1 if (sense == minimize) else -1),
                                disable_objective_call=True)
         assert results.solution_status == "feasible"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == (1 if (sense == minimize) else -1)
         assert results.bound == 0
         assert results.absolute_gap == 1
@@ -99,7 +113,7 @@ def _test_initialize_queue(comm):
                                best_node=best_node_,
                                disable_objective_call=True)
         assert results.solution_status == "feasible"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == best_node_.objective
         assert results.bound == 0
         assert results.absolute_gap == 1
@@ -159,7 +173,7 @@ def _test_initialize_queue(comm):
         results = solver.solve(problem,
                                initialize_queue=queue)
         assert results.solution_status == "unknown"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == (inf if (sense == minimize) else -inf)
         assert results.bound == (-inf if (sense == minimize) else inf)
         assert results.absolute_gap is None
@@ -173,7 +187,7 @@ def _test_initialize_queue(comm):
                                initialize_queue=queue,
                                best_objective=0)
         assert results.solution_status == "feasible"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == 0
         assert results.bound == (-inf if (sense == minimize) else inf)
         assert results.absolute_gap == inf
@@ -188,7 +202,7 @@ def _test_initialize_queue(comm):
                                best_objective=0,
                                disable_objective_call=True)
         assert results.solution_status == "feasible"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == 0
         assert results.bound == (-inf if (sense == minimize) else inf)
         assert results.absolute_gap == inf
@@ -206,7 +220,7 @@ def _test_initialize_queue(comm):
                                best_objective=0,
                                best_node=best_node_)
         assert results.solution_status == "feasible"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == 0
         assert results.bound == (-inf if (sense == minimize) else inf)
         assert results.absolute_gap == inf
@@ -232,7 +246,7 @@ def _test_initialize_queue(comm):
                                best_objective=(2 if (sense == minimize) else -2),
                                best_node=best_node_)
         assert results.solution_status == "feasible"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == (1 if (sense == minimize) else -1)
         assert results.bound == (-inf if (sense == minimize) else inf)
         assert results.absolute_gap == inf
@@ -347,7 +361,7 @@ def _test_initialize_queue(comm):
                                best_objective=(1 if (sense == minimize) else -1),
                                disable_objective_call=True)
         assert results.solution_status == "feasible"
-        assert results.termination_condition == "no_nodes"
+        assert results.termination_condition == "queue_empty"
         assert results.objective == (1 if (sense == minimize) else -1)
         assert results.bound == 0
         assert results.absolute_gap == 1

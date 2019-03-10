@@ -186,7 +186,7 @@ def _test_heaps(comm):
     results = solver.solve(problem,
                            queue_strategy='breadth')
     assert results.solution_status == "feasible"
-    assert results.termination_condition == "no_nodes"
+    assert results.termination_condition == "queue_empty"
     assert results.objective == 0
     assert results.bound == -2
     assert results.best_node.objective == 0
@@ -202,7 +202,7 @@ def _test_heaps(comm):
                            initialize_queue=queue,
                            best_node=results.best_node)
     assert results.solution_status == "feasible"
-    assert results.termination_condition == "no_nodes"
+    assert results.termination_condition == "queue_empty"
     assert results.objective == 0
     assert results.bound == -2
     assert results.best_node.objective == 0

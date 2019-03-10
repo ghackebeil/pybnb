@@ -55,6 +55,8 @@ class TestDispatcherSimple:
     def test_queue_strategy(self):
         node_limit = None
         time_limit = None
+        queue_limit = None
+        track_bound = True
         log = get_simple_logger()
         log_interval_seconds = inf
         log_new_incumbent = True
@@ -78,6 +80,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -90,6 +94,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -102,6 +108,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -114,6 +122,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -126,6 +136,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -138,6 +150,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -150,6 +164,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -162,6 +178,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -174,6 +192,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -186,6 +206,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -194,6 +216,8 @@ class TestDispatcherSimple:
     def test_initialize_queue(self):
         node_limit = None
         time_limit = None
+        queue_limit = None
+        track_bound = True
         log = get_simple_logger()
         log_interval_seconds = inf
         log_new_incumbent = True
@@ -220,6 +244,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -234,6 +260,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -249,6 +277,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -265,6 +295,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -281,6 +313,8 @@ class TestDispatcherSimple:
             convergence_checker,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -301,6 +335,8 @@ class TestDispatcherSimple:
                 convergence_checker,
                 node_limit,
                 time_limit,
+                queue_limit,
+                track_bound,
                 log,
                 log_interval_seconds,
                 log_new_incumbent)

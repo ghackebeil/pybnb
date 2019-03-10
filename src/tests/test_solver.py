@@ -6,7 +6,6 @@ import time
 import pytest
 
 from pybnb.common import (minimize,
-                          inf,
                           nan)
 from pybnb.node import Node
 from pybnb.problem import Problem
@@ -54,7 +53,8 @@ class TestSolverSimple:
         assert b.worker_count == 1
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()
-        assert len(stats) == 12
+        assert len(stats) == 13
+        assert stats['rank'] == [0]
         assert stats['wall_time'] == [0]
         assert stats['queue_time'] == [0]
         assert stats['queue_call_count'] == [0]

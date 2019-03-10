@@ -129,7 +129,7 @@ def _test_infeasible_max(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = -inf
     baseline.bound = -16
     baseline.nodes = 31
@@ -354,7 +354,7 @@ def _test_infeasible_min(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "unknown"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = inf
     baseline.bound = 16
     baseline.nodes = 31
@@ -805,7 +805,7 @@ def _test_zero_objective_max(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = 0.0
     baseline.bound = 0.0009765625
     baseline.absolute_gap = 0.0009765625
@@ -844,8 +844,6 @@ def _test_zero_objective_max(comm):
     for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
-        if queue_strategy in ("depth","lifo"):
-            baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
         else:
@@ -916,7 +914,7 @@ def _test_zero_objective_min(comm):
 
     baseline = SolverResults()
     baseline.solution_status = "feasible"
-    baseline.termination_condition = "no_nodes"
+    baseline.termination_condition = "queue_empty"
     baseline.objective = 0.0
     baseline.bound = -0.0009765625
     baseline.absolute_gap = 0.0009765625
@@ -955,8 +953,6 @@ def _test_zero_objective_min(comm):
     for queue_strategy in _queue_strategies:
         if queue_strategy == "custom":
             continue
-        if queue_strategy in ("depth","lifo"):
-            baseline.nodes = 2033
         elif queue_strategy == "random":
             baseline.nodes = _ignore_value_
         else:

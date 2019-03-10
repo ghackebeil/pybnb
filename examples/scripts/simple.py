@@ -59,4 +59,5 @@ class Simple(pybnb.Problem):
 
 problem = Simple()
 solver = pybnb.Solver()
-results = solver.solve(problem)
+results = solver.solve(problem,
+                       absolute_gap=1e-8)

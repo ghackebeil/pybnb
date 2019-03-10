@@ -51,16 +51,15 @@ this can be done.
 
     solver = pybnb.Solver()
     results = solver.solve(problem,
-                           relative_gap=1e-4,
-                           absolute_gap=None,
+                           absolute_gap=1e-4,
+                           queue_tolerance=1e-8,
                            time_limit=10)
     queue = solver.save_dispatcher_queue()
     results = solver.solve(problem,
                            best_objective=results.objective,
                            best_node=results.best_node,
                            initialize_queue=queue,
-                           relative_gap=1e-8,
-                           absolute_gap=None)
+                           absolute_gap=1e-8)
 
 For the dispatcher process, the :func:`save_dispatcher_queue
 <pybnb.solver.Solver.save_dispatcher_queue>` method returns
@@ -75,6 +74,22 @@ keyword. The :attr:`best_node
 the results object will be identical for all processes
 (possibly equal to None), and can be directly assigned to
 the `best_node` solver option.
+
+Note the use of the `queue_tolerance` solve option in the
+first solve above. If left unused, this option will be set
+equal to the value of the `absolute_gap` setting (it is not
+affected by the `relative_gap` setting). The
+`queue_tolerance` setting is used to determine when new
+child nodes are eligible to enter the queue. If the
+difference between a child node's bound estimate and the
+best objective is less than or equal to the
+`queue_tolerance` (or worse than the best objective by any
+amount), the child node will be discarded. Thus, in the
+example above, the first solve uses a `queue_tolerance`
+equal to the `absolute_gap` used in the second solve to
+avoid discarding child nodes in the first solve that may be
+required to achieve the tighter optimality settings used in
+the second solve.
 
 Assigning the :attr:`objective
 <pybnb.solver_results.SolverResults.objective>` attribute of
@@ -96,8 +111,8 @@ left unused, as shown below:
 
     solver = pybnb.Solver()
     results = solver.solve(problem,
-                           relative_gap=1e-4,
-                           absolute_gap=None,
+                           asolute_gap=1e-4,
+                           queue_tolerance=1e-8,
                            time_limit=10)
     if results.solution_status in ("optimal",
                                    "feasible"):
@@ -105,8 +120,7 @@ left unused, as shown below:
         results = solver.solve(problem,
                                best_node=results.best_node,
                                initialize_queue=queue,
-                               relative_gap=1e-8,
-                               absolute_gap=None)
+                               absolute_gap=1e-8)
 
 .. _configuration:
 
@@ -187,16 +201,17 @@ solver, as shown below.
     results = solver.solve(
         pybnb.futures.NestedSolver(problem,
                                    queue_strategy=...,
+                                   track_bound=...,
                                    time_limit=...,
                                    node_limit=...),
         queue_strategy='bound',
         ...)
 
-The `queue_strategy`, `time_limit`, and `node_limit` solve
-options can be passed into the :class:`NestedSolver
-<pybnb.futures.NestedSolver>` class when it is created to
-control these aspects of the sub-solves used by the workers
-when processing a node.
+The `queue_strategy`, `track_bound`, `time_limit`, and
+`node_limit` solve options can be passed into the
+:class:`NestedSolver <pybnb.futures.NestedSolver>` class
+when it is created to control these aspects of the
+sub-solves used by the workers when processing a node.
 
 This kind of scheme can be useful for problems with
 relatively fast bound and objective computations, where the
@@ -224,8 +239,6 @@ original problem is passed to the solver (no nested solve):
 
     results = solver.solve(
         problem,
-        absolute_gap=0,
-        relative_gap=None,
         queue_strategy='depth',
         initialize_queue=queue,
         best_node=best_node,
@@ -256,14 +269,13 @@ problem argument is wrapped with the :class:`NestedSolver
 <pybnb.futures.NestedSolver>` object:
 
 .. code-block:: python
-  :emphasize-lines: 2,3,4
+  :emphasize-lines: 2,3,4,5
 
     results = solver.solve(
         pybnb.futures.NestedSolver(problem,
                                    queue_strategy='depth',
+                                   track_bound=False,
                                    time_limit=1),
-        absolute_gap=0,
-        relative_gap=None,
         queue_strategy='depth',
         initialize_queue=queue,
         best_node=best_node,

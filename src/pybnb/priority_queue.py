@@ -10,7 +10,8 @@ import heapq
 import math
 
 from pybnb.common import (minimize,
-                          maximize)
+                          maximize,
+                          inf)
 
 from sortedcontainers import SortedList
 
@@ -347,9 +348,16 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
     ----------
     sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
         The objective sense for the problem.
+    track_bound : bool
+        Indicates whether or not to track the global queue
+        bound. Note that this particular queue
+        implementation always tracks the global bound. This
+        argument is ignored.
     """
 
-    def __init__(self, sense):
+    def __init__(self,
+                 sense,
+                 track_bound):
         assert sense in (minimize, maximize)
         self._sense = sense
         self._queue = _NoThreadingMaxPriorityFirstQueue()
@@ -398,23 +406,27 @@ class CustomPriorityQueue(IPriorityQueue):
     ----------
     sense : {:obj:`minimize <pybnb.common.minimize>`, :obj:`maximize <pybnb.common.maximize>`}
         The objective sense for the problem.
+    track_bound : bool
+        Indicates whether or not to track the global queue
+        bound.
     """
 
     def __init__(self,
                  sense,
+                 track_bound,
                  *,
                  _queue_type_=_NoThreadingMaxPriorityFirstQueue):
         assert sense in (minimize, maximize)
         self._sense = sense
         self._queue = _queue_type_()
-        self._sorted_by_bound = SortedList()
+        self._sorted_by_bound = None
+        if track_bound:
+            self._sorted_by_bound = SortedList()
 
     def size(self):
         return self._queue.size()
 
     def put(self, node):
-        bound = node.bound
-        assert not math.isnan(bound)
         if self._queue.requires_priority:
             priority = node.queue_priority
             if priority is None:
@@ -422,10 +434,13 @@ class CustomPriorityQueue(IPriorityQueue):
             cnt = self._queue.put(node, priority)
         else:
             cnt = self._queue.put(node)
-        if self._sense == maximize:
-            self._sorted_by_bound.add((-bound, cnt, node))
-        else:
-            self._sorted_by_bound.add((bound, cnt, node))
+        if self._sorted_by_bound is not None:
+            bound = node.bound
+            assert not math.isnan(bound)
+            if self._sense == maximize:
+                self._sorted_by_bound.add((-bound, cnt, node))
+            else:
+                self._sorted_by_bound.add((bound, cnt, node))
         return cnt
 
     def get(self):
@@ -434,31 +449,48 @@ class CustomPriorityQueue(IPriorityQueue):
             assert type(cnt) is int
             node = self._queue.get()
             assert tmp_ is node
-            bound = node.bound
-            if self._sense == maximize:
-                self._sorted_by_bound.remove((-bound, cnt, node))
-            else:
-                self._sorted_by_bound.remove((bound, cnt, node))
+            if self._sorted_by_bound is not None:
+                bound = node.bound
+                if self._sense == maximize:
+                    self._sorted_by_bound.remove((-bound, cnt, node))
+                else:
+                    self._sorted_by_bound.remove((bound, cnt, node))
             return node
         else:
             return None
 
     def bound(self):
-        try:
-            return self._sorted_by_bound[0][2].bound
-        except IndexError:
-            return None
+        if self._sorted_by_bound is not None:
+            try:
+                return self._sorted_by_bound[0][2].bound
+            except IndexError:
+                return None
+        else:
+            if self.size() > 0:
+                if self._sense == maximize:
+                    return inf
+                else:
+                    return -inf
+            else:
+                return None
 
     def filter(self, func):
         removed = []
-        for cnt, node in self._queue.filter(func,
-                                            include_counters=True):
-            removed.append(node)
-            bound = node.bound
-            if self._sense == maximize:
-                self._sorted_by_bound.remove((-bound, cnt, node))
-            else:
-                self._sorted_by_bound.remove((bound, cnt, node))
+        if self._sorted_by_bound is not None:
+            for cnt, node in self._queue.filter(
+                    func,
+                    include_counters=True):
+                removed.append(node)
+                bound = node.bound
+                if self._sense == maximize:
+                    self._sorted_by_bound.remove((-bound, cnt, node))
+                else:
+                    self._sorted_by_bound.remove((bound, cnt, node))
+        else:
+            for cnt, node in self._queue.filter(
+                    func,
+                    include_counters=True):
+                removed.append(node)
         return removed
 
     def items(self):
@@ -534,9 +566,12 @@ class FIFOQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def __init__(self, sense):
+    def __init__(self,
+                 sense,
+                 track_bound):
         super(FIFOQueue, self).__init__(
             sense,
+            track_bound,
             _queue_type_=_NoThreadingFIFOQueue)
 
     @staticmethod
@@ -559,9 +594,12 @@ class LIFOQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def __init__(self, sense):
+    def __init__(self,
+                 sense,
+                 track_bound):
         super(LIFOQueue, self).__init__(
             sense,
+            track_bound,
             _queue_type_=_NoThreadingLIFOQueue)
 
     @staticmethod
@@ -628,10 +666,14 @@ class LexicographicPriorityQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def __init__(self, queue_types, sense):
+    def __init__(self,
+                 queue_types,
+                 sense,
+                 track_bound):
         self._queue_types = tuple(queue_types)
         assert len(self._queue_types)
-        super(LexicographicPriorityQueue, self).__init__(sense)
+        super(LexicographicPriorityQueue, self).__init__(sense,
+                                                         track_bound)
 
     def _generate_priority(self, node):
         return tuple(qt.generate_priority(node,

@@ -96,14 +96,11 @@ def run_solve_loop(dist, problem, solver):
     queue = None
     best_node = None
     while (1):
-        # solve exactly (disable check for relative
-        # gap and use absolute gap of zero)
         results = solver.solve(
             pybnb.futures.NestedSolver(problem,
                                        queue_strategy='depth',
+                                       track_bound=False,
                                        time_limit=1),
-            absolute_gap=0,
-            relative_gap=None,
             queue_strategy='depth',
             initialize_queue=queue,
             best_node=best_node,

@@ -318,12 +318,14 @@ class DispatcherBase:
         self.termination_condition = None
         self.converger = None
         self.last_global_bound = None
+        self.track_bound = False
         self.queue = None
         self.best_node = None
         self.best_objective = None
         self.journalist = None
         self.node_limit = None
         self.time_limit = None
+        self.queue_limit = None
         self.served_nodes_count = None
         self.worst_terminal_bound = None
         self.clock = None
@@ -334,6 +336,11 @@ class DispatcherBase:
                 bound,
                 self.best_objective):
             self.queue.put(node)
+            if (self.queue_limit is not None) and \
+               (self.queue.size() > self.queue_limit) and \
+               (self.termination_condition is None):
+                self.termination_condition = \
+                    TerminationCondition.queue_limit
             return True
         else:
             self._check_update_worst_terminal_bound(bound)
@@ -382,14 +389,15 @@ class DispatcherBase:
                 self._check_update_best_objective(objective)
         return best_objective_updated
 
-    def _check_convergence(self):
+    def _check_termination(self):
         # check if we are done
         if self.termination_condition is None:
-            global_bound = self._get_current_bound()
-            self.last_global_bound = global_bound
-            self.termination_condition = self.converger.\
-                check_termination_criteria(global_bound,
-                                           self.best_objective)
+            if self.track_bound:
+                global_bound = self._get_current_bound()
+                self.last_global_bound = global_bound
+                self.termination_condition = self.converger.\
+                    check_termination_criteria(global_bound,
+                                               self.best_objective)
             if self.termination_condition is None:
                 if self.node_limit is not None:
                     (served_nodes_count, explored_nodes_count, _) = \
@@ -425,6 +433,8 @@ class DispatcherBase:
                    converger,
                    node_limit,
                    time_limit,
+                   queue_limit,
+                   track_bound,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -454,6 +464,10 @@ class DispatcherBase:
             The maximum amount of time to spend processing
             nodes before beginning to terminate the
             solve. If None, no time limit will be enforced.
+        queue_limit : int or None
+            The maximum allowed queue size. If exceeded, the
+            solve will terminate. If None, no size limit on
+            the queue will be enforced.
         log : ``logging.Logger``
             A log object where solver output should be sent.
         log_interval_seconds : float
@@ -475,6 +489,8 @@ class DispatcherBase:
              (node_limit == int(node_limit)))
         assert (time_limit is None) or \
             (time_limit >= 0)
+        assert (queue_limit is None) or \
+            (queue_limit >= 0)
         self.start_time = self.clock()
         self.initialized = True
         self.log_new_incumbent = log_new_incumbent
@@ -484,8 +500,11 @@ class DispatcherBase:
             raise ValueError("The objective sense does not match "
                              "that of the initial queue.")
         self.last_global_bound = self.converger.unbounded_objective
-        self.queue = PriorityQueueFactory(queue_strategy,
-                                          self.converger.sense)
+        self.track_bound = track_bound
+        self.queue = PriorityQueueFactory(
+            queue_strategy,
+            self.converger.sense,
+            self.track_bound)
         self.best_objective = best_objective
         self.best_node = None
         if best_node is not None:
@@ -497,6 +516,9 @@ class DispatcherBase:
         self.time_limit = None
         if time_limit is not None:
             self.time_limit = float(time_limit)
+        self.queue_limit = None
+        if queue_limit is not None:
+            self.queue_limit = int(queue_limit)
         self.served_nodes_count = 0
         self.worst_terminal_bound = \
             initialize_queue.worst_terminal_bound
@@ -654,6 +676,8 @@ class DispatcherLocal(DispatcherBase):
                    converger,
                    node_limit,
                    time_limit,
+                   queue_limit,
+                   track_bound,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -670,6 +694,8 @@ class DispatcherLocal(DispatcherBase):
             converger,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -735,11 +761,11 @@ class DispatcherLocal(DispatcherBase):
             self._check_update_worst_terminal_bound(
                     terminal_bound)
         last_global_bound = self.last_global_bound
-        self._check_convergence()
+        self._check_termination()
         if (self.queue.size() == 0) and \
            (self.termination_condition is None):
             self.termination_condition = \
-                TerminationCondition.no_nodes
+                TerminationCondition.queue_empty
         if self.termination_condition is None:
             node = self._get_work_item()
             self.active_nodes = 1
@@ -936,7 +962,7 @@ class DispatcherDistributed(DispatcherBase):
             if len(self.needs_work_queue) == (self.comm.size-1):
                 if self.termination_condition is None:
                     self.termination_condition = \
-                        TerminationCondition.no_nodes
+                        TerminationCondition.queue_empty
                 requests = []
                 for r_ in self._send_requests.values():
                     if r_ is not None:
@@ -988,6 +1014,8 @@ class DispatcherDistributed(DispatcherBase):
                    converger,
                    node_limit,
                    time_limit,
+                   queue_limit,
+                   track_bound,
                    log,
                    log_interval_seconds,
                    log_new_incumbent):
@@ -1018,6 +1046,8 @@ class DispatcherDistributed(DispatcherBase):
             converger,
             node_limit,
             time_limit,
+            queue_limit,
+            track_bound,
             log,
             log_interval_seconds,
             log_new_incumbent)
@@ -1099,7 +1129,7 @@ class DispatcherDistributed(DispatcherBase):
             self._check_update_worst_terminal_bound(
                 terminal_bound)
         last_global_bound = self.last_global_bound
-        self._check_convergence()
+        self._check_termination()
         ret = self._send_work()
         stop = ret[0]
         if not stop:

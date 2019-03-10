@@ -35,11 +35,17 @@ class SolverResults:
         The best objective found.
     bound : float
         The global optimality bound.
-    absolute_gap : float
-        The absolute gap between the objective and bound.
-    relative_gap : float
-        The relative gap between the objective and bound.
-    nodes : float
+    absolute_gap : float or None
+        The absolute gap between the objective and
+        bound. This will only be set when the solution
+        status sf "optimal" or "feasible"; otherwise, it
+        will be None.
+    relative_gap : float or None
+        The relative gap between the objective and
+        bound. This will only be set when the solution
+        status sf "optimal" or "feasible"; otherwise, it
+        will be None.
+    nodes : int
         The total number of nodes processes by all workers.
     wall_time : float
         The process-local wall time (seconds). This is the
