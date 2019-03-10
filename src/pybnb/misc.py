@@ -457,7 +457,8 @@ def create_command_line_solver(problem, parser=None):
     except ImportError:                                #pragma:nocover
         raise ImportError("The PyYAML module is required to "
                           "run the command-line solver.")
-
+    from pybnb.convergence_checker import \
+        _auto_queue_tolerance
     if parser is None:
         import argparse
         parser = argparse.ArgumentParser(
@@ -502,8 +503,13 @@ def create_command_line_solver(problem, parser=None):
     solve_docs.pop("log")
     assert len(solve_defaults) == len(solve_docs)
     for key in solve_defaults:
-        assert solve_defaults[key] == \
-            solve_docs[key]["default"]
+        if key == "queue_tolerance":
+            assert "default" not in solve_docs[key]
+            assert solve_defaults[key] is \
+                _auto_queue_tolerance
+        else:
+            assert solve_defaults[key] == \
+                solve_docs[key]["default"]
         assert "choices" not in solve_docs[key]
         if key == "queue_strategy":
             solve_docs[key]["choices"] = \
