@@ -4,7 +4,8 @@ Changelog
 0.6.dev0 - `master`_
 ~~~~~~~~~~~~~~~~~~~~
 
-* Renaming "no_nodes" termination condition to "queue_empty"
+* Renaming "no_nodes" termination condition to
+  "queue_empty".
 * Changing solver default settings to use an exact
   optimality check with no relative gap
   (`relative_gap=None`, `absolute_gap=0`).
@@ -16,18 +17,18 @@ Changelog
   strategies (e.g., depth-first) with inexact `absolute_gap`
   settings. Before this change, it would be necessary to set
   both the `absolute_gap` and `queue_tolerance` to the same
-  nonzero value to avoid unnecessary processing of nodes.
+  nonzero value to avoid unnecessary processing of nodes,
+  which is probably not obvious to users.
 * Adding a `queue_limit` solve option, which causes the
   solve to terminate with the "queue_limit" termination
   condition when the queue size exceeds this value. This
   option is useful for avoiding excessively large updates
   from a `NestedSolver`.
-* Adding a `track_bound` solve option, which can be set to
-  False to disable online tracking of the global bound to
-  reduce dispatcher overhead for non-default queue
-  strategies (e.g., "depth", "lifo"). Adding a new section
-  to the online docs that discusses this and other methods
-  for reducing dispatcher overhead.
+* Adding a `track_bound` solve option that can be set to
+  false to disable online tracking of the global bound. This
+  reduces dispatcher overhead for non-default queue
+  strategies (e.g., "depth", "lifo").
+* Improved documentation.
 
 0.5.2 - 2019-02-13
 ~~~~~~~~~~~~~~~~~~
