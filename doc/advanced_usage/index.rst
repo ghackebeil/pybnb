@@ -1,6 +1,56 @@
 Advanced Usage
 ==============
 
+Setting the Queue Strategy and Solver Tolerances
+------------------------------------------------
+
+``pybnb`` uses a default queue strategy that prioritizes
+improving the global optimality bound over other solve
+metrics. The `queue_strategy` solve option controls this
+behavior. See the :class:`QueueStrategy
+<pybnb.common.QueueStrategy>` enum for a complete list of
+available strategies.
+
+The best queue strategy to use depends on characteristics of
+the problem being solved. Queue strategies such as "depth"
+and "lifo" tend to keep the queue size small and reduce the
+dispatcher overhead, which may be important for problems
+with relatively fast objective and bound
+evaluations. Setting the `track_bound` solve option to false
+will further reduce the dispatcher overhead of these queue
+strategies. On the other hand, using these strategies may
+result in a larger number of nodes being processed before
+reaching a given optimality gap.
+
+The `absolute_gap` and `relative_gap` solve options can be
+adjusted to control when the solver considers a solution to
+be optimal. By default, optimality is defined as having an
+absolute gap of zero between the best objective and the
+global problem bound, and no relative gap is considered.
+(`absolute_gap=0`, `relative_gap=None`). To enable a check
+for relative optimality, simply assign a non-negative value
+to the `relative_gap` solver option (e.g.,
+`relative_gap=1e-4`). Additionally, a function can be
+provided through the `scale_function` solver option for
+computing the scaling factor used to convert an absolute gap
+to a relative gap. This function should have the signature
+`f(bound, objective) -> float`. The default scale function
+is `max{1.0,|objective|}`.
+
+Two additional solve options to be aware of are the
+`queue_tolerance` and `branch_tolerance`.  The
+`queue_tolerance` setting controls when new child nodes are
+allowed into the queue. If left unset, it will be assigned
+the value of the `absolute_gap` setting. It is not affected
+by the `relative_gap` setting. See the section titled
+:ref:`continuing` for further discussion along with an
+example. Finally, the `branch_tolerance` setting controls
+when the `branch` method is called. The default setting of
+zero means that any non-zero gap between a node's local
+bound and objective will allow branching. Larger settings
+may be useful for avoiding tolerance issues in a problem
+implementation.
+
 Terminating a Solve Early
 -------------------------
 
@@ -38,6 +88,8 @@ command such as:
 .. code-block:: console
 
     $ kill -USR1 <pid>
+
+.. _continuing:
 
 Continuing a Solve After Stopping
 ---------------------------------
@@ -79,17 +131,16 @@ Note the use of the `queue_tolerance` solve option in the
 first solve above. If left unused, this option will be set
 equal to the value of the `absolute_gap` setting (it is not
 affected by the `relative_gap` setting). The
-`queue_tolerance` setting is used to determine when new
-child nodes are eligible to enter the queue. If the
-difference between a child node's bound estimate and the
-best objective is less than or equal to the
-`queue_tolerance` (or worse than the best objective by any
-amount), the child node will be discarded. Thus, in the
-example above, the first solve uses a `queue_tolerance`
-equal to the `absolute_gap` used in the second solve to
-avoid discarding child nodes in the first solve that may be
-required to achieve the tighter optimality settings used in
-the second solve.
+`queue_tolerance` setting determines when new child nodes
+are eligible to enter the queue. If the difference between a
+child node's bound estimate and the best objective is less
+than or equal to the `queue_tolerance` (or worse than the
+best objective by any amount), the child node will be
+discarded. Thus, in the example above, the first solve uses
+a `queue_tolerance` equal to the `absolute_gap` used in the
+second solve to avoid discarding child nodes in the first
+solve that may be required to achieve the tighter optimality
+settings used in the second solve.
 
 Assigning the :attr:`objective
 <pybnb.solver_results.SolverResults.objective>` attribute of
@@ -171,116 +222,3 @@ those applied through environment variables.  The
 <pybnb.configuration.Configuration.reset>` method can be
 called to restore all configuration options to their default
 setting (ignoring the environment if specified).
-
-pybnb.futures
--------------
-The `pybnb.futures` module stores utilities that are still
-in the early phase of development. They will typically be
-fairly well tested, but are subject to change or be removed
-without much notice from one release to the next.
-
-Using a Nested Solve to Improve Parallel Performance
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The :class:`NestedSolver <pybnb.futures.NestedSolver>`
-object is a wrapper class for problems that provides an easy
-way to implement a custom two-layer, parallel
-branch-and-bound solve. That is, a branch-and-bound solve
-where, at the top layer, a single dispatcher serves nodes to
-worker processes over MPI, and those workers process each
-node by performing their own limited branch-and-bound solve
-in serial, rather than simply evaluating the node bound and
-objective and returning its immediate children to the
-dispatcher.
-
-The above strategy can be implemented by simply wrapping the
-problem argument with this class before passing it to the
-solver, as shown below.
-
-.. code-block:: python
-
-    results = solver.solve(
-        pybnb.futures.NestedSolver(problem,
-                                   queue_strategy=...,
-                                   track_bound=...,
-                                   time_limit=...,
-                                   node_limit=...),
-        queue_strategy='bound',
-        ...)
-
-The `queue_strategy`, `track_bound`, `time_limit`, and
-`node_limit` solve options can be passed into the
-:class:`NestedSolver <pybnb.futures.NestedSolver>` class
-when it is created to control these aspects of the
-sub-solves used by the workers when processing a node.
-
-This kind of scheme can be useful for problems with
-relatively fast bound and objective computations, where the
-overhead of updates to the central dispatcher over MPI is a
-clear bottleneck. It is important to consider, however, that
-assigning large values to the `node_limit` or `time_limit`
-nested solve options may result in more work being performed
-to achieve the same result as the non-nested case. As such,
-the use of this solution scheme may not always result in a
-net benefit for the total solve time.
-
-Next, we show how this class is used to maximize the
-parallel performance of the `TSP example
-<https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_byvertex.py>`_.
-Tests are run using CPython 3.7 and PyPy3 6.0 (Python 3.5.3)
-on a laptop with a single quad-core 2.6 GHz Intel Core i7
-processor.
-
-The code block below shows the main call to the solver used
-in the TSP example, except it has been modified so that the
-original problem is passed to the solver (no nested solve):
-
-.. code-block:: python
-  :emphasize-lines: 2
-
-    results = solver.solve(
-        problem,
-        queue_strategy='depth',
-        initialize_queue=queue,
-        best_node=best_node,
-        objective_stop=objective_stop)
-
-Running the serial case as follows,
-
-.. code-block:: console
-
-    $ python -O tsp_naive.py fri26_d.txt
-
-on CPython 3.7 we achieve a peak performance of ~19k nodes
-processed per second, and on PyPy3 6.0 the performance peaks
-at ~150k nodes processed per second. Compare this with the
-parallel case (using three workers and one dispatcher),
-
-.. code-block:: console
-
-    $ mpirun -np 4 python -O tsp_naive.py fri26_d.txt
-
-where with CPython 3.7 we achieve a peak performance of ~21k
-nodes per second, and with PyPy3 6.0 the performance
-actually drops to ~28k nodes per second (nowhere near the 3x
-increase one would hope for).
-
-Now consider the TSP example in its original form, where the
-problem argument is wrapped with the :class:`NestedSolver
-<pybnb.futures.NestedSolver>` object:
-
-.. code-block:: python
-  :emphasize-lines: 2,3,4,5
-
-    results = solver.solve(
-        pybnb.futures.NestedSolver(problem,
-                                   queue_strategy='depth',
-                                   track_bound=False,
-                                   time_limit=1),
-        queue_strategy='depth',
-        initialize_queue=queue,
-        best_node=best_node,
-        objective_stop=objective_stop)
-
-Running the parallel case, with CPython 3.7 we achieve a
-peak performance of ~60k nodes per second, and with PyPy3
-6.0 we achieve ~450k nodes per second!

@@ -199,7 +199,7 @@ description of each of the required methods.
 
    Additionally, further control over the prioritization of
    a child node can be achieved by setting the
-   ``queue_strategy`` solve option to "custom", and then
+   `queue_strategy` solve option to "custom", and then
    directly assigning a value to the :attr:`queue_priority
    <pybnb.node.Node.queue_priority>` attribute of the child
    node before it is yielded.
@@ -250,17 +250,17 @@ By default, the solver will automatically use
 ``mpi4py.MPI.COMM_WORLD`` as the communicator, and the rank
 0 process will act as the dispatcher. If the ``mpi4py``
 module is not available, this will result in an
-``ImportError``. The optional keywords ``comm`` and
-``dispatcher_rank`` can be used to change the default
+``ImportError``. The optional keywords `comm` and
+`dispatcher_rank` can be used to change the default
 behavior.
 
 When a solver is created with ``Solver(comm=None)``, this
 will disable any attempted import of ``mpi4py``, allowing
 problems to be solved without the use of any parallel
-functionality. The ``comm`` keyword can also be assigned a
+functionality. The `comm` keyword can also be assigned a
 communicator different from ``mpi4py.MPI.COMM_WORLD``. If
 the solver communicator includes more than one process, the
-``dispatcher_rank`` keyword can be assigned a process rank
+`dispatcher_rank` keyword can be assigned a process rank
 to control which process is designated as the dispatcher.
 However the solver is initialized, the following assertions
 hold true for the :attr:`is_dispatcher
