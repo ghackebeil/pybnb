@@ -42,4 +42,5 @@ shown in the example below.
 
     getting_started/index.rst
     advanced_usage/index.rst
+    futures/index.rst
     reference/index.rst
