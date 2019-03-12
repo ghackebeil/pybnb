@@ -1,8 +1,8 @@
 Changelog
 =========
 
-0.6.dev0 - `master`_
-~~~~~~~~~~~~~~~~~~~~
+0.6.0 - 2019-03-12
+~~~~~~~~~~~~~~~~~~
 
 * Renaming "no_nodes" termination condition to
   "queue_empty".
