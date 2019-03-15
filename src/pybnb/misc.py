@@ -95,7 +95,7 @@ def metric_format(num, unit="s", digits=1, align_unit=False):
         num *= 1000.0
         for p in ['m','u','n','p','f']:
             prefix = p
-            if abs(num) > 1:
+            if abs(round(num,digits+3)) >= 1:
                 break
             num *= 1000.0
     if (prefix == "") and align_unit:
@@ -139,7 +139,7 @@ def time_format(num, digits=1, align_unit=False):
         num *= 1000.0
         for p in ['ms','us','ns','ps','fs']:
             unit = p
-            if abs(num) > 1:
+            if abs(round(num,digits+3)) >= 1:
                 break
             num *= 1000.0
     if (len(unit) == 1) and align_unit:

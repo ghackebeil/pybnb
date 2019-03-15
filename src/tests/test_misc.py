@@ -78,6 +78,18 @@ class Test(object):
         assert metric_format(0.00023334, digits=1) == "233.3 us"
         assert metric_format(0.00023334, digits=2) == "233.34 us"
 
+        assert metric_format(0.0009999,digits=1) == "999.9 us"
+        assert metric_format(0.00099999,digits=1) == "1.0 ms"
+        assert metric_format(0.00099999,digits=2) == "999.99 us"
+        assert metric_format(0.000999999,digits=2) == "1.00 ms"
+        assert metric_format(0.000999999,digits=3) == "999.999 us"
+        assert metric_format(0.0009999999,digits=3) == "1.000 ms"
+        assert metric_format(0.0009999999,digits=4) == "999.9999 us"
+        assert metric_format(0.00099999999,digits=4) == "1.0000 ms"
+        assert metric_format(0.00099999999,digits=5) == "999.99999 us"
+        assert metric_format(0.000999999999,digits=5) == "1.00000 ms"
+        assert metric_format(0.000999999999,digits=6) == "999.999999 us"
+
     def test_time_format(self):
         assert time_format(None) == "<unknown>"
         assert time_format(0.0) == "0.0 s"
@@ -98,6 +110,20 @@ class Test(object):
                            align_unit=True) == "1.5577 d "
         assert time_format(0.23334, digits=1) == "233.3 ms"
         assert time_format(0.23334, digits=2) == "233.34 ms"
+        assert time_format(0.00023334, digits=1) == "233.3 us"
+        assert time_format(0.00023334, digits=2) == "233.34 us"
+
+        assert time_format(0.0009999,digits=1) == "999.9 us"
+        assert time_format(0.00099999,digits=1) == "1.0 ms"
+        assert time_format(0.00099999,digits=2) == "999.99 us"
+        assert time_format(0.000999999,digits=2) == "1.00 ms"
+        assert time_format(0.000999999,digits=3) == "999.999 us"
+        assert time_format(0.0009999999,digits=3) == "1.000 ms"
+        assert time_format(0.0009999999,digits=4) == "999.9999 us"
+        assert time_format(0.00099999999,digits=4) == "1.0000 ms"
+        assert time_format(0.00099999999,digits=5) == "999.99999 us"
+        assert time_format(0.000999999999,digits=5) == "1.00000 ms"
+        assert time_format(0.000999999999,digits=6) == "999.999999 us"
 
     def test_get_gap_labels(self):
         l0, l1, l2 = get_gap_labels(1)
