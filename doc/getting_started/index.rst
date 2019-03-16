@@ -50,6 +50,52 @@ to the remaining processes. Thus, one should not expect any
 parallel speedup until at least three processes are used to
 solve a problem.
 
+More Examples
+-------------
+
+``pybnb`` is distributed with a number of example problem
+implementations. Each example can be run in serial or in
+parallel with the ``mpiexec`` command. Some examples require
+additional python packages or external binaries that are not
+listed as dependencies for ``pybnb`` (e.g., ``pyomo``). See
+the comments at the top of each example file for a brief
+explanation.
+
+The `examples
+<https://github.com/ghackebeil/pybnb/blob/master/examples>`_
+directory included with the source repository is organized
+into two top-level directories.
+
+ - `command_line_problems
+   <https://github.com/ghackebeil/pybnb/blob/master/examples/command_line_problems>`_:
+   Includes basic problem implementations that expose all ``pybnb``
+   solver options as command-line arguments. Simply execute
+   one of the available examples with ``--help`` as an
+   argument to see the list of available solver options.
+
+   - `binary_knapsack.py <https://github.com/ghackebeil/pybnb/blob/master/examples/command_line_problems/binary_knapsack.py>`_
+
+   - `lipschitz_1d.py <https://github.com/ghackebeil/pybnb/blob/master/examples/command_line_problems/lipschitz_1d.py>`_ (faster with ``numba``, but it is optional)
+
+   - `bin_packing.py <https://github.com/ghackebeil/pybnb/blob/master/examples/command_line_problems/bin_packing.py>`_ (requires: ``pyomo`` + ``ipopt`` binary)
+
+   - `rosenbrock_2d.py <https://github.com/ghackebeil/pybnb/blob/master/examples/command_line_problems/rosenbrock_2d.py>`_ (requires: ``pyomo`` + ``ipopt`` binary)
+
+
+
+ - `scripts
+   <https://github.com/ghackebeil/pybnb/blob/master/examples/scripts>`_:
+   Includes problem implementations along with various
+   usages of ``pybnb`` ranging from simple to advanced. Some
+   of the examples accept a small set of command-line
+   options, but most ``pybnb`` solver options are hard-coded
+   and must be manually adjusted within each example file.
+
+   - `simple.py <https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/simple.py>`_
+   - `range_reduction_pyomo.py <https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/range_reduction_pyomo.py>`_ (requires: ``pyomo`` + ``ipopt`` binary)
+   - `tsp/tsp_byvertex.py <https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_byvertex.py>`_
+   - `tsp/tsp_byedge.py <https://github.com/ghackebeil/pybnb/blob/master/examples/scripts/tsp/tsp_byedge.py>`_ (requires: ``numpy``)
+
 Defining a Problem
 ------------------
 To define a branch-and-bound problem with ``pybnb``, one
