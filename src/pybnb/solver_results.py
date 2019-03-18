@@ -109,7 +109,6 @@ class SolverResults(object):
         -------
 
         >>> import six
-        >>> import yaml
         >>> import pybnb
         >>> results = pybnb.SolverResults()
         >>> results.best_node = pybnb.Node()
@@ -118,7 +117,8 @@ class SolverResults(object):
         >>> # the best_node is serialized
         >>> results.write(out)
         >>> del results
-        >>> results_dict = yaml.load(out.getvalue())
+        >>> import yaml
+        >>> results_dict = yaml.safe_load(out.getvalue())
         >>> # de-serialize the best_node
         >>> best_node = pybnb.node.loads(results_dict['best_node'])
         >>> assert best_node.objective == 123

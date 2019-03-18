@@ -150,7 +150,7 @@ class TestSolverResults(object):
         results = SolverResults()
         out = StringIO()
         results.write(out)
-        x = yaml.load(out.getvalue())
+        x = yaml.safe_load(out.getvalue())
         assert len(x) == 9
         assert x['solution_status'] is None
         assert x['termination_condition'] is None
@@ -185,7 +185,7 @@ class TestSolverResults(object):
         results.junk7 = 'nan'
         out = StringIO()
         results.write(out)
-        x = yaml.load(out.getvalue())
+        x = yaml.safe_load(out.getvalue())
         assert len(x) == 16
         assert x['solution_status'] == "optimal"
         assert x['termination_condition'] == "optimality"
@@ -220,7 +220,7 @@ class TestSolverResults(object):
         results.junk0 = None
         out = StringIO()
         results.write(out)
-        x = yaml.load(out.getvalue())
+        x = yaml.safe_load(out.getvalue())
         assert len(x) == 16
         assert x['bound'] == 'inf'
         assert x['absolute_gap'] == '-inf'
