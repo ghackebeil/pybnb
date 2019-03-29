@@ -126,38 +126,42 @@ class Test(object):
         assert time_format(0.000999999999,digits=6) == "999.999999 us"
 
     def test_get_gap_labels(self):
-        l0, l1, l2 = get_gap_labels(1)
-        assert l0 == 10
-        assert l1 == "{gap:>10}"
-        assert l2 == "{gap:>10.1f}"
-        l0, l1, l2 = get_gap_labels(0.1)
+        l0, l1, l2 = get_gap_labels(10)
         assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.2f}"
-        l0, l1, l2 = get_gap_labels(0.01)
+        l0, l1, l2 = get_gap_labels(1)
+        assert l0 == 10
+        assert l1 == "{gap:>10}"
+        assert l2 == "{gap:>10.2f}"
+        l0, l1, l2 = get_gap_labels(0.1)
         assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.3f}"
-        l0, l1, l2 = get_gap_labels(0.001)
+        l0, l1, l2 = get_gap_labels(0.01)
         assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.4f}"
-        l0, l1, l2 = get_gap_labels(0.0001)
+        l0, l1, l2 = get_gap_labels(0.001)
         assert l0 == 10
         assert l1 == "{gap:>10}"
         assert l2 == "{gap:>10.5f}"
-        l0, l1, l2 = get_gap_labels(0.00001)
+        l0, l1, l2 = get_gap_labels(0.0001)
         assert l0 == 11
         assert l1 == "{gap:>11}"
         assert l2 == "{gap:>11.6f}"
-        l0, l1, l2 = get_gap_labels(0.000001,key='rgap')
+        l0, l1, l2 = get_gap_labels(0.00001)
         assert l0 == 12
-        assert l1 == "{rgap:>12}"
-        assert l2 == "{rgap:>12.7f}"
-        l0, l1, l2 = get_gap_labels(0.0000001,key='agap',format='g')
+        assert l1 == "{gap:>12}"
+        assert l2 == "{gap:>12.7f}"
+        l0, l1, l2 = get_gap_labels(0.000001,key='rgap')
         assert l0 == 13
-        assert l1 == "{agap:>13}"
-        assert l2 == "{agap:>13.8g}"
+        assert l1 == "{rgap:>13}"
+        assert l2 == "{rgap:>13.8f}"
+        l0, l1, l2 = get_gap_labels(0.0000001,key='agap',format='g')
+        assert l0 == 14
+        assert l1 == "{agap:>14}"
+        assert l2 == "{agap:>14.9g}"
 
     def test_as_stream(self):
         fid, fname = tempfile.mkstemp()
