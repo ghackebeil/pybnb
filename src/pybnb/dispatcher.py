@@ -114,7 +114,7 @@ class StatusPrinter(object):
         self._log_interval_seconds = log_interval_seconds
         self._log = log
 
-        percent_relative_gap_tol = 1e-6
+        percent_relative_gap_tol = 1e-4
         if (self._dispatcher.converger.relative_gap is not None) and \
            self._dispatcher.converger.relative_gap != 0:
             percent_relative_gap_tol = 100.0 * \
