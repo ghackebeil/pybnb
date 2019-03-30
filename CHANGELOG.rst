@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.7.dev0 - `master`_
-~~~~~~~~~~~~~~~~~~~~
+0.6.1 - 2019-03-29
+~~~~~~~~~~~~~~~~~~
 
-* TODO
+* Improving number formatting in log output.
+* Documentation updates.
 
 0.6.0 - 2019-03-12
 ~~~~~~~~~~~~~~~~~~
