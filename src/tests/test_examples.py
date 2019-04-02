@@ -174,9 +174,9 @@ def test_example(example_name, procs):
             assert not os.path.exists(baseline_filename)
             return
         with open(results_filename) as f:
-            results = yaml.load(f)
+            results = yaml.safe_load(f)
         with open(baseline_filename) as f:
-            baseline_results = yaml.load(f)
+            baseline_results = yaml.safe_load(f)
         assert len(baseline_results) < len(results)
         for key in baseline_results:
             if type(baseline_results[key]) is float:

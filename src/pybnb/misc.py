@@ -6,6 +6,7 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 import logging
 import signal
 import numbers
+import math
 
 def _cast_to_float_or_int(x):
     """Casts a number to a float or int built-in type. Makes
@@ -102,7 +103,7 @@ def metric_format(num,
         num *= 1000.0
         for p in ['m','u','n','p','f']:
             prefix = p
-            if abs(num) > 1:
+            if abs(round(num,digits+3)) >= 1:
                 break
             num *= 1000.0
     if (prefix == "") and align_unit:
@@ -149,7 +150,7 @@ def time_format(num,
         num *= 1000.0
         for p in ['ms','us','ns','ps','fs']:
             unit = p
-            if abs(num) > 1:
+            if abs(round(num,digits+3)) >= 1:
                 break
             num *= 1000.0
     if (len(unit) == 1) and align_unit:
@@ -164,11 +165,16 @@ def get_gap_labels(gap,
     """Get format strings with enough size and precision to print
     a given gap tolerance."""
     gap_length = 10
-    gap_digits = 0
-    while gap < (10**(-gap_digits+1)):
-        gap_digits += 1
-        if gap_length - gap_digits < 5:
-            gap_length += 1
+    gap_digits = 2
+    # extract the decimal part, so we can determine the
+    # precision we need
+    gap = gap - math.floor(gap)
+    if gap != 0:
+        while (gap < (10**(-gap_digits+2))) and \
+              (gap_length < 20):
+            gap_digits += 1
+            if gap_length - gap_digits < 5:
+                gap_length += 1
     gap_label_str = "{"+key+":>"+str(gap_length)+"}"
     gap_number_str = "{"+key+":>"+str(gap_length)+"." + \
                      str(gap_digits)+format+"}"
