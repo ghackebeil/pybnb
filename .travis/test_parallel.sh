@@ -13,7 +13,7 @@ then
         MPIRUN_ARG="mpirun -n 4"
     fi
 fi
-${DOC} pytest -v --doctest-plus src/pybnb
+"[[ -n $NODOCTEST ]] || ${DOC} pytest -v --doctest-plus src/pybnb"
 ${DOC} pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v ${EXAMPLE_ARG}
 ${DOC} mv .coverage coverage.parallel.1
 ${DOC} python run-mpitests.py "${MPIRUN_FLAG}""${MPIRUN_ARG}" --no-build --with-coverage -v

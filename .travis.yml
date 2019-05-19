@@ -23,9 +23,9 @@ env:
     - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_2.7-openmpi PYBNB_COMPRESSION=true
     - IMAGE_NAME=python-mpi-builds:python_2.7-mpich EXAMPLES=1
-    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi
-    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi PYBNB_COMPRESSION=true
-    - IMAGE_NAME=python-mpi-builds:pypy_3-mpich
+    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi NODOCTEST=1
+    - IMAGE_NAME=python-mpi-builds:pypy_3-openmpi PYBNB_COMPRESSION=true NODOCTEST=1
+    - IMAGE_NAME=python-mpi-builds:pypy_3-mpich NODOCTEST=1
     - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi
     - IMAGE_NAME=python-mpi-builds:pypy_2-openmpi PYBNB_COMPRESSION=true
     - IMAGE_NAME=python-mpi-builds:pypy_2-mpich
@@ -48,6 +48,7 @@ install:
         ${DOC} bash -c 'cd ./pyomo && python setup.py install && cd .. && rm -r ./pyomo'
     fi
   - ${DOC} pip install -r test_requirements.txt
+  - "[[ -z $NODOCTEST ]] || ${DOC} pip uninstall pytest-doctestplus"
   - ${DOC} pip install codecov
   - ${DOC} python setup.py develop
 script:
