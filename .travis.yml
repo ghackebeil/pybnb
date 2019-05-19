@@ -48,7 +48,7 @@ install:
         ${DOC} bash -c 'cd ./pyomo && python setup.py install && cd .. && rm -r ./pyomo'
     fi
   - ${DOC} pip install -r test_requirements.txt
-  - "[[ -z $NODOCTEST ]] || ${DOC} pip uninstall pytest-doctestplus"
+  - "[[ -z $NODOCTEST ]] || ${DOC} pip uninstall -y pytest-doctestplus"
   - ${DOC} pip install codecov
   - ${DOC} python setup.py develop
 script:
