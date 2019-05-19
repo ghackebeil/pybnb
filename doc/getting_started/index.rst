@@ -173,7 +173,7 @@ description of each of the required methods.
    This method should return a valid bound for the objective
    function over the current problem domain (as defined by
    the current problem state), or it can return
-   :func:`self.ubnounded_objective()
+   :func:`self.unbounded_objective()
    <pybnb.problem.Problem.unbounded_objective>` if a finite
    bound can not be determined.
 
