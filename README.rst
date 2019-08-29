@@ -5,6 +5,8 @@ pybnb
 
 |Travis-Status| |Appveyor-Status| |Coverage-Status| |Documentation-Status|
 
+|PyPI-Downloads|
+
 A parallel branch-and-bound engine for Python. (https://pybnb.readthedocs.io)
 
 This software is copyright (c) by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
@@ -126,8 +128,10 @@ Quick Start
 .. |Documentation-Status| image:: https://readthedocs.org/projects/pybnb/badge/?version=latest
   :target: http://pybnb.readthedocs.io/en/latest/?badge=latest
 .. |PyPI-Status| image:: https://img.shields.io/pypi/v/pybnb.svg
-  :target: https://pypi.python.org/pypi/pybnb/
+  :target: https://pypi.python.org/pypi/pybnb
 .. |PyPI-Versions| image:: https://img.shields.io/pypi/pyversions/pybnb.svg
    :target: https://pypi.org/project/pybnb
 .. |Codacy-Grade| image:: https://img.shields.io/lgtm/grade/python/g/ghackebeil/pybnb.svg?logo=lgtm&logoWidth=18
    :target: https://lgtm.com/projects/g/ghackebeil/pybnb/context:python
+.. |PyPI-Downloads| image:: https://img.shields.io/pypi/dm/pybnb.svg
+  :target: https://pypistats.org/packages/pybnb
