@@ -163,7 +163,9 @@ def test_example(example_name, procs):
                                       results_filename] + \
                                      options)
             else:
-                rc = subprocess.call(["mpirun", "--allow-run-as-root",
+                rc = subprocess.call(["mpirun",
+                                      "--oversubscribe",
+                                      "--allow-run-as-root",
                                       "-np", str(procs)] + \
                                      cmd + \
                                      ["--results-file",
