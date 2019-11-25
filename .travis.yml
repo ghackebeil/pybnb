@@ -6,9 +6,9 @@ env:
   global:
     - DH_ACCT_NAME=qkjqvazeqfjqftchxlgw
   matrix:
-    - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi DEPLOY=1
-    - IMAGE_NAME=python-mpi-builds:python_3.8_rc-openmpi
-    - IMAGE_NAME=python-mpi-builds:python_3.8_rc-mpich
+    - IMAGE_NAME=python-mpi-builds:python_3.8-openmpi DEPLOY=1
+    - IMAGE_NAME=python-mpi-builds:python_3.8-openmpi EXAMPLES=1
+    - IMAGE_NAME=python-mpi-builds:python_3.8-mpich   EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYTHONOPTIMIZE=1
     - IMAGE_NAME=python-mpi-builds:python_3.7-openmpi EXAMPLES=1 PYBNB_SERIALIZER='dill' PYBNB_COMPRESSION=true
