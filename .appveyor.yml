@@ -35,12 +35,12 @@ install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PYTHON%\\Library\\bin;%PATH%"
   - python --version
   - python -m pip install --upgrade pip
-  - python  -m pip --version
+  - python -m pip --version
   - python -m pip install --upgrade wheel
   - python -m wheel version
   # Microsoft MPI (piggyback off of mpi4py appveyor setup scripts)
   - git clone https://github.com/mpi4py/mpi4py.git _mpi4py_
-  - "powershell _mpi4py_\\conf\\ci\\appveyor\\install-msmpi.ps1"
+  - "powershell _mpi4py_\\.azure\\install-msmpi.ps1"
   - "SetEnvMPI.cmd"
   - "SET PATH=%MSMPI_BIN%;%PATH%"
   - "powershell Remove-Item -Path _mpi4py_ -Recurse -Force"
