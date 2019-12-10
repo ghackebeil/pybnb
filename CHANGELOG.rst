@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.7.dev0 - `master`_
-~~~~~~~~~~~~~~~~~~~~
+0.6.2 - 2019-12-09
+~~~~~~~~~~~~~~~~~~
 
-* TODO
+* Tagging with explicit support for Python 3.8 on PyPI.
+* Minor tweak to output of default option value.
 
 0.6.1 - 2019-03-29
 ~~~~~~~~~~~~~~~~~~
