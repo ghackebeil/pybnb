@@ -874,6 +874,8 @@ class Solver(object):
                                 val_ = "Queue(size=%s)" % (len(val_.nodes))
                             elif key_ == 'best_node':
                                 val_ = "Node(objective=%.7g)" % (val_.objective)
+                            elif key_ == "queue_tolerance":
+                                default_ = "<absolute-gap>"
                             log.info(' - %s: %s (default: %s)'
                                      % (key_, val_, default_))
                     if changed:
