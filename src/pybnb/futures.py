@@ -5,6 +5,7 @@ import math
 from pybnb.dispatcher import DispatcherQueueData
 from pybnb.problem import _ProblemWithSolveInfoCollection
 
+
 class _RedirectHandler(logging.Handler):
     """Redirects log messages with a WARNING level or above
     to the provided dispatcher's log."""
@@ -20,6 +21,7 @@ class _RedirectHandler(logging.Handler):
             self._dispatcher.log_error(record.getMessage())
         elif logging.CRITICAL <= record.levelno:
             self._dispatcher.log_critical(record.getMessage())
+
 
 class NestedSolver(_ProblemWithSolveInfoCollection):
     """A class for creating a nested branch-and-bound solve
@@ -53,16 +55,19 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         used when processing a work item. (default: 'depth')
     """
 
-    def __init__(self,
-                 problem,
-                 node_limit=None,
-                 time_limit=5,
-                 queue_limit=None,
-                 track_bound=True,
-                 queue_strategy="depth"):
+    def __init__(
+        self,
+        problem,
+        node_limit=None,
+        time_limit=5,
+        queue_limit=None,
+        track_bound=True,
+        queue_strategy="depth",
+    ):
         # we import from pybnb.solver here to avoid a
         # circular import reference
         from pybnb.solver import Solver
+
         self._problem = problem
         self._node_limit = node_limit
         self._time_limit = time_limit
@@ -70,8 +75,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         self._track_bound = track_bound
         self._queue_strategy = queue_strategy
         self._solver = Solver(comm=None)
-        self._log = logging.Logger(None,
-                                   level=logging.WARNING)
+        self._log = logging.Logger(None, level=logging.WARNING)
         self._convergence_checker = None
         self._best_objective = None
         self._best_node = None
@@ -80,10 +84,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         self._queue = None
         super(NestedSolver, self).__init__()
 
-    def _initialize(self,
-                    dispatcher,
-                    best_objective,
-                    disable_objective_call):
+    def _initialize(self, dispatcher, best_objective, disable_objective_call):
         assert best_objective is not None
         self._best_objective = best_objective
         self._disable_objective_call = disable_objective_call
@@ -98,7 +99,8 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         init_queue = DispatcherQueueData(
             nodes=[root],
             worst_terminal_bound=None,
-            sense=self._convergence_checker.sense)
+            sense=self._convergence_checker.sense,
+        )
         self._results = self._solver.solve(
             self._problem,
             best_objective=self._best_objective,
@@ -106,46 +108,39 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
             bound_stop=bound_stop,
             initialize_queue=init_queue,
             log=self._log,
-            absolute_gap=\
-                self._convergence_checker.absolute_gap,
-            relative_gap=\
-                self._convergence_checker.relative_gap,
-            scale_function=\
-                self._convergence_checker.scale_function,
-            queue_tolerance=\
-                self._convergence_checker.queue_tolerance,
-            branch_tolerance=\
-                self._convergence_checker.branch_tolerance,
-            comparison_tolerance=\
-                self._convergence_checker.comparison_tolerance,
-            objective_stop=\
-                self._convergence_checker.objective_stop,
+            absolute_gap=self._convergence_checker.absolute_gap,
+            relative_gap=self._convergence_checker.relative_gap,
+            scale_function=self._convergence_checker.scale_function,
+            queue_tolerance=self._convergence_checker.queue_tolerance,
+            branch_tolerance=self._convergence_checker.branch_tolerance,
+            comparison_tolerance=self._convergence_checker.comparison_tolerance,
+            objective_stop=self._convergence_checker.objective_stop,
             disable_objective_call=self._disable_objective_call,
             node_limit=self._node_limit,
             time_limit=self._time_limit,
             queue_limit=self._queue_limit,
             track_bound=self._track_bound,
             queue_strategy=self._queue_strategy,
-            disable_signal_handlers=True)
+            disable_signal_handlers=True,
+        )
         self._queue = self._solver.save_dispatcher_queue()
-        self._solve_info.add_from(
-            self._solver._global_solve_info)
+        self._solve_info.add_from(self._solver._global_solve_info)
 
     #
     # Ducktype a partial Problem interface
     #
 
-    def objective(self):                          #pragma:nocover
+    def objective(self):  # pragma:nocover
         """The solver does not call this method when it sees the
         problem implements a nested solve."""
         raise NotImplementedError()
 
-    def bound(self):                              #pragma:nocover
+    def bound(self):  # pragma:nocover
         """The solver does not call this method when it sees the
         problem implements a nested solve."""
         raise NotImplementedError()
 
-    def branch(self):                #pragma:nocover
+    def branch(self):  # pragma:nocover
         """The solver does not call this method when it sees the
         problem implements a nested solve."""
         raise NotImplementedError()
@@ -169,10 +164,7 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         self._current_node = node
         self._solve_found_best_node = False
 
-    def notify_solve_begins(self,
-                            comm,
-                            worker_comm,
-                            convergence_checker):
+    def notify_solve_begins(self, comm, worker_comm, convergence_checker):
         """Calls the notify_solve_begins() method on the
         user-provided problem and prepares for a solve."""
         self._best_objective = None
@@ -181,31 +173,22 @@ class NestedSolver(_ProblemWithSolveInfoCollection):
         self._current_node = None
         self._results = None
         self._queue = None
-        self._problem.notify_solve_begins(
-            comm,
-            worker_comm,
-            convergence_checker)
+        self._problem.notify_solve_begins(comm, worker_comm, convergence_checker)
 
     def notify_new_best_node(self, node, current):
         """Calls the notify_new_best_node() method on the
         user-provided problem and stores the best node for
         use in the next nested solve."""
-        self._best_objective = self._convergence_checker.\
-            best_objective(self._best_objective,
-                           node.objective)
+        self._best_objective = self._convergence_checker.best_objective(
+            self._best_objective, node.objective
+        )
         self._best_node = node
         self._problem.notify_new_best_node(node, current)
 
-    def notify_solve_finished(self,
-                              comm,
-                              worker_comm,
-                              results):
+    def notify_solve_finished(self, comm, worker_comm, results):
         """Calls the notify_solve_finished() method on the
         user-provided problem and does some final
         cleanup."""
         while len(self._log.handlers) > 0:
             self._log.removeHandler(self._log.handlers[0])
-        self._problem.notify_solve_finished(
-            comm,
-            worker_comm,
-            results)
+        self._problem.notify_solve_finished(comm, worker_comm, results)

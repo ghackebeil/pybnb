@@ -1,9 +1,8 @@
 import pybnb
 
-class ZeroObjectiveMax(pybnb.Problem):
 
-    def __init__(self,
-                 branching_abstol=0.001):
+class ZeroObjectiveMax(pybnb.Problem):
+    def __init__(self, branching_abstol=0.001):
         assert branching_abstol > 0
         self._branching_abstol = branching_abstol
         self._xL = 0

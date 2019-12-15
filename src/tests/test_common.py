@@ -1,21 +1,23 @@
 import math
 
-from pybnb.common import (minimize,
-                          maximize,
-                          inf,
-                          nan,
-                          QueueStrategy,
-                          _queue_strategy_to_int,
-                          _int_to_queue_strategy,
-                          SolutionStatus,
-                          _solution_status_to_int,
-                          _int_to_solution_status,
-                          TerminationCondition,
-                          _termination_condition_to_int,
-                          _int_to_termination_condition)
+from pybnb.common import (
+    minimize,
+    maximize,
+    inf,
+    nan,
+    QueueStrategy,
+    _queue_strategy_to_int,
+    _int_to_queue_strategy,
+    SolutionStatus,
+    _solution_status_to_int,
+    _int_to_solution_status,
+    TerminationCondition,
+    _termination_condition_to_int,
+    _int_to_termination_condition,
+)
+
 
 class Test(object):
-
     def test_minimize(self):
         assert minimize == 1
 
@@ -44,8 +46,7 @@ class Test(object):
         assert len(_queue_strategy_to_int) == 9
         assert len(_int_to_queue_strategy) == 9
         for val in QueueStrategy:
-            assert _int_to_queue_strategy[
-                _queue_strategy_to_int[val]] is val
+            assert _int_to_queue_strategy[_queue_strategy_to_int[val]] is val
 
     def test_SolutionStatus(self):
         assert SolutionStatus.optimal == "optimal"
@@ -58,8 +59,7 @@ class Test(object):
         assert len(_solution_status_to_int) == 6
         assert len(_int_to_solution_status) == 6
         for i, val in enumerate(SolutionStatus):
-            assert _int_to_solution_status[
-                _solution_status_to_int[val]] is val
+            assert _int_to_solution_status[_solution_status_to_int[val]] is val
 
     def test_TerminationCondition(self):
         assert TerminationCondition.optimality == "optimality"
@@ -73,5 +73,6 @@ class Test(object):
         assert len(_termination_condition_to_int) == 7
         assert len(_int_to_termination_condition) == 7
         for i, val in enumerate(TerminationCondition):
-            assert _int_to_termination_condition[
-                _termination_condition_to_int[val]] is val
+            assert (
+                _int_to_termination_condition[_termination_condition_to_int[val]] is val
+            )

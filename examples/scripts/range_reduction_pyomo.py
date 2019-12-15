@@ -19,16 +19,15 @@
 import os
 import sys
 
-examples_dir = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(examples_dir,
-                                'command_line_problems'))
+examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(examples_dir, "command_line_problems"))
 from rosenbrock_2d import Rosenbrock2D
-sys.path.remove(os.path.join(examples_dir,
-                             'command_line_problems'))
+
+sys.path.remove(os.path.join(examples_dir, "command_line_problems"))
 
 import pybnb
 from pybnb.pyomo.range_reduction import RangeReductionProblem
+
 
 class Rosenbrock2D_RangeReduction(RangeReductionProblem):
 
@@ -75,14 +74,12 @@ class Rosenbrock2D_RangeReduction(RangeReductionProblem):
     def range_reduction_solve_for_object_bound(self, x):
         """Called to perform a range reduction solve for a
         Pyomo model object"""
-        results = self.problem._ipopt.solve(self.problem._model,
-                                            load_solutions=False)
+        results = self.problem._ipopt.solve(self.problem._model, load_solutions=False)
         if str(results.solver.termination_condition) == "optimal":
             assert str(results.solver.status) == "ok"
             symbol_map = results.solution(0).symbol_map
             assert results.solution(0).default_variable_value is None
-            return results.solution(0).\
-                variable[symbol_map.getSymbol(x)]['Value']
+            return results.solution(0).variable[symbol_map.getSymbol(x)]["Value"]
 
     def range_reduction_model_cleanup(self):
         """Called after range reduction has finished to
@@ -91,16 +88,11 @@ class Rosenbrock2D_RangeReduction(RangeReductionProblem):
         # nothing to do for this problem
         pass
 
-    def range_reduction_process_bounds(self,
-                                       objects,
-                                       lower_bounds,
-                                       upper_bounds):
+    def range_reduction_process_bounds(self, objects, lower_bounds, upper_bounds):
         """Called to process the bounds obtained by the
         range reduction solves"""
         changed_cnt = 0
-        for lb, ub, var in zip(lower_bounds,
-                               upper_bounds,
-                               objects):
+        for lb, ub, var in zip(lower_bounds, upper_bounds, objects):
             changed = False
             if lb > var.lb + self.improved_abstol:
                 var.lb = lb
@@ -113,41 +105,47 @@ class Rosenbrock2D_RangeReduction(RangeReductionProblem):
         self.problem.rebuild_convex_envelopes()
         return False
 
+
 if __name__ == "__main__":
     import argparse
 
     comm = None
     try:
         import mpi4py.MPI
+
         comm = mpi4py.MPI.COMM_WORLD
     except ImportError:
         pass
 
     parser = argparse.ArgumentParser(
-        description=("Run parallel branch and bound "
-                     "with optimality-based range reduction "
-                     "on the first few nodes"))
-    parser.add_argument("--results-filename", type=str, default=None,
-                        help=("When set, saves the solver results into a "
-                              "YAML-formated file with the given name."))
+        description=(
+            "Run parallel branch and bound "
+            "with optimality-based range reduction "
+            "on the first few nodes"
+        )
+    )
+    parser.add_argument(
+        "--results-filename",
+        type=str,
+        default=None,
+        help=(
+            "When set, saves the solver results into a "
+            "YAML-formated file with the given name."
+        ),
+    )
     args = parser.parse_args()
 
-    problem = Rosenbrock2D(xL=-25, xU=25,
-                           yL=-25 ,yU=25)
+    problem = Rosenbrock2D(xL=-25, xU=25, yL=-25, yU=25)
 
     # do parallel bounds tightening on the
     # first 7 nodes that are processed
-    obrr = Rosenbrock2D_RangeReduction(
-        problem,
-        comm=comm)
+    obrr = Rosenbrock2D_RangeReduction(problem, comm=comm)
 
     queue = None
     best_node = None
     if (comm is None) or (comm.rank == 0):
         opt_obrr = pybnb.Solver(comm=None)
-        results = opt_obrr.solve(obrr,
-                                 node_limit=7,
-                                 log_interval_seconds=0)
+        results = opt_obrr.solve(obrr, node_limit=7, log_interval_seconds=0)
         queue = opt_obrr.save_dispatcher_queue()
         best_node = results.best_node
     else:
@@ -156,10 +154,12 @@ if __name__ == "__main__":
 
     # continue the solve in parallel, without bounds
     # tightening on the remaining nodes
-    results = pybnb.solve(problem,
-                          comm=comm,
-                          relative_gap=1e-4,
-                          dispatcher_rank=0,
-                          best_node=best_node,
-                          initialize_queue=queue,
-                          results_filename=args.results_filename)
+    results = pybnb.solve(
+        problem,
+        comm=comm,
+        relative_gap=1e-4,
+        dispatcher_rank=0,
+        best_node=best_node,
+        initialize_queue=queue,
+        results_filename=args.results_filename,
+    )

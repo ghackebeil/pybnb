@@ -7,17 +7,18 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 from typing import List, Dict
 import enum
 
-minimize = 1 # type: int
+minimize = 1  # type: int
 """The objective sense defining a minimization problem."""
 
-maximize = -1 # type: int
+maximize = -1  # type: int
 """The objective sense defining a maximization problem."""
 
-inf = float("inf") # type: float
+inf = float("inf")  # type: float
 """A floating point constant set to ``float('inf')``."""
 
-nan = float("nan") # type: float
+nan = float("nan")  # type: float
 """A floating point constant set to ``float('nan')``."""
+
 
 @enum.unique
 class QueueStrategy(str, enum.Enum):
@@ -54,14 +55,16 @@ class QueueStrategy(str, enum.Enum):
     assign a priority to all nodes returned from the
     :func:`branch <pybnb.problem.Problem.branch>`
     method on their problem."""
-_queue_strategy_to_int = {} # type: Dict[QueueStrategy, int]
-_int_to_queue_strategy = [] # type: List[QueueStrategy]
-for _i_qs, _val_qs in enumerate(sorted(QueueStrategy,
-                                 key=lambda v: v.value)):
+
+
+_queue_strategy_to_int = {}  # type: Dict[QueueStrategy, int]
+_int_to_queue_strategy = []  # type: List[QueueStrategy]
+for _i_qs, _val_qs in enumerate(sorted(QueueStrategy, key=lambda v: v.value)):
     _queue_strategy_to_int[_val_qs] = _i_qs
     _int_to_queue_strategy.append(_val_qs)
 del _i_qs
 del _val_qs
+
 
 @enum.unique
 class SolutionStatus(str, enum.Enum):
@@ -93,14 +96,16 @@ class SolutionStatus(str, enum.Enum):
     unknown = "unknown"
     """Indicates that the global bound is finite, but no
     feasible (finite) objective was found."""
-_solution_status_to_int = {} # type: Dict[SolutionStatus, int]
-_int_to_solution_status = [] # type: List[SolutionStatus]
-for _i_ss, _val_ss in enumerate(sorted(SolutionStatus,
-                                 key=lambda v: v.value)):
+
+
+_solution_status_to_int = {}  # type: Dict[SolutionStatus, int]
+_int_to_solution_status = []  # type: List[SolutionStatus]
+for _i_ss, _val_ss in enumerate(sorted(SolutionStatus, key=lambda v: v.value)):
     _solution_status_to_int[_val_ss] = _i_ss
     _int_to_solution_status.append(_val_ss)
 del _i_ss
 del _val_ss
+
 
 @enum.unique
 class TerminationCondition(str, enum.Enum):
@@ -131,10 +136,11 @@ class TerminationCondition(str, enum.Enum):
     interrupted = "interrupted"
     """Solve termination was initiated by SIGINT or SIGUSR
     signal event."""
-_termination_condition_to_int = {} # type: Dict[TerminationCondition, int]
-_int_to_termination_condition = [] # type: List[TerminationCondition]
-for _i_tc, _val_tc in enumerate(sorted(TerminationCondition,
-                                 key=lambda v: v.value)):
+
+
+_termination_condition_to_int = {}  # type: Dict[TerminationCondition, int]
+_int_to_termination_condition = []  # type: List[TerminationCondition]
+for _i_tc, _val_tc in enumerate(sorted(TerminationCondition, key=lambda v: v.value)):
     _termination_condition_to_int[_val_tc] = _i_tc
     _int_to_termination_condition.append(_val_tc)
 del _i_tc

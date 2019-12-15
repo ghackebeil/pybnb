@@ -17,15 +17,18 @@ if not six.PY2:
 else:
     import cPickle as pickle
 
-_serializer_modules = {} # type: Dict[str, Optional[ModuleType]]
+_serializer_modules = {}  # type: Dict[str, Optional[ModuleType]]
 _serializer_modules["pickle"] = pickle
 _serializer_modules["dill"] = None
+
 
 def _get_dill():
     assert config.SERIALIZER == "dill"
     import dill
+
     _serializer_modules["dill"] = dill
     return dill
+
 
 def dumps(obj):
     """Return the serialized representation of the object as
@@ -34,17 +37,17 @@ def dumps(obj):
     try:
         mod = _serializer_modules[config.SERIALIZER]
     except KeyError:
-        raise ValueError("Invalid serializer '%s'. "
-                         "Valid choices are: ['pickle', 'dill']"
-                         % (config.SERIALIZER))
+        raise ValueError(
+            "Invalid serializer '%s'. "
+            "Valid choices are: ['pickle', 'dill']" % (config.SERIALIZER)
+        )
     if mod is None:
         mod = _get_dill()
-    data = mod.dumps(
-        obj,
-        protocol=config.SERIALIZER_PROTOCOL_VERSION)
+    data = mod.dumps(obj, protocol=config.SERIALIZER_PROTOCOL_VERSION)
     if config.COMPRESSION:
         data = zlib.compress(data)
     return data
+
 
 def loads(data):
     """Read and return an object from the given serialized
@@ -53,52 +56,57 @@ def loads(data):
     try:
         mod = _serializer_modules[config.SERIALIZER]
     except KeyError:
-        raise ValueError("Invalid serializer '%s'. "
-                         "Valid choices are: ['pickle', 'dill']"
-                         % (config.SERIALIZER))
+        raise ValueError(
+            "Invalid serializer '%s'. "
+            "Valid choices are: ['pickle', 'dill']" % (config.SERIALIZER)
+        )
     if mod is None:
         mod = _get_dill()
     if config.COMPRESSION:
         data = zlib.decompress(data)
     return mod.loads(data)
 
+
 class _SerializedNode(object):
     """A helper object used by the distributed dispatcher
     for lightweight handling of serialized nodes."""
-    __slots__ = ("objective",
-                 "bound",
-                 "tree_depth",
-                 "queue_priority",
-                 "_uuid",
-                 "data")
+
+    __slots__ = ("objective", "bound", "tree_depth", "queue_priority", "_uuid", "data")
+
     def __init__(self, slots):
-        (self.objective,
-         self.bound,
-         self.tree_depth,
-         self.queue_priority,
-         self._uuid,
-         self.data) = slots
+        (
+            self.objective,
+            self.bound,
+            self.tree_depth,
+            self.queue_priority,
+            self._uuid,
+            self.data,
+        ) = slots
 
     def _generate_uuid(self):
         self._uuid = uuid.uuid4().hex
 
     @property
     def slots(self):
-        return (self.objective,
-                self.bound,
-                self.tree_depth,
-                self.queue_priority,
-                self._uuid,
-                self.data)
+        return (
+            self.objective,
+            self.bound,
+            self.tree_depth,
+            self.queue_priority,
+            self._uuid,
+            self.data,
+        )
 
     @staticmethod
     def to_slots(node):
-        return (node.objective,
-                node.bound,
-                node.tree_depth,
-                node.queue_priority,
-                node._uuid,
-                dumps(node.state))
+        return (
+            node.objective,
+            node.bound,
+            node.tree_depth,
+            node.queue_priority,
+            node._uuid,
+            dumps(node.state),
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -107,14 +115,17 @@ class _SerializedNode(object):
     @staticmethod
     def restore_node(slots):
         node = Node()
-        (node.objective,
-         node.bound,
-         node.tree_depth,
-         node.queue_priority,
-         node._uuid,
-         node.state) = slots
+        (
+            node.objective,
+            node.bound,
+            node.tree_depth,
+            node.queue_priority,
+            node._uuid,
+            node.state,
+        ) = slots
         node.state = loads(node.state)
         return node
+
 
 class Node(object):
     """A branch-and-bound node that stores problem state.
@@ -132,12 +143,8 @@ class Node(object):
     state
         The user specified node state.
     """
-    __slots__ = ("objective",
-                 "bound",
-                 "tree_depth",
-                 "queue_priority",
-                 "_uuid",
-                 "state")
+
+    __slots__ = ("objective", "bound", "tree_depth", "queue_priority", "_uuid", "state")
 
     def __init__(self):
         self.objective = None
@@ -158,16 +165,15 @@ class Node(object):
             "needs to be a numpy array. The node state "
             "must be serialize-able using pickle or dill "
             "in order to be compatible with the MPI-based "
-            "parallel solver.")
+            "parallel solver."
+        )
 
     def __str__(self):
-        out = \
-            ("Node(objective=%s,\n"
-             "     bound=%s,\n"
-             "     tree_depth=%s)"
-             % (self.objective,
-                self.bound,
-                self.tree_depth))
+        out = (
+            "Node(objective=%s,\n"
+            "     bound=%s,\n"
+            "     tree_depth=%s)" % (self.objective, self.bound, self.tree_depth)
+        )
         return out
 
     def new_child(self):

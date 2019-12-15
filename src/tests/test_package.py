@@ -5,9 +5,11 @@ import pybnb
 is_pypy = False
 try:
     import __pypy__
+
     is_pypy = True
 except ImportError:
     is_pypy = False
+
 
 class Test(object):
 

@@ -1,10 +1,8 @@
 import pybnb
 
-class InfeasibleMax(pybnb.Problem):
 
-    def __init__(self,
-                 branching_abstol=0.001,
-                 fixed_objective=None):
+class InfeasibleMax(pybnb.Problem):
+    def __init__(self, branching_abstol=0.001, fixed_objective=None):
         if fixed_objective is None:
             fixed_objective = self.infeasible_objective()
         assert branching_abstol > 0
@@ -28,7 +26,7 @@ class InfeasibleMax(pybnb.Problem):
         if delta < 0.01:
             return self.infeasible_objective()
         else:
-            return -1.0/delta
+            return -1.0 / delta
 
     def save_state(self, node):
         node.state = (self._xL, self._xU)

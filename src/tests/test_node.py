@@ -1,19 +1,16 @@
 import pytest
 
 from pybnb.configuration import config
-from pybnb.node import (loads,
-                        dumps,
-                        _SerializedNode,
-                        Node)
+from pybnb.node import loads, dumps, _SerializedNode, Node
+
 
 class TestNode(object):
-
     def test_bad_serializer(self):
         orig = config.SERIALIZER
         config.SERIALIZER = "_not_dill_or_pickle_"
         try:
             with pytest.raises(ValueError):
-                loads(b'')
+                loads(b"")
             with pytest.raises(ValueError):
                 dumps(None)
         finally:
@@ -50,7 +47,7 @@ class TestNode(object):
         node.objective = 1
         node.bound = -1
         node.queue_priority = 5
-        node.state = 'a'
+        node.state = "a"
         node = node.new_child()
         assert node.objective == 1
         assert node.bound == -1
@@ -63,22 +60,24 @@ class TestNode(object):
         node.objective = -1
         node.bound = -2
         node.tree_depth = 3
-        node.queue_priority = (1,2,3)
-        node.state = 'a'
-        assert str(node) == \
-            """\
+        node.queue_priority = (1, 2, 3)
+        node.state = "a"
+        assert (
+            str(node)
+            == """\
 Node(objective=-1,
      bound=-2,
      tree_depth=3)"""
+        )
 
     def test_serialization(self):
         node = Node()
         node.objective = 0.0
         node.bound = 1.0
         node.tree_depth = -1
-        node.queue_priority = (1,2,3)
+        node.queue_priority = (1, 2, 3)
         node._uuid = None
-        node.state = 'a'
+        node.state = "a"
         s = _SerializedNode.from_node(node)
         assert s.objective == node.objective
         assert s.bound == node.bound

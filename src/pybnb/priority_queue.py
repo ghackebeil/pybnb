@@ -10,12 +10,11 @@ import collections
 import heapq
 import math
 
-from pybnb.common import (minimize,
-                          maximize,
-                          inf)
+from pybnb.common import minimize, maximize, inf
 
 from sortedcontainers import SortedList
 import six
+
 
 class _NoThreadingMaxPriorityFirstQueue(object):
     """A simple priority queue implementation that is not
@@ -24,6 +23,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
 
     This queue implementation is not allowed to store None.
     """
+
     requires_priority = True
 
     def __init__(self):
@@ -31,7 +31,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         self._heap = []
 
     def _negate(self, priority):
-        if hasattr(priority, '__neg__'):
+        if hasattr(priority, "__neg__"):
             return -priority
         else:
             return tuple(-v for v in priority)
@@ -72,8 +72,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         cnt = self._count
         self._count += 1
         if len(self._heap) > 0:
-            item_ = _push_pop_(self._heap,
-                               (self._negate(priority), cnt, item))[2]
+            item_ = _push_pop_(self._heap, (self._negate(priority), cnt, item))[2]
             return cnt, item_
         else:
             return cnt, item
@@ -110,7 +109,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
             elif not include_counters:
                 removed.append(item)
             else:
-                removed.append((cnt,item))
+                removed.append((cnt, item))
         heapq.heapify(heap_new)
         self._heap = heap_new
         return removed
@@ -118,8 +117,9 @@ class _NoThreadingMaxPriorityFirstQueue(object):
     def items(self):
         """Iterates over the queued items in arbitrary order
         without modifying the queue."""
-        for _,_,item in self._heap:
+        for _, _, item in self._heap:
             yield item
+
 
 class _NoThreadingFIFOQueue(object):
     """A simple first-in, first-out queue implementation
@@ -127,6 +127,7 @@ class _NoThreadingFIFOQueue(object):
 
     This queue implementation is not allowed to store None.
     """
+
     requires_priority = False
 
     def __init__(self):
@@ -205,15 +206,16 @@ class _NoThreadingFIFOQueue(object):
             elif not include_counters:
                 removed.append(item)
             else:
-                removed.append((cnt,item))
+                removed.append((cnt, item))
         self._deque = deque_new
         return removed
 
     def items(self):
         """Iterates over the queued items in arbitrary order
         without modifying the queue."""
-        for _,item in self._deque:
+        for _, item in self._deque:
             yield item
+
 
 class _NoThreadingLIFOQueue(object):
     """A simple last-in, first-out queue implementation
@@ -221,6 +223,7 @@ class _NoThreadingLIFOQueue(object):
 
     This queue implementation is not allowed to store None.
     """
+
     requires_priority = False
 
     def __init__(self):
@@ -293,28 +296,29 @@ class _NoThreadingLIFOQueue(object):
             elif not include_counters:
                 removed.append(item)
             else:
-                removed.append((cnt,item))
+                removed.append((cnt, item))
         self._items = items_new
         return removed
 
     def items(self):
         """Iterates over the queued items in arbitrary order
         without modifying the queue."""
-        for _,item in self._items:
+        for _, item in self._items:
             yield item
+
 
 class IPriorityQueue(object):
     """The abstract interface for priority queues that store
     node data for the dispatcher."""
 
     def __init__(self, *args, **kwds):
-        raise NotImplementedError                 #pragma:nocover
+        raise NotImplementedError  # pragma:nocover
 
-    def size(self):                               #pragma:nocover
+    def size(self):  # pragma:nocover
         """Returns the size of the queue."""
         raise NotImplementedError
 
-    def put(self, node):                          #pragma:nocover
+    def put(self, node):  # pragma:nocover
         """Puts an node in the queue, possibly updating the
         value of :attr:`queue_priority <pybnb.node.Node.queue_priority>`,
         depending on the queue implementation. This method
@@ -322,17 +326,17 @@ class IPriorityQueue(object):
         put."""
         raise NotImplementedError()
 
-    def get(self):                                #pragma:nocover
+    def get(self):  # pragma:nocover
         """Returns the next node in the queue. If the queue
         is empty, returns None."""
         raise NotImplementedError()
 
-    def bound(self):                              #pragma:nocover
+    def bound(self):  # pragma:nocover
         """Returns the weakest bound of all nodes in the
         queue. If the queue is empty, returns None."""
         raise NotImplementedError()
 
-    def filter(self, func):                       #pragma:nocover
+    def filter(self, func):  # pragma:nocover
         """Removes nodes from the queue for which
         `func(node)` returns False. The list of nodes
         removed is returned. If the queue is empty or no
@@ -340,10 +344,11 @@ class IPriorityQueue(object):
         empty."""
         raise NotImplementedError()
 
-    def items(self):                              #pragma:nocover
+    def items(self):  # pragma:nocover
         """Iterates over the queued nodes in arbitrary order
         without modifying the queue."""
         raise NotImplementedError()
+
 
 class WorstBoundFirstPriorityQueue(IPriorityQueue):
     """A priority queue implementation that serves nodes
@@ -360,9 +365,7 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
         argument is ignored.
     """
 
-    def __init__(self,
-                 sense,
-                 track_bound):
+    def __init__(self, sense, track_bound):
         assert sense in (minimize, maximize)
         self._sense = sense
         self._queue = _NoThreadingMaxPriorityFirstQueue()
@@ -381,9 +384,7 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
         return self._queue.size()
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     self._sense,
-                                                     None)
+        node.queue_priority = self.generate_priority(node, self._sense, None)
         return self._queue.put(node, node.queue_priority)
 
     def get(self):
@@ -401,6 +402,7 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
     def items(self):
         return self._queue.items()
 
+
 class CustomPriorityQueue(IPriorityQueue):
     """A priority queue implementation that can handle
     custom node priorities. It uses an additional data
@@ -416,10 +418,9 @@ class CustomPriorityQueue(IPriorityQueue):
         bound.
     """
 
-    def __init__(self,
-                 sense,
-                 track_bound,
-                 _queue_type_=_NoThreadingMaxPriorityFirstQueue):
+    def __init__(
+        self, sense, track_bound, _queue_type_=_NoThreadingMaxPriorityFirstQueue
+    ):
         assert sense in (minimize, maximize)
         self._sense = sense
         self._queue = _queue_type_()
@@ -481,9 +482,7 @@ class CustomPriorityQueue(IPriorityQueue):
     def filter(self, func):
         removed = []
         if self._sorted_by_bound is not None:
-            for cnt, node in self._queue.filter(
-                    func,
-                    include_counters=True):
+            for cnt, node in self._queue.filter(func, include_counters=True):
                 removed.append(node)
                 bound = node.bound
                 if self._sense == maximize:
@@ -491,14 +490,13 @@ class CustomPriorityQueue(IPriorityQueue):
                 else:
                     self._sorted_by_bound.remove((bound, cnt, node))
         else:
-            for cnt, node in self._queue.filter(
-                    func,
-                    include_counters=True):
+            for cnt, node in self._queue.filter(func, include_counters=True):
                 removed.append(node)
         return removed
 
     def items(self):
         return self._queue.items()
+
 
 class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes
@@ -519,10 +517,9 @@ class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
             return objective
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     self._sense,
-                                                     None)
+        node.queue_priority = self.generate_priority(node, self._sense, None)
         return super(BestObjectiveFirstPriorityQueue, self).put(node)
+
 
 class BreadthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -538,10 +535,9 @@ class BreadthFirstPriorityQueue(CustomPriorityQueue):
         return -node.tree_depth
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     None,
-                                                     None)
+        node.queue_priority = self.generate_priority(node, None, None)
         return super(BreadthFirstPriorityQueue, self).put(node)
+
 
 class DepthFirstPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -557,10 +553,9 @@ class DepthFirstPriorityQueue(CustomPriorityQueue):
         return node.tree_depth
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     None,
-                                                     None)
+        node.queue_priority = self.generate_priority(node, None, None)
         return super(DepthFirstPriorityQueue, self).put(node)
+
 
 class FIFOQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -570,25 +565,21 @@ class FIFOQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def __init__(self,
-                 sense,
-                 track_bound):
+    def __init__(self, sense, track_bound):
         super(FIFOQueue, self).__init__(
-            sense,
-            track_bound,
-            _queue_type_=_NoThreadingFIFOQueue)
+            sense, track_bound, _queue_type_=_NoThreadingFIFOQueue
+        )
 
     @staticmethod
     def generate_priority(node, sense, queue):
         return -queue._count
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(None,
-                                                     None,
-                                                     self._queue)
+        node.queue_priority = self.generate_priority(None, None, self._queue)
         cnt = super(FIFOQueue, self).put(node)
         assert node.queue_priority == -cnt
         return cnt
+
 
 class LIFOQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes in
@@ -598,25 +589,21 @@ class LIFOQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def __init__(self,
-                 sense,
-                 track_bound):
+    def __init__(self, sense, track_bound):
         super(LIFOQueue, self).__init__(
-            sense,
-            track_bound,
-            _queue_type_=_NoThreadingLIFOQueue)
+            sense, track_bound, _queue_type_=_NoThreadingLIFOQueue
+        )
 
     @staticmethod
     def generate_priority(node, sense, queue):
         return queue._count
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(None,
-                                                     None,
-                                                     self._queue)
+        node.queue_priority = self.generate_priority(None, None, self._queue)
         cnt = super(LIFOQueue, self).put(node)
         assert node.queue_priority == cnt
         return cnt
+
 
 class RandomPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that assigns
@@ -631,8 +618,9 @@ class RandomPriorityQueue(CustomPriorityQueue):
         return random.random()
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(None,None,None)
+        node.queue_priority = self.generate_priority(None, None, None)
         return super(RandomPriorityQueue, self).put(node)
+
 
 class LocalGapPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes
@@ -656,10 +644,9 @@ class LocalGapPriorityQueue(CustomPriorityQueue):
         return gap
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node,
-                                                     self._sense,
-                                                     None)
+        node.queue_priority = self.generate_priority(node, self._sense, None)
         return super(LocalGapPriorityQueue, self).put(node)
+
 
 class LexicographicPriorityQueue(CustomPriorityQueue):
     """A priority queue implementation that serves nodes
@@ -670,26 +657,24 @@ class LexicographicPriorityQueue(CustomPriorityQueue):
         The objective sense for the problem.
     """
 
-    def __init__(self,
-                 queue_types,
-                 sense,
-                 track_bound):
+    def __init__(self, queue_types, sense, track_bound):
         self._queue_types = tuple(queue_types)
         assert len(self._queue_types)
-        super(LexicographicPriorityQueue, self).__init__(sense,
-                                                         track_bound)
+        super(LexicographicPriorityQueue, self).__init__(sense, track_bound)
 
     def _generate_priority(self, node):
-        return tuple(qt.generate_priority(node,
-                                          self._sense,
-                                          self._queue)
-                     for qt in self._queue_types)
+        return tuple(
+            qt.generate_priority(node, self._sense, self._queue)
+            for qt in self._queue_types
+        )
 
     def put(self, node):
         node.queue_priority = self._generate_priority(node)
         return super(LexicographicPriorityQueue, self).put(node)
 
-_registered_queue_types = {} # type: Dict[str, Type[IPriorityQueue]]
+
+_registered_queue_types = {}  # type: Dict[str, Type[IPriorityQueue]]
+
 
 def PriorityQueueFactory(name, *args, **kwds):
     # type: (str, Any, Any) -> IPriorityQueue
@@ -697,52 +682,45 @@ def PriorityQueueFactory(name, *args, **kwds):
     registered under the given name."""
     if isinstance(name, six.string_types):
         if name not in _registered_queue_types:
-            raise ValueError("invalid queue type: %s"
-                             % (name))
+            raise ValueError("invalid queue type: %s" % (name))
         return _registered_queue_types[name](*args, **kwds)
     else:
         names = []
         for n_ in name:
             if n_ not in _registered_queue_types:
-                raise ValueError("invalid queue type: %s"
-                                 % (n_))
-            if n_ == 'custom':
-                raise ValueError("'custom' queue type not "
-                                 "allowed when defining a "
-                                 "lexicographic queue strategy")
+                raise ValueError("invalid queue type: %s" % (n_))
+            if n_ == "custom":
+                raise ValueError(
+                    "'custom' queue type not "
+                    "allowed when defining a "
+                    "lexicographic queue strategy"
+                )
             names.append(_registered_queue_types[n_])
         if len(names) == 0:
-            raise ValueError("Can not define lexicographic queue "
-                             "strategy with empty list")
+            raise ValueError(
+                "Can not define lexicographic queue " "strategy with empty list"
+            )
         return LexicographicPriorityQueue(names, *args, **kwds)
+
 
 def register_queue_type(name, cls):
     # type: (str, Type[IPriorityQueue]) -> None
     """Registers a new priority queue class with the
     PriorityQueueFactory."""
-    if (name in _registered_queue_types) and \
-       (_registered_queue_types[name] is not cls):
+    if (name in _registered_queue_types) and (_registered_queue_types[name] is not cls):
         raise ValueError(
             "The name '%s' has already been registered"
-            "for priority queue type '%s'"
-            % (name, cls))
+            "for priority queue type '%s'" % (name, cls)
+        )
     _registered_queue_types[name] = cls
 
-register_queue_type('bound',
-                    WorstBoundFirstPriorityQueue)
-register_queue_type('custom',
-                    CustomPriorityQueue)
-register_queue_type('objective',
-                    BestObjectiveFirstPriorityQueue)
-register_queue_type('breadth',
-                    BreadthFirstPriorityQueue)
-register_queue_type('depth',
-                    DepthFirstPriorityQueue)
-register_queue_type('fifo',
-                    FIFOQueue)
-register_queue_type('lifo',
-                    LIFOQueue)
-register_queue_type('random',
-                    RandomPriorityQueue)
-register_queue_type('local_gap',
-                    LocalGapPriorityQueue)
+
+register_queue_type("bound", WorstBoundFirstPriorityQueue)
+register_queue_type("custom", CustomPriorityQueue)
+register_queue_type("objective", BestObjectiveFirstPriorityQueue)
+register_queue_type("breadth", BreadthFirstPriorityQueue)
+register_queue_type("depth", DepthFirstPriorityQueue)
+register_queue_type("fifo", FIFOQueue)
+register_queue_type("lifo", LIFOQueue)
+register_queue_type("random", RandomPriorityQueue)
+register_queue_type("local_gap", LocalGapPriorityQueue)

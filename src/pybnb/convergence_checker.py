@@ -7,13 +7,12 @@ from __future__ import division
 
 import math
 
-from pybnb.common import (minimize,
-                          maximize,
-                          inf,
-                          TerminationCondition)
+from pybnb.common import minimize, maximize, inf, TerminationCondition
+
 
 class _auto_queue_tolerance(object):
     pass
+
 
 def compute_absolute_gap(sense, bound, objective):
     """Returns the absolute gap between the bound and
@@ -23,14 +22,12 @@ def compute_absolute_gap(sense, bound, objective):
         return 0.0
     elif math.isinf(bound) or math.isinf(objective):
         if sense == minimize:
-            if (bound == -inf) or \
-               (objective == inf):
+            if (bound == -inf) or (objective == inf):
                 return inf
             else:
                 return -inf
         else:
-            if (bound == inf) or \
-               (objective == -inf):
+            if (bound == inf) or (objective == -inf):
                 return inf
             else:
                 return -inf
@@ -41,6 +38,7 @@ def compute_absolute_gap(sense, bound, objective):
             gap = bound - objective
         return gap
 
+
 def _scale_absolute_gap(gap, scale):
     """Convert an absolute gap to a relative gap with the
     given scaling factor."""
@@ -49,6 +47,7 @@ def _scale_absolute_gap(gap, scale):
         return gap / scale
     else:
         return gap
+
 
 def _default_scale(bound, objective):
     """`max{1.0,|objective|}`"""
@@ -61,17 +60,15 @@ def _default_scale(bound, objective):
     else:
         return 1.0
 
-def compute_relative_gap(sense,
-                         bound,
-                         objective,
-                         scale=_default_scale):
+
+def compute_relative_gap(sense, bound, objective, scale=_default_scale):
     """Returns the relative gap between the bound and
     the objective, respecting the sign relative to the
     objective sense of this problem."""
-    return _scale_absolute_gap(compute_absolute_gap(sense,
-                                                    bound,
-                                                    objective),
-                               scale(bound, objective))
+    return _scale_absolute_gap(
+        compute_absolute_gap(sense, bound, objective), scale(bound, objective)
+    )
+
 
 class ConvergenceChecker(object):
     """A class used to check convergence.
@@ -154,28 +151,33 @@ class ConvergenceChecker(object):
         as soon as a finite objective is found.
         (default: None)
     """
-    __slots__ = ("sense",
-                 "absolute_gap",
-                 "relative_gap",
-                 "scale_function",
-                 "queue_tolerance",
-                 "branch_tolerance",
-                 "comparison_tolerance",
-                 "objective_stop",
-                 "bound_stop",
-                 "infeasible_objective",
-                 "unbounded_objective")
 
-    def __init__(self,
-                 sense,
-                 absolute_gap=0,
-                 relative_gap=None,
-                 scale_function=_default_scale,
-                 queue_tolerance=_auto_queue_tolerance,
-                 branch_tolerance=0,
-                 comparison_tolerance=0,
-                 objective_stop=None,
-                 bound_stop=None):
+    __slots__ = (
+        "sense",
+        "absolute_gap",
+        "relative_gap",
+        "scale_function",
+        "queue_tolerance",
+        "branch_tolerance",
+        "comparison_tolerance",
+        "objective_stop",
+        "bound_stop",
+        "infeasible_objective",
+        "unbounded_objective",
+    )
+
+    def __init__(
+        self,
+        sense,
+        absolute_gap=0,
+        relative_gap=None,
+        scale_function=_default_scale,
+        queue_tolerance=_auto_queue_tolerance,
+        branch_tolerance=0,
+        comparison_tolerance=0,
+        objective_stop=None,
+        bound_stop=None,
+    ):
         self.sense = sense
         if self.sense == minimize:
             self.infeasible_objective = inf
@@ -187,32 +189,38 @@ class ConvergenceChecker(object):
         self.absolute_gap = None
         if absolute_gap is not None:
             self.absolute_gap = float(absolute_gap)
-            assert (self.absolute_gap >= 0) and \
-                (not math.isinf(self.absolute_gap))
+            assert (self.absolute_gap >= 0) and (not math.isinf(self.absolute_gap))
         self.relative_gap = None
         if relative_gap is not None:
             self.relative_gap = float(relative_gap)
-            assert self.relative_gap >= 0 and \
-                (not math.isinf(self.relative_gap))
+            assert self.relative_gap >= 0 and (not math.isinf(self.relative_gap))
         self.scale_function = scale_function
         if queue_tolerance is _auto_queue_tolerance:
             queue_tolerance = self.absolute_gap
-        self.queue_tolerance = float(queue_tolerance) \
-            if (queue_tolerance is not None) else queue_tolerance
-        assert (self.queue_tolerance is None) or \
-            ((self.queue_tolerance >= 0) and \
-            (not math.isinf(self.queue_tolerance)) and \
-            (not math.isnan(self.queue_tolerance)))
-        self.branch_tolerance = float(branch_tolerance) \
-            if (branch_tolerance is not None) else branch_tolerance
-        assert (self.branch_tolerance is None) or \
-            ((self.branch_tolerance >= 0) and \
-            (not math.isinf(self.branch_tolerance)) and \
-            (not math.isnan(self.branch_tolerance)))
+        self.queue_tolerance = (
+            float(queue_tolerance) if (queue_tolerance is not None) else queue_tolerance
+        )
+        assert (self.queue_tolerance is None) or (
+            (self.queue_tolerance >= 0)
+            and (not math.isinf(self.queue_tolerance))
+            and (not math.isnan(self.queue_tolerance))
+        )
+        self.branch_tolerance = (
+            float(branch_tolerance)
+            if (branch_tolerance is not None)
+            else branch_tolerance
+        )
+        assert (self.branch_tolerance is None) or (
+            (self.branch_tolerance >= 0)
+            and (not math.isinf(self.branch_tolerance))
+            and (not math.isnan(self.branch_tolerance))
+        )
         self.comparison_tolerance = float(comparison_tolerance)
-        assert self.comparison_tolerance >= 0 and \
-            (not math.isinf(self.comparison_tolerance)) and \
-            (not math.isnan(self.comparison_tolerance))
+        assert (
+            self.comparison_tolerance >= 0
+            and (not math.isinf(self.comparison_tolerance))
+            and (not math.isnan(self.comparison_tolerance))
+        )
         self.objective_stop = None
         if objective_stop is not None:
             self.objective_stop = float(objective_stop)
@@ -224,17 +232,17 @@ class ConvergenceChecker(object):
             assert self.bound_stop != self.infeasible_objective
             assert not math.isnan(self.bound_stop)
 
-    def check_termination_criteria(self,
-                                   global_bound,
-                                   best_objective):
+    def check_termination_criteria(self, global_bound, best_objective):
         """Checks if any termination criteria are met and returns
         the corresponding :class:`TerminationCondition
         <pybnb.common.TerminationCondition>` enum value;
         otherwise, `None` is returned."""
         result = None
-        if (global_bound == self.infeasible_objective) or \
-           (best_objective == self.unbounded_objective) or \
-           (self.objective_is_optimal(best_objective, global_bound)):
+        if (
+            (global_bound == self.infeasible_objective)
+            or (best_objective == self.unbounded_objective)
+            or (self.objective_is_optimal(best_objective, global_bound))
+        ):
             result = TerminationCondition.optimality
         elif self.objective_stop is not None:
             if self.objective_stop != self.infeasible_objective:
@@ -266,14 +274,13 @@ class ConvergenceChecker(object):
         relative to the absolute gap or relative gap
         settings."""
         assert bound != self.infeasible_objective
-        if (objective != self.unbounded_objective) and \
-           (objective != self.infeasible_objective):
-            gap = self.compute_absolute_gap(bound,
-                                            objective)
-            if (self.absolute_gap is not None) and \
-               (gap <= self.absolute_gap):
+        if (objective != self.unbounded_objective) and (
+            objective != self.infeasible_objective
+        ):
+            gap = self.compute_absolute_gap(bound, objective)
+            if (self.absolute_gap is not None) and (gap <= self.absolute_gap):
                 return True
-            elif (self.relative_gap is not None):
+            elif self.relative_gap is not None:
                 scale = self.scale_function(bound, objective)
                 gap = _scale_absolute_gap(gap, scale)
                 if gap <= self.relative_gap:
@@ -284,22 +291,20 @@ class ConvergenceChecker(object):
         """Returns the absolute gap between the bound and
         the objective, respecting the sign relative to the
         objective sense of this problem."""
-        return compute_absolute_gap(self.sense,
-                                    bound,
-                                    objective)
+        return compute_absolute_gap(self.sense, bound, objective)
 
     def compute_relative_gap(self, bound, objective):
         """Returns the relative gap between the bound and
         the objective, respecting the sign relative to the
         objective sense of this problem."""
-        return compute_relative_gap(self.sense,
-                                    bound,
-                                    objective,
-                                    scale=self.scale_function)
+        return compute_relative_gap(
+            self.sense, bound, objective, scale=self.scale_function
+        )
 
     def _check_eligible(self, bound, objective, tolerance):
-        if (bound == self.infeasible_objective) or \
-           (objective == self.unbounded_objective):
+        if (bound == self.infeasible_objective) or (
+            objective == self.unbounded_objective
+        ):
             return False
         if self.sense == minimize:
             delta = objective - bound
@@ -315,16 +320,12 @@ class ConvergenceChecker(object):
         """Returns True when the queue object with the given
         bound is eligible for the queue relative to the
         given objective."""
-        return self._check_eligible(bound,
-                                    objective,
-                                    self.queue_tolerance)
+        return self._check_eligible(bound, objective, self.queue_tolerance)
 
     def eligible_to_branch(self, bound, objective):
         """Returns True when the bound and objective
         are sufficiently far apart to allow branching."""
-        return self._check_eligible(bound,
-                                    objective,
-                                    self.branch_tolerance)
+        return self._check_eligible(bound, objective, self.branch_tolerance)
 
     def _check_delta(self, new, old):
         # handles the both equal and infinite case

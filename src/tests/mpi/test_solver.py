@@ -1,6 +1,4 @@
-from pybnb.common import (minimize,
-                          maximize,
-                          inf)
+from pybnb.common import minimize, maximize, inf
 from pybnb.node import Node
 from pybnb.problem import Problem
 from pybnb.solver import Solver
@@ -10,20 +8,35 @@ from .common import mpi_available
 
 from runtests.mpi import MPITest
 
+
 class DummyProblem(Problem):
     def __init__(self, sense):
         self._sense = sense
         self._notify_new_best_node_args = None
         self._notify_new_best_node_call_count = 0
-    def sense(self): return self._sense
-    def objective(self): return 0
-    def bound(self): return 0
-    def save_state(self, node): pass
-    def load_state(self, node): pass
-    def branch(self): return ()
+
+    def sense(self):
+        return self._sense
+
+    def objective(self):
+        return 0
+
+    def bound(self):
+        return 0
+
+    def save_state(self, node):
+        pass
+
+    def load_state(self, node):
+        pass
+
+    def branch(self):
+        return ()
+
     def notify_new_best_node(self, node, current):
         self._notify_new_best_node_args = (node, current)
         self._notify_new_best_node_call_count += 1
+
 
 def _test_initialize_queue(comm):
     solver = Solver(comm=comm)
@@ -31,8 +44,7 @@ def _test_initialize_queue(comm):
     # no initial queue
     for sense in (minimize, maximize):
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               queue_limit=0)
+        results = solver.solve(problem, queue_limit=0)
         assert results.solution_status == "unknown"
         assert results.termination_condition == "queue_limit"
         assert results.objective == (inf if (sense == minimize) else -inf)
@@ -68,8 +80,9 @@ def _test_initialize_queue(comm):
         else:
             assert problem._notify_new_best_node_call_count == 0
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               best_objective=(1 if (sense == minimize) else -1))
+        results = solver.solve(
+            problem, best_objective=(1 if (sense == minimize) else -1)
+        )
         assert results.solution_status == "optimal"
         assert results.termination_condition == "optimality"
         assert results.objective == 0
@@ -92,9 +105,11 @@ def _test_initialize_queue(comm):
         else:
             assert problem._notify_new_best_node_call_count == 0
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               best_objective=(1 if (sense == minimize) else -1),
-                               disable_objective_call=True)
+        results = solver.solve(
+            problem,
+            best_objective=(1 if (sense == minimize) else -1),
+            disable_objective_call=True,
+        )
         assert results.solution_status == "feasible"
         assert results.termination_condition == "queue_empty"
         assert results.objective == (1 if (sense == minimize) else -1)
@@ -106,12 +121,12 @@ def _test_initialize_queue(comm):
         assert results.best_node is None
         assert problem._notify_new_best_node_call_count == 0
         best_node_ = Node()
-        best_node_.objective = (1 if (sense == minimize) else -1)
-        best_node_._uuid = 'abcd'
+        best_node_.objective = 1 if (sense == minimize) else -1
+        best_node_._uuid = "abcd"
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               best_node=best_node_,
-                               disable_objective_call=True)
+        results = solver.solve(
+            problem, best_node=best_node_, disable_objective_call=True
+        )
         assert results.solution_status == "feasible"
         assert results.termination_condition == "queue_empty"
         assert results.objective == best_node_.objective
@@ -134,11 +149,10 @@ def _test_initialize_queue(comm):
         else:
             assert problem._notify_new_best_node_call_count == 0
         best_node_ = Node()
-        best_node_.objective = (1 if (sense == minimize) else -1)
-        best_node_._uuid = 'abcd'
+        best_node_.objective = 1 if (sense == minimize) else -1
+        best_node_._uuid = "abcd"
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               best_node=best_node_)
+        results = solver.solve(problem, best_node=best_node_)
         assert results.solution_status == "optimal"
         assert results.termination_condition == "optimality"
         assert results.objective == 0
@@ -163,15 +177,11 @@ def _test_initialize_queue(comm):
             assert problem._notify_new_best_node_call_count == 0
 
     # empty initial queue
-    queue = DispatcherQueueData(
-        nodes=[],
-        worst_terminal_bound=None,
-        sense=minimize)
+    queue = DispatcherQueueData(nodes=[], worst_terminal_bound=None, sense=minimize)
     for sense in (minimize, maximize):
         queue.sense = sense
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue)
+        results = solver.solve(problem, initialize_queue=queue)
         assert results.solution_status == "unknown"
         assert results.termination_condition == "queue_empty"
         assert results.objective == (inf if (sense == minimize) else -inf)
@@ -183,9 +193,7 @@ def _test_initialize_queue(comm):
         assert results.best_node is None
         assert problem._notify_new_best_node_call_count == 0
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue,
-                               best_objective=0)
+        results = solver.solve(problem, initialize_queue=queue, best_objective=0)
         assert results.solution_status == "feasible"
         assert results.termination_condition == "queue_empty"
         assert results.objective == 0
@@ -197,10 +205,12 @@ def _test_initialize_queue(comm):
         assert results.best_node is None
         assert problem._notify_new_best_node_call_count == 0
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue,
-                               best_objective=0,
-                               disable_objective_call=True)
+        results = solver.solve(
+            problem,
+            initialize_queue=queue,
+            best_objective=0,
+            disable_objective_call=True,
+        )
         assert results.solution_status == "feasible"
         assert results.termination_condition == "queue_empty"
         assert results.objective == 0
@@ -212,13 +222,12 @@ def _test_initialize_queue(comm):
         assert results.best_node is None
         assert problem._notify_new_best_node_call_count == 0
         best_node_ = Node()
-        best_node_.objective = (1 if (sense == minimize) else -1)
-        best_node_._uuid = 'abcd'
+        best_node_.objective = 1 if (sense == minimize) else -1
+        best_node_._uuid = "abcd"
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue,
-                               best_objective=0,
-                               best_node=best_node_)
+        results = solver.solve(
+            problem, initialize_queue=queue, best_objective=0, best_node=best_node_
+        )
         assert results.solution_status == "feasible"
         assert results.termination_condition == "queue_empty"
         assert results.objective == 0
@@ -238,13 +247,15 @@ def _test_initialize_queue(comm):
         else:
             assert problem._notify_new_best_node_call_count == 0
         best_node_ = Node()
-        best_node_.objective = (1 if (sense == minimize) else -1)
-        best_node_._uuid = 'abcd'
+        best_node_.objective = 1 if (sense == minimize) else -1
+        best_node_._uuid = "abcd"
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue,
-                               best_objective=(2 if (sense == minimize) else -2),
-                               best_node=best_node_)
+        results = solver.solve(
+            problem,
+            initialize_queue=queue,
+            best_objective=(2 if (sense == minimize) else -2),
+            best_node=best_node_,
+        )
         assert results.solution_status == "feasible"
         assert results.termination_condition == "queue_empty"
         assert results.objective == (1 if (sense == minimize) else -1)
@@ -266,21 +277,17 @@ def _test_initialize_queue(comm):
 
     # non-empty initial queue
     root = Node()
-    root._uuid = 'abcd'
+    root._uuid = "abcd"
     root.tree_depth = 0
     root.objective = 0
     root.bound = 0
-    queue = DispatcherQueueData(
-        nodes=[root],
-        worst_terminal_bound=None,
-        sense=minimize)
+    queue = DispatcherQueueData(nodes=[root], worst_terminal_bound=None, sense=minimize)
     orig_objective = queue.nodes[0].objective
     for sense in (minimize, maximize):
         queue.sense = sense
         queue.nodes[0].objective = orig_objective
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue)
+        results = solver.solve(problem, initialize_queue=queue)
         assert results.solution_status == "optimal"
         assert results.termination_condition == "optimality"
         assert results.objective == 0
@@ -304,9 +311,11 @@ def _test_initialize_queue(comm):
             assert problem._notify_new_best_node_call_count == 0
         queue.nodes[0].objective = orig_objective
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue,
-                               best_objective=(1 if (sense == minimize) else -1))
+        results = solver.solve(
+            problem,
+            initialize_queue=queue,
+            best_objective=(1 if (sense == minimize) else -1),
+        )
         assert results.solution_status == "optimal"
         assert results.termination_condition == "optimality"
         assert results.objective == 0
@@ -328,11 +337,13 @@ def _test_initialize_queue(comm):
                 assert not problem._notify_new_best_node_args[1]
         else:
             assert problem._notify_new_best_node_call_count == 0
-        queue.nodes[0].objective = (inf if (sense == minimize) else -inf)
+        queue.nodes[0].objective = inf if (sense == minimize) else -inf
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue,
-                               best_objective=(1 if (sense == minimize) else -1))
+        results = solver.solve(
+            problem,
+            initialize_queue=queue,
+            best_objective=(1 if (sense == minimize) else -1),
+        )
         assert results.solution_status == "optimal"
         assert results.termination_condition == "optimality"
         assert results.objective == 0
@@ -354,12 +365,14 @@ def _test_initialize_queue(comm):
                 assert not problem._notify_new_best_node_args[1]
         else:
             assert problem._notify_new_best_node_call_count == 0
-        queue.nodes[0].objective = (inf if (sense == minimize) else -inf)
+        queue.nodes[0].objective = inf if (sense == minimize) else -inf
         problem = DummyProblem(sense)
-        results = solver.solve(problem,
-                               initialize_queue=queue,
-                               best_objective=(1 if (sense == minimize) else -1),
-                               disable_objective_call=True)
+        results = solver.solve(
+            problem,
+            initialize_queue=queue,
+            best_objective=(1 if (sense == minimize) else -1),
+            disable_objective_call=True,
+        )
         assert results.solution_status == "feasible"
         assert results.termination_condition == "queue_empty"
         assert results.objective == (1 if (sense == minimize) else -1)
@@ -372,8 +385,10 @@ def _test_initialize_queue(comm):
         assert problem._notify_new_best_node_call_count == 0
         queue.nodes[0].objective = orig_objective
 
+
 def test_initialize_queue_nocomm():
     _test_initialize_queue(None)
+
 
 def test_solver_nocomm():
     solver = Solver(comm=None)
@@ -381,6 +396,7 @@ def test_solver_nocomm():
     assert solver.is_dispatcher
     assert solver.comm is None
     assert solver.worker_comm is None
+
 
 if mpi_available:
 
