@@ -3,8 +3,12 @@ Various utility function for MPI.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
+from typing import Optional, List, Any
 import array
+
+# used in various places where we are receiving an empty message,
+# initialization is delayed to avoid early mpi4py import
+_nothing = None # type: Optional[List[Any]]
 
 # avoids generating a deprecation warning in python 3.7
 def _array_to_string(out):
@@ -91,20 +95,20 @@ def recv_nothing(comm, status):
         receive. Otherwise, the status object that was
         created will be returned.
     """
+    global _nothing
     import mpi4py.MPI
-    if recv_nothing._nothing is None:
-        recv_nothing._nothing = [array.array("B",[]),
-                                 mpi4py.MPI.CHAR]
+    if _nothing is None:
+        _nothing = [array.array("B",[]),
+                    mpi4py.MPI.CHAR]
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
-    comm.Recv(recv_nothing._nothing,
+    comm.Recv(_nothing,
               source=status.Get_source(),
               tag=status.Get_tag(),
               status=status)
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
     return status
-recv_nothing._nothing = None
 
 def send_nothing(comm, dest, tag=0):
     """A helper function for sending an empty message
@@ -119,14 +123,14 @@ def send_nothing(comm, dest, tag=0):
     tag : int, optional
         A valid MPI tag to use for the message. (default: 0)
     """
+    global _nothing
     import mpi4py.MPI
-    if send_nothing._nothing is None:
-        send_nothing._nothing = [array.array("B",[]),
-                                 mpi4py.MPI.CHAR]
-    comm.Send(send_nothing._nothing,
+    if _nothing is None:
+        _nothing = [array.array("B",[]),
+                    mpi4py.MPI.CHAR]
+    comm.Send(_nothing,
          dest,
          tag=tag)
-send_nothing._nothing = None
 
 def recv_data(comm, status, datatype, out=None):
     """A helper function for receiving numeric or string

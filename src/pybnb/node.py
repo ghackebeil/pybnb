@@ -3,6 +3,8 @@ Branch-and-bound node implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+from types import ModuleType
+from typing import Dict, Optional
 import uuid
 import zlib
 
@@ -15,7 +17,7 @@ if not six.PY2:
 else:
     import cPickle as pickle
 
-_serializer_modules = {}
+_serializer_modules = {} # type: Dict[str, Optional[ModuleType]]
 _serializer_modules["pickle"] = pickle
 _serializer_modules["dill"] = None
 

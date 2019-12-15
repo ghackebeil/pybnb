@@ -4,6 +4,7 @@ used by the dispatcher.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+from typing import Type, Dict, Any
 import random
 import collections
 import heapq
@@ -305,6 +306,9 @@ class _NoThreadingLIFOQueue(object):
 class IPriorityQueue(object):
     """The abstract interface for priority queues that store
     node data for the dispatcher."""
+
+    def __init__(self, *args, **kwds):
+        raise NotImplementedError                 #pragma:nocover
 
     def size(self):                               #pragma:nocover
         """Returns the size of the queue."""
@@ -685,42 +689,44 @@ class LexicographicPriorityQueue(CustomPriorityQueue):
         node.queue_priority = self._generate_priority(node)
         return super(LexicographicPriorityQueue, self).put(node)
 
+_registered_queue_types = {} # type: Dict[str, Type[IPriorityQueue]]
+
 def PriorityQueueFactory(name, *args, **kwds):
+    # type: (str, Any, Any) -> IPriorityQueue
     """Returns a new instance of the priority queue type
     registered under the given name."""
     if isinstance(name, six.string_types):
-        if name not in PriorityQueueFactory._types:
+        if name not in _registered_queue_types:
             raise ValueError("invalid queue type: %s"
                              % (name))
-        return PriorityQueueFactory._types[name](*args,
-                                                 **kwds)
+        return _registered_queue_types[name](*args, **kwds)
     else:
         names = []
         for n_ in name:
-            if n_ not in PriorityQueueFactory._types:
+            if n_ not in _registered_queue_types:
                 raise ValueError("invalid queue type: %s"
                                  % (n_))
             if n_ == 'custom':
                 raise ValueError("'custom' queue type not "
                                  "allowed when defining a "
                                  "lexicographic queue strategy")
-            names.append(PriorityQueueFactory._types[n_])
+            names.append(_registered_queue_types[n_])
         if len(names) == 0:
             raise ValueError("Can not define lexicographic queue "
                              "strategy with empty list")
         return LexicographicPriorityQueue(names, *args, **kwds)
-PriorityQueueFactory._types = {}
 
 def register_queue_type(name, cls):
+    # type: (str, Type[IPriorityQueue]) -> None
     """Registers a new priority queue class with the
     PriorityQueueFactory."""
-    if (name in PriorityQueueFactory._types) and \
-       (PriorityQueueFactory._types[name] is not cls):
+    if (name in _registered_queue_types) and \
+       (_registered_queue_types[name] is not cls):
         raise ValueError(
             "The name '%s' has already been registered"
             "for priority queue type '%s'"
             % (name, cls))
-    PriorityQueueFactory._types[name] = cls
+    _registered_queue_types[name] = cls
 
 register_queue_type('bound',
                     WorstBoundFirstPriorityQueue)
