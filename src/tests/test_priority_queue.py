@@ -18,6 +18,7 @@ from pybnb.priority_queue import (
     RandomPriorityQueue,
     LocalGapPriorityQueue,
     LexicographicPriorityQueue,
+    _registered_queue_types,
     PriorityQueueFactory,
     register_queue_type,
 )
@@ -90,19 +91,19 @@ class TestFactory(object):
             PriorityQueueFactory((), minimize, True)
 
     def test_register_queue_type(self):
-        assert PriorityQueueFactory._types["bound"] is WorstBoundFirstPriorityQueue
+        assert _registered_queue_types["bound"] is WorstBoundFirstPriorityQueue
         # its okay to re-register the exact same thing
         register_queue_type("bound", WorstBoundFirstPriorityQueue)
-        assert PriorityQueueFactory._types["bound"] is WorstBoundFirstPriorityQueue
+        assert _registered_queue_types["bound"] is WorstBoundFirstPriorityQueue
         with pytest.raises(ValueError):
             register_queue_type("bound", None)
-        assert PriorityQueueFactory._types["bound"] is WorstBoundFirstPriorityQueue
-        assert "_not_a_type_" not in PriorityQueueFactory._types
+        assert _registered_queue_types["bound"] is WorstBoundFirstPriorityQueue
+        assert "_not_a_type_" not in _registered_queue_types
         try:
             register_queue_type("_not_a_type_", None)
-            assert PriorityQueueFactory._types["_not_a_type_"] is None
+            assert _registered_queue_types["_not_a_type_"] is None
         finally:
-            PriorityQueueFactory._types.pop("_not_a_type_", None)
+            _registered_queue_types.pop("_not_a_type_", None)
 
 
 class Test_NoThreadingMaxPriorityFirstQueue(object):
