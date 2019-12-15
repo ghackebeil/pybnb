@@ -520,7 +520,7 @@ class DispatcherBase(object):
         self.converger = converger
         if initialize_queue.sense != self.converger.sense:
             raise ValueError(
-                "The objective sense does not match " "that of the initial queue."
+                "The objective sense does not match that of the initial queue."
             )
         self.last_global_bound = self.converger.unbounded_objective
         self.track_bound = track_bound

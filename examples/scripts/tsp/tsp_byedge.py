@@ -131,12 +131,12 @@ if __name__ == "__main__":
     from tsp_util import parse_dense_distance_matrix, run_solve_loop
 
     parser = argparse.ArgumentParser(
-        description=("Run parallel branch and bound " "to solve an instance of TSP.")
+        description=("Run parallel branch and bound to solve an instance of TSP.")
     )
     parser.add_argument(
         "data_filename",
         type=str,
-        help=("The name of a file that stores a " "dense distance matrix."),
+        help=("The name of a file that stores a dense distance matrix."),
     )
     parser.add_argument(
         "--results-filename",

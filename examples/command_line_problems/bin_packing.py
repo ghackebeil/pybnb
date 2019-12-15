@@ -81,8 +81,8 @@ class BinPacking(pybnb.Problem):
         N = range(len(self.W))
         for i in N:
             yi = self.model.y[i]
-            assert yi.lb in (0, 1), str(yi.name) + " " + str(yi.bounds)
-            assert yi.ub in (0, 1), str(yi.name) + " " + str(yi.bounds)
+            assert yi.lb in (0, 1)
+            assert yi.ub in (0, 1)
             if yi.lb == 0:
                 if yi.ub == 1:
                     break

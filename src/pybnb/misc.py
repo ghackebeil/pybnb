@@ -493,7 +493,7 @@ def create_command_line_solver(problem, parser=None):
         import yaml
     except ImportError:  # pragma:nocover
         raise ImportError(
-            "The PyYAML module is required to " "run the command-line solver."
+            "The PyYAML module is required to run the command-line solver."
         )
     from pybnb.convergence_checker import _auto_queue_tolerance
 

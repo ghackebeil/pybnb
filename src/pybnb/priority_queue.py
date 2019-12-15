@@ -698,7 +698,7 @@ def PriorityQueueFactory(name, *args, **kwds):
             names.append(_registered_queue_types[n_])
         if len(names) == 0:
             raise ValueError(
-                "Can not define lexicographic queue " "strategy with empty list"
+                "Can not define lexicographic queue strategy with empty list"
             )
         return LexicographicPriorityQueue(names, *args, **kwds)
 
