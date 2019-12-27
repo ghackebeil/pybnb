@@ -9,6 +9,7 @@ import pickle
 
 from pybnb import __version__
 
+
 class Configuration(object):
     """The main configuration object.
 
@@ -28,10 +29,13 @@ class Configuration(object):
         The version argument passed to the
         :func:`marshal.dumps` function. (default: 2)
     """
-    __slots__ = ("SERIALIZER",
-                 "SERIALIZER_PROTOCOL_VERSION",
-                 "COMPRESSION",
-                 "MARSHAL_PROTOCOL_VERSION")
+
+    __slots__ = (
+        "SERIALIZER",
+        "SERIALIZER_PROTOCOL_VERSION",
+        "COMPRESSION",
+        "MARSHAL_PROTOCOL_VERSION",
+    )
 
     def __init__(self):
         self.reset()
@@ -54,44 +58,61 @@ class Configuration(object):
             # process environment variables
             prefix = "PYBNB_"
             for symbol in self.__slots__:
-                if prefix+symbol in os.environ:
+                if prefix + symbol in os.environ:
                     default = getattr(self, symbol)
-                    value = os.environ[prefix+symbol]
+                    value = os.environ[prefix + symbol]
                     if symbol == "COMPRESSION":
-                        if value in ("0",
-                                     "off","Off","OFF",
-                                     "no","No","NO",
-                                     "false","False","FALSE"):
+                        if value in (
+                            "0",
+                            "off",
+                            "Off",
+                            "OFF",
+                            "no",
+                            "No",
+                            "NO",
+                            "false",
+                            "False",
+                            "FALSE",
+                        ):
                             value = False
-                        elif value in ("1",
-                                       "on","On","ON",
-                                       "yes","Yes","YES",
-                                       "true","True","TRUE"):
+                        elif value in (
+                            "1",
+                            "on",
+                            "On",
+                            "ON",
+                            "yes",
+                            "Yes",
+                            "YES",
+                            "true",
+                            "True",
+                            "TRUE",
+                        ):
                             value = True
                         else:
                             raise ValueError(
                                 "invalid boolean value: %s%s=%s"
-                                % (prefix, symbol, value))
+                                % (prefix, symbol, value)
+                            )
                     else:
                         value = type(default)(value)
                     setattr(self, symbol, value)
 
     def __str__(self):
-        out =  "pybnb version: %s\n" % __version__
-        out += ("loaded from: %s\n"
-                % (os.path.dirname(__file__)))
-        out += ("python version: %s %s (%s, %s)\n"
-                % (platform.python_implementation(),
-                   platform.python_version(),
-                   platform.system(),
-                   os.name))
+        out = "pybnb version: %s\n" % __version__
+        out += "loaded from: %s\n" % (os.path.dirname(__file__))
+        out += "python version: %s %s (%s, %s)\n" % (
+            platform.python_implementation(),
+            platform.python_version(),
+            platform.system(),
+            os.name,
+        )
         out += "configuration:"
         for key in self.__slots__:
-            out += ("\n - %s: %s" % (key,
-                                     getattr(self, key)))
+            out += "\n - %s: %s" % (key, getattr(self, key))
         return out
+
 
 config = Configuration()
 
-if __name__ == "__main__":                        #pragma:nocover
+if __name__ == "__main__":  # pragma:nocover
     print(config)

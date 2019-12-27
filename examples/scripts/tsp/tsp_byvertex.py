@@ -23,8 +23,8 @@
 #
 import pybnb
 
-class TSP_ByVertex(pybnb.Problem):
 
+class TSP_ByVertex(pybnb.Problem):
     def __init__(self, dist):
         self._dist = dist
         self._N = len(dist)
@@ -45,8 +45,8 @@ class TSP_ByVertex(pybnb.Problem):
             assert return_cost != 0
             if return_cost != pybnb.inf:
                 cost = 0.0
-                for i in range(self._N-1):
-                    cost += self._dist[self._path[i]][self._path[i+1]]
+                for i in range(self._N - 1):
+                    cost += self._dist[self._path[i]][self._path[i + 1]]
                 cost += return_cost
         return cost
 
@@ -64,21 +64,25 @@ class TSP_ByVertex(pybnb.Problem):
         bound = 0
         # for the edges that are certain
         for i in range(len(self._path) - 1):
-            bound += self._dist[self._path[i]][self._path[i+1]]
+            bound += self._dist[self._path[i]][self._path[i + 1]]
         # for the last item
         last = self._path[-1]
-        tmp = [self._dist[last][v] for v in remaining
-               if ((self._dist[last][v] != pybnb.inf) and \
-                   (v != last))]
+        tmp = [
+            self._dist[last][v]
+            for v in remaining
+            if ((self._dist[last][v] != pybnb.inf) and (v != last))
+        ]
         if len(tmp) == 0:
             return self.infeasible_objective()
         bound += min(tmp)
         # for the undetermined nodes
         p = [self._path[0]] + remaining
         for r in remaining:
-            tmp = [self._dist[r][v] for v in p
-                   if ((self._dist[r][v] != pybnb.inf) and \
-                       (v != r))]
+            tmp = [
+                self._dist[r][v]
+                for v in p
+                if ((self._dist[r][v] != pybnb.inf) and (v != r))
+            ]
             if len(tmp) == 0:
                 return self.infeasible_objective()
             bound += min(tmp)
@@ -101,42 +105,44 @@ class TSP_ByVertex(pybnb.Problem):
         visited = set(self._path)
         for v in range(self._N):
             # dist[u][v] == inf means no edge
-            if (self._dist[u][v] != pybnb.inf) and \
-               (v not in visited):
+            if (self._dist[u][v] != pybnb.inf) and (v not in visited):
                 assert self._dist[u][v] != 0
                 child = pybnb.Node()
                 child.state = (self._path + [v],)
                 yield child
 
-    def notify_solve_finished(self,
-                              comm,
-                              worker_comm,
-                              results):
+    def notify_solve_finished(self, comm, worker_comm, results):
         tour = None
-        if (results.best_node is not None) and \
-           (results.best_node.state is not None):
+        if (results.best_node is not None) and (results.best_node.state is not None):
             path = results.best_node.state[0]
             route = path + [path[0]]
-            tour = {'cost': results.best_node.objective,
-                    'route': route}
+            tour = {"cost": results.best_node.objective, "route": route}
         results.tour = tour
+
 
 if __name__ == "__main__":
     import argparse
 
-    from tsp_util import (parse_dense_distance_matrix,
-                          run_solve_loop)
+    from tsp_util import parse_dense_distance_matrix, run_solve_loop
 
     parser = argparse.ArgumentParser(
-        description=("Run parallel branch and bound "
-                     "to solve an instance of TSP."))
-    parser.add_argument("data_filename", type=str,
-                        help=("The name of a file that stores a "
-                              "dense distance matrix."))
-    parser.add_argument("--results-filename", type=str, default=None,
-                        help=("When set, saves the solver results "
-                              "into a YAML-formatted file with the "
-                              "given name."))
+        description=("Run parallel branch and bound to solve an instance of TSP.")
+    )
+    parser.add_argument(
+        "data_filename",
+        type=str,
+        help=("The name of a file that stores a dense distance matrix."),
+    )
+    parser.add_argument(
+        "--results-filename",
+        type=str,
+        default=None,
+        help=(
+            "When set, saves the solver results "
+            "into a YAML-formatted file with the "
+            "given name."
+        ),
+    )
     args = parser.parse_args()
 
     dist = parse_dense_distance_matrix(args.data_filename)

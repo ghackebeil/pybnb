@@ -6,8 +6,8 @@ from pybnb.configuration import Configuration
 
 import pytest
 
-class TestConfiguration(object):
 
+class TestConfiguration(object):
     def test_str(self):
         print(_config_)
 
@@ -15,14 +15,13 @@ class TestConfiguration(object):
         config = Configuration()
         config.reset(use_environment=False)
         assert config.SERIALIZER == "pickle"
-        assert config.SERIALIZER_PROTOCOL_VERSION == \
-            pickle.HIGHEST_PROTOCOL
+        assert config.SERIALIZER_PROTOCOL_VERSION == pickle.HIGHEST_PROTOCOL
         assert not config.COMPRESSION
         assert config.MARSHAL_PROTOCOL_VERSION == 2
         env_orig = {}
         prefix = "PYBNB_"
         for symbol in Configuration.__slots__:
-            key = prefix+symbol
+            key = prefix + symbol
             if key in os.environ:
                 env_orig[key] = os.environ[key]
         try:
@@ -32,8 +31,7 @@ class TestConfiguration(object):
             os.environ["PYBNB_MARSHAL_PROTOCOL_VERSION"] = "0"
             config.reset(use_environment=False)
             assert config.SERIALIZER == "pickle"
-            assert config.SERIALIZER_PROTOCOL_VERSION == \
-                pickle.HIGHEST_PROTOCOL
+            assert config.SERIALIZER_PROTOCOL_VERSION == pickle.HIGHEST_PROTOCOL
             assert not config.COMPRESSION
             assert config.MARSHAL_PROTOCOL_VERSION == 2
             config.reset(use_environment=True)
@@ -50,7 +48,7 @@ class TestConfiguration(object):
         finally:
             # reset the environment to its original state
             for symbol in Configuration.__slots__:
-                key = prefix+symbol
+                key = prefix + symbol
                 if key in env_orig:
                     os.environ[key] = env_orig[key]
                 else:

@@ -3,17 +3,23 @@ Various utility function for MPI.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
+from typing import Optional, List, Any
 import array
+
+# used in various places where we are receiving an empty message,
+# initialization is delayed to avoid early mpi4py import
+_nothing = None  # type: Optional[List[Any]]
+
 
 # avoids generating a deprecation warning in python 3.7
 def _array_to_string(out):
     """converts an array of bytes to a string"""
-    if hasattr(out, 'tobytes'):
+    if hasattr(out, "tobytes"):
         # array.tobytes was added in python 3.2
         return out.tobytes().decode("utf8")
     else:
         return out.tostring().decode("utf8")
+
 
 class Message(object):
     """A helper class for probing for and receiving
@@ -25,16 +31,21 @@ class Message(object):
     comm : :class:`mpi4py.MPI.Comm`
         The MPI communicator to use.
     """
-    __slots__ = ("status","data","comm")
+
+    __slots__ = ("status", "data", "comm")
+
     def __init__(self, comm):
         import mpi4py.MPI
+
         self.comm = comm
         self.status = mpi4py.MPI.Status()
         self.data = None
+
     def probe(self, **kwds):
         """Perform a blocking test for a message"""
         self.comm.Probe(status=self.status)
         self.data = None
+
     def recv(self, datatype=None, data=None):
         """Complete the receive for the most recent message
         probe and return the data as a numeric array or a
@@ -56,17 +67,18 @@ class Message(object):
         else:
             count = self.status.Get_count(datatype=datatype)
         if count == 0:
-            recv_nothing(self.comm,
-                         self.status)
+            recv_nothing(self.comm, self.status)
         else:
-            self.data = recv_data(self.comm,
-                                  self.status,
-                                  datatype=datatype,
-                                  out=data)
+            self.data = recv_data(self.comm, self.status, datatype=datatype, out=data)
+
     @property
-    def tag(self): return self.status.Get_tag()
+    def tag(self):
+        return self.status.Get_tag()
+
     @property
-    def source(self): return self.status.Get_source()
+    def source(self):
+        return self.status.Get_source()
+
 
 def recv_nothing(comm, status):
     """A helper function for receiving an empty
@@ -91,20 +103,18 @@ def recv_nothing(comm, status):
         receive. Otherwise, the status object that was
         created will be returned.
     """
+    global _nothing
     import mpi4py.MPI
-    if recv_nothing._nothing is None:
-        recv_nothing._nothing = [array.array("B",[]),
-                                 mpi4py.MPI.CHAR]
+
+    if _nothing is None:
+        _nothing = [array.array("B", []), mpi4py.MPI.CHAR]
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
-    comm.Recv(recv_nothing._nothing,
-              source=status.Get_source(),
-              tag=status.Get_tag(),
-              status=status)
+    comm.Recv(_nothing, source=status.Get_source(), tag=status.Get_tag(), status=status)
     assert not status.Get_error()
     assert status.Get_count(mpi4py.MPI.CHAR) == 0
     return status
-recv_nothing._nothing = None
+
 
 def send_nothing(comm, dest, tag=0):
     """A helper function for sending an empty message
@@ -119,14 +129,13 @@ def send_nothing(comm, dest, tag=0):
     tag : int, optional
         A valid MPI tag to use for the message. (default: 0)
     """
+    global _nothing
     import mpi4py.MPI
-    if send_nothing._nothing is None:
-        send_nothing._nothing = [array.array("B",[]),
-                                 mpi4py.MPI.CHAR]
-    comm.Send(send_nothing._nothing,
-         dest,
-         tag=tag)
-send_nothing._nothing = None
+
+    if _nothing is None:
+        _nothing = [array.array("B", []), mpi4py.MPI.CHAR]
+    comm.Send(_nothing, dest, tag=tag)
+
 
 def recv_data(comm, status, datatype, out=None):
     """A helper function for receiving numeric or string
@@ -155,17 +164,16 @@ def recv_data(comm, status, datatype, out=None):
     string or user-provided data buffer
     """
     import mpi4py.MPI
+
     assert not status.Get_error()
     size = status.Get_count(datatype)
     if datatype == mpi4py.MPI.CHAR:
         assert out is None
-        out = array.array("B",b"\0")*size
-    assert (out is not None) and \
-        (len(out) >= size)
-    comm.Recv([out,datatype],
-              source=status.Get_source(),
-              tag=status.Get_tag(),
-              status=status)
+        out = array.array("B", b"\0") * size
+    assert (out is not None) and (len(out) >= size)
+    comm.Recv(
+        [out, datatype], source=status.Get_source(), tag=status.Get_tag(), status=status
+    )
     assert not status.Get_error()
     if datatype == mpi4py.MPI.CHAR:
         out = _array_to_string(out)

@@ -3,49 +3,57 @@ Branch-and-bound solver implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-
 import sys
 import time
 import array
 import math
 
-from pybnb.common import (minimize,
-                          maximize,
-                          QueueStrategy,
-                          TerminationCondition,
-                          SolutionStatus)
-from pybnb.problem import (_SolveInfo,
-                           _SimpleSolveInfoCollector,
-                           _ProblemWithSolveInfoCollection)
-from pybnb.misc import (_cast_to_float_or_int,
-                        MPI_InterruptHandler,
-                        time_format,
-                        as_stream,
-                        get_simple_logger,
-                        get_default_args)
+from pybnb.common import (
+    minimize,
+    maximize,
+    QueueStrategy,
+    TerminationCondition,
+    SolutionStatus,
+)
+from pybnb.problem import (
+    _SolveInfo,
+    _SimpleSolveInfoCollector,
+    _ProblemWithSolveInfoCollection,
+)
+from pybnb.misc import (
+    _cast_to_float_or_int,
+    MPI_InterruptHandler,
+    time_format,
+    as_stream,
+    get_simple_logger,
+    get_default_args,
+)
 from pybnb.node import Node
 from pybnb.solver_results import SolverResults
-from pybnb.convergence_checker import (_auto_queue_tolerance,
-                                       _default_scale,
-                                       ConvergenceChecker)
+from pybnb.convergence_checker import (
+    _auto_queue_tolerance,
+    _default_scale,
+    ConvergenceChecker,
+)
 from pybnb.dispatcher_proxy import DispatcherProxy
-from pybnb.dispatcher import (DispatcherLocal,
-                              DispatcherDistributed,
-                              DispatcherQueueData)
+from pybnb.dispatcher import DispatcherLocal, DispatcherDistributed, DispatcherQueueData
 from pybnb.futures import NestedSolver
 
 try:
     import mpi4py
-except ImportError:                               #pragma:nocover
+except ImportError:  # pragma:nocover
     pass
 
 import six
 
+
 class _notset(object):
     pass
 
+
 # this is defined at the bottom of this file
 _solve_defaults = None
+
 
 class Solver(object):
     """A branch-and-bound solver.
@@ -70,6 +78,7 @@ class Solver(object):
         if not self.is_dispatcher:
             return
         import inspect
+
         argname = None
         if not six.PY2:
             # py3 does not include selse argument of class methods
@@ -82,19 +91,19 @@ class Solver(object):
             if len(sig.args) == 2:
                 argname = sig.args[1]
         if argname is not None:
-            raise TypeError("The pybnb solver has detected that "
-                            "the 'branch' method on your problem "
-                            "uses the old call signature compatible "
-                            "with pybnb 0.4.0 and earlier. To make "
-                            "your problem compatible with the most "
-                            "recent version of pybnb, please remove "
-                            "the '%s' argument from this method, and "
-                            "replace '%s.new_child()' with "
-                            "'pybnb.Node()'." % (argname, argname))
+            raise TypeError(
+                "The pybnb solver has detected that "
+                "the 'branch' method on your problem "
+                "uses the old call signature compatible "
+                "with pybnb 0.4.0 and earlier. To make "
+                "your problem compatible with the most "
+                "recent version of pybnb, please remove "
+                "the '%s' argument from this method, and "
+                "replace '%s.new_child()' with "
+                "'pybnb.Node()'." % (argname, argname)
+            )
 
-    def __init__(self,
-                 comm=_notset,
-                 dispatcher_rank=0):
+    def __init__(self, comm=_notset, dispatcher_rank=0):
         mpi = True
         if comm is None:
             mpi = False
@@ -105,18 +114,22 @@ class Solver(object):
         self._time = None
         if mpi:
             import mpi4py.MPI
+
             assert mpi4py.MPI.Is_initialized()
             assert comm is not None
             if comm is _notset:
                 comm = mpi4py.MPI.COMM_WORLD
-            if (int(dispatcher_rank) != dispatcher_rank) or \
-               (dispatcher_rank < 0) or \
-               (dispatcher_rank >= comm.size):
-                raise ValueError("The 'dispatcher_rank' keyword "
-                                 "has been set to %s, which is not "
-                                 "an available rank given the "
-                                 "size of the MPI communicator (%d)."
-                                 % (dispatcher_rank, comm.size))
+            if (
+                (int(dispatcher_rank) != dispatcher_rank)
+                or (dispatcher_rank < 0)
+                or (dispatcher_rank >= comm.size)
+            ):
+                raise ValueError(
+                    "The 'dispatcher_rank' keyword "
+                    "has been set to %s, which is not "
+                    "an available rank given the "
+                    "size of the MPI communicator (%d)." % (dispatcher_rank, comm.size)
+                )
             self._comm = comm
             if comm.size > 1:
                 dispatcher_rank = int(dispatcher_rank)
@@ -138,7 +151,8 @@ class Solver(object):
                 raise ValueError(
                     "MPI functionality has been disabled but "
                     "the 'dispatcher_rank' keyword is set to "
-                    "something other than 0.")
+                    "something other than 0."
+                )
             assert self._comm is None
             self._disp = DispatcherLocal()
             self._worker_flag = True
@@ -165,19 +179,21 @@ class Solver(object):
         self._local_solve_info.reset()
         self._global_solve_info = None
 
-    def _check_update_best_node(self,
-                                convergence_checker,
-                                node):
+    def _check_update_best_node(self, convergence_checker, node):
         objective = node.objective
         assert objective is not None
         assert not math.isnan(objective)
         updated = False
-        if (objective != convergence_checker.infeasible_objective) and \
-           (objective != convergence_checker.unbounded_objective) and \
-           ((self._best_node is None) or \
-            convergence_checker.objective_improved(
-                objective,
-                self._best_node.objective)):
+        if (
+            (objective != convergence_checker.infeasible_objective)
+            and (objective != convergence_checker.unbounded_objective)
+            and (
+                (self._best_node is None)
+                or convergence_checker.objective_improved(
+                    objective, self._best_node.objective
+                )
+            )
+        ):
             if node._uuid is None:
                 node._generate_uuid()
             self._best_node = node
@@ -186,10 +202,8 @@ class Solver(object):
         return updated
 
     def _fill_results(self, results, convergence_checker):
-        infeasible_objective = \
-            convergence_checker.infeasible_objective
-        unbounded_objective = \
-            convergence_checker.unbounded_objective
+        infeasible_objective = convergence_checker.infeasible_objective
+        unbounded_objective = convergence_checker.unbounded_objective
         if results.bound == infeasible_objective:
             if results.objective == infeasible_objective:
                 results.solution_status = SolutionStatus.infeasible
@@ -202,34 +216,38 @@ class Solver(object):
             results.solution_status = SolutionStatus.unbounded
         else:
             if convergence_checker.objective_is_optimal(
-                    results.objective,
-                    results.bound):
+                results.objective, results.bound
+            ):
                 results.solution_status = SolutionStatus.invalid
-                if (convergence_checker.sense == minimize) and \
-                   (results.bound <= results.objective):
+                if (convergence_checker.sense == minimize) and (
+                    results.bound <= results.objective
+                ):
                     results.solution_status = SolutionStatus.optimal
-                elif (convergence_checker.sense == maximize) and \
-                     (results.bound >= results.objective):
+                elif (convergence_checker.sense == maximize) and (
+                    results.bound >= results.objective
+                ):
                     results.solution_status = SolutionStatus.optimal
             else:
                 results.solution_status = SolutionStatus.feasible
-            if results.solution_status in (SolutionStatus.feasible,
-                                           SolutionStatus.optimal):
-                results.absolute_gap = convergence_checker.\
-                    compute_absolute_gap(
-                        results.bound,
-                        results.objective)
-                results.relative_gap = convergence_checker.\
-                    compute_relative_gap(
-                        results.bound,
-                        results.objective)
+            if results.solution_status in (
+                SolutionStatus.feasible,
+                SolutionStatus.optimal,
+            ):
+                results.absolute_gap = convergence_checker.compute_absolute_gap(
+                    results.bound, results.objective
+                )
+                results.relative_gap = convergence_checker.compute_relative_gap(
+                    results.bound, results.objective
+                )
 
-    def _solve(self,
-               problem,
-               best_objective,
-               best_node,
-               disable_objective_call,
-               convergence_checker):
+    def _solve(
+        self,
+        problem,
+        best_objective,
+        best_node,
+        disable_objective_call,
+        convergence_checker,
+    ):
         is_nested_solver = False
         if isinstance(problem, NestedSolver):
             is_nested_solver = True
@@ -242,54 +260,47 @@ class Solver(object):
         self._best_objective = best_objective
         self._best_node = best_node
         infeasible_objective = problem.infeasible_objective()
-        assert infeasible_objective == \
-            convergence_checker.infeasible_objective
+        assert infeasible_objective == convergence_checker.infeasible_objective
         unbounded_objective = problem.unbounded_objective()
-        assert unbounded_objective == \
-            convergence_checker.unbounded_objective
+        assert unbounded_objective == convergence_checker.unbounded_objective
         first_update = True
         terminal_bound = None
         children = []
-        while (1):
+        while 1:
             update_start = self._time()
             new_best_objective = None
-            if first_update or \
-               (self._best_objective == unbounded_objective):
+            if first_update or (self._best_objective == unbounded_objective):
                 new_best_objective = self._best_objective
             new_best_node = None
             if self._best_node_updated:
                 new_best_node = self._best_node
             self._best_node_updated = False
-            (stop,
-             new_best_objective,
-             new_best_node,
-             working_node) = self._disp.update(
-                 new_best_objective,
-                 new_best_node,
-                 terminal_bound,
-                 self._local_solve_info,
-                 children)
+            (stop, new_best_objective, new_best_node, working_node) = self._disp.update(
+                new_best_objective,
+                new_best_node,
+                terminal_bound,
+                self._local_solve_info,
+                children,
+            )
             update_stop = self._time()
 
             if first_update and is_nested_solver:
-                problem._initialize(self._disp,
-                                    new_best_objective,
-                                    disable_objective_call)
+                problem._initialize(
+                    self._disp, new_best_objective, disable_objective_call
+                )
 
             old_best_node = self._best_node
             self._best_objective = new_best_objective
-            assert (old_best_node is None) or \
-                (old_best_node._uuid is not None)
-            assert (new_best_node is None) or \
-                (new_best_node._uuid is not None)
+            assert (old_best_node is None) or (old_best_node._uuid is not None)
+            assert (new_best_node is None) or (new_best_node._uuid is not None)
             updated = False
-            if (new_best_node is not None) and \
-               ((old_best_node is None) or \
-                (new_best_node._uuid != old_best_node._uuid) or \
-                first_update):
+            if (new_best_node is not None) and (
+                (old_best_node is None)
+                or (new_best_node._uuid != old_best_node._uuid)
+                or first_update
+            ):
                 self._best_node = new_best_node
-                problem.notify_new_best_node(node=self._best_node,
-                                             current=False)
+                problem.notify_new_best_node(node=self._best_node, current=False)
             del old_best_node
             del new_best_objective
             del new_best_node
@@ -300,17 +311,16 @@ class Solver(object):
                 # objective value (not just subject to tolerances)
                 break
             if not is_nested_solver:
-                self._local_solve_info.\
-                    _increment_explored_nodes_stat(1)
-                self._local_solve_info.\
-                    _increment_queue_stat(
-                        update_stop-update_start, 1)
+                self._local_solve_info._increment_explored_nodes_stat(1)
+                self._local_solve_info._increment_queue_stat(
+                    update_stop - update_start, 1
+                )
 
             # we should not be receiving a node that
             # does not satisfy these assertions
             assert convergence_checker.eligible_for_queue(
-                working_node.bound,
-                self._best_objective)
+                working_node.bound, self._best_objective
+            )
             assert working_node.tree_depth >= 0
 
             problem.load_state(working_node)
@@ -324,47 +334,48 @@ class Solver(object):
                     self._best_objective = results_.objective
                 elif results_.best_node is not None:
                     self._check_update_best_node(
-                        convergence_checker,
-                        results_.best_node)
+                        convergence_checker, results_.best_node
+                    )
                 del results_
                 continue
             new_bound = _cast_to_float_or_int(problem.bound())
-            if convergence_checker.bound_worsened(new_bound,
-                                                  working_node.bound):    #pragma:nocover
+            if convergence_checker.bound_worsened(
+                new_bound, working_node.bound
+            ):  # pragma:nocover
                 self._disp.log_warning(
                     "WARNING: Bound became worse "
-                    "(old=%r, new=%r)"
-                    % (working_node.bound, new_bound))
+                    "(old=%r, new=%r)" % (working_node.bound, new_bound)
+                )
             working_node.bound = new_bound
             children = []
             if convergence_checker.eligible_for_queue(
-                    working_node.bound,
-                    self._best_objective):
+                working_node.bound, self._best_objective
+            ):
                 if not disable_objective_call:
-                    working_node.objective = \
-                        _cast_to_float_or_int(problem.objective())
-                if convergence_checker.best_bound(
-                        working_node.bound,
-                        working_node.objective) != working_node.objective: #pragma:nocover
+                    working_node.objective = _cast_to_float_or_int(problem.objective())
+                if (
+                    convergence_checker.best_bound(
+                        working_node.bound, working_node.objective
+                    )
+                    != working_node.objective
+                ):  # pragma:nocover
                     self._disp.log_warning(
                         "WARNING: Local node bound is worse "
                         "than local node objective (bound=%r, "
-                        "objective=%r)" % (working_node.bound,
-                                           working_node.objective))
+                        "objective=%r)" % (working_node.bound, working_node.objective)
+                    )
                 updated = self._check_update_best_node(
-                    convergence_checker,
-                    working_node)
+                    convergence_checker, working_node
+                )
                 if updated:
-                    problem.notify_new_best_node(node=self._best_node,
-                                                 current=True)
+                    problem.notify_new_best_node(node=self._best_node, current=True)
                 if working_node.objective == unbounded_objective:
                     self._best_objective = unbounded_objective
                 elif convergence_checker.eligible_for_queue(
-                        working_node.bound,
-                        self._best_objective) and \
-                    convergence_checker.eligible_to_branch(
-                        working_node.bound,
-                        working_node.objective):
+                    working_node.bound, self._best_objective
+                ) and convergence_checker.eligible_to_branch(
+                    working_node.bound, working_node.objective
+                ):
                     clist = problem.branch()
                     for child in clist:
                         children.append(child)
@@ -373,15 +384,15 @@ class Solver(object):
                         if child.bound is None:
                             child.bound = working_node.bound
                         elif convergence_checker.bound_worsened(
-                                child.bound,
-                                working_node.bound):    #pragma:nocover
+                            child.bound, working_node.bound
+                        ):  # pragma:nocover
                             self._disp.log_warning(
                                 "WARNING: Bound on child node "
                                 "returned from branch method "
                                 "is worse than parent node "
                                 "(child=%r, parent=%r)"
-                                % (child.bound,
-                                   working_node.bound))
+                                % (child.bound, working_node.bound)
+                            )
                         if child.objective is None:
                             child.objective = working_node.objective
             if len(children) > 0:
@@ -393,11 +404,13 @@ class Solver(object):
         global_bound = working_node[0]
         termination_condition = working_node[1]
         global_solve_info = working_node[2]
-        return (self._best_objective,
-                self._best_node,
-                global_bound,
-                termination_condition,
-                global_solve_info)
+        return (
+            self._best_objective,
+            self._best_node,
+            global_bound,
+            termination_condition,
+            global_solve_info,
+        )
 
     #
     # Interface
@@ -427,8 +440,7 @@ class Solver(object):
         """The worker MPI communicator. Will be None on any
         processes for which :attr:`Solver.is_worker` is
         False, or if MPI functionality has been disabled."""
-        if (self._comm is None) or \
-           (self._comm.size == 1):
+        if (self._comm is None) or (self._comm.size == 1):
             return self._comm
         elif not self.is_dispatcher:
             return self._disp.worker_comm
@@ -437,8 +449,7 @@ class Solver(object):
     @property
     def worker_count(self):
         """The number of worker processes associated with this solver."""
-        if (self._comm is None) or \
-           (self._comm.size == 1):
+        if (self._comm is None) or (self._comm.size == 1):
             return 1
         elif not self.is_dispatcher:
             return self._disp.worker_comm.size
@@ -457,84 +468,84 @@ class Solver(object):
             storing a value for each worker.
         """
         stats = {}
-        if (self.comm is not None) and \
-           (self.comm.size > 1):
+        if (self.comm is not None) and (self.comm.size > 1):
             num_stats = 13
-            gathered = array.array('d',[0]) * (self.worker_count*num_stats)
+            gathered = array.array("d", [0]) * (self.worker_count * num_stats)
             if self.is_worker:
                 assert self.worker_comm is not None
                 assert not self.is_dispatcher
                 solve_info = self._local_solve_info
-                mine = array.array('d',
-                    [self.comm.rank,
-                     self._wall_time,
-                     solve_info.total_queue_time,
-                     solve_info.queue_call_count,
-                     solve_info.total_objective_time,
-                     solve_info.objective_call_count,
-                     solve_info.total_bound_time,
-                     solve_info.bound_call_count,
-                     solve_info.total_branch_time,
-                     solve_info.branch_call_count,
-                     solve_info.total_load_state_time,
-                     solve_info.load_state_call_count,
-                     solve_info.explored_nodes_count])
+                mine = array.array(
+                    "d",
+                    [
+                        self.comm.rank,
+                        self._wall_time,
+                        solve_info.total_queue_time,
+                        solve_info.queue_call_count,
+                        solve_info.total_objective_time,
+                        solve_info.objective_call_count,
+                        solve_info.total_bound_time,
+                        solve_info.bound_call_count,
+                        solve_info.total_branch_time,
+                        solve_info.branch_call_count,
+                        solve_info.total_load_state_time,
+                        solve_info.load_state_call_count,
+                        solve_info.explored_nodes_count,
+                    ],
+                )
                 assert len(mine) == num_stats
-                assert len(mine) == len(gathered)//self.worker_count
-                self.worker_comm.Allgather([mine, mpi4py.MPI.DOUBLE],
-                                           [gathered, mpi4py.MPI.DOUBLE])
+                assert len(mine) == len(gathered) // self.worker_count
+                self.worker_comm.Allgather(
+                    [mine, mpi4py.MPI.DOUBLE], [gathered, mpi4py.MPI.DOUBLE]
+                )
                 if self.worker_comm.rank == 0:
-                    self.comm.Send([gathered, mpi4py.MPI.DOUBLE],
-                                   self._disp.dispatcher_rank,
-                                   tag=11112111)
+                    self.comm.Send(
+                        [gathered, mpi4py.MPI.DOUBLE],
+                        self._disp.dispatcher_rank,
+                        tag=11112111,
+                    )
             else:
                 assert self.worker_comm is None
                 assert self.is_dispatcher
-                self.comm.Recv([gathered, mpi4py.MPI.DOUBLE],
-                               tag=11112111)
-            for i, key in enumerate(('rank',
-                                     'wall_time',
-                                     'queue_time',
-                                     'queue_call_count',
-                                     'objective_time',
-                                     'objective_call_count',
-                                     'bound_time',
-                                     'bound_call_count',
-                                     'branch_time',
-                                     'branch_call_count',
-                                     'load_state_time',
-                                     'load_state_call_count',
-                                     'explored_nodes_count')):
+                self.comm.Recv([gathered, mpi4py.MPI.DOUBLE], tag=11112111)
+            for i, key in enumerate(
+                (
+                    "rank",
+                    "wall_time",
+                    "queue_time",
+                    "queue_call_count",
+                    "objective_time",
+                    "objective_call_count",
+                    "bound_time",
+                    "bound_call_count",
+                    "branch_time",
+                    "branch_call_count",
+                    "load_state_time",
+                    "load_state_call_count",
+                    "explored_nodes_count",
+                )
+            ):
                 items = []
                 for k in range(self.worker_count):
-                    items.append(gathered[k*num_stats + i])
+                    items.append(gathered[k * num_stats + i])
                 stats[key] = items
         else:
             assert self.is_worker
             assert self.is_dispatcher
             solve_info = self._local_solve_info
-            stats['rank'] = [0]
-            stats['wall_time'] = [self._wall_time]
-            stats['queue_time'] = [solve_info.total_queue_time]
-            stats['queue_call_count'] = [solve_info.queue_call_count]
-            stats['objective_time'] = \
-                [solve_info.total_objective_time]
-            stats['objective_call_count'] = \
-                [solve_info.objective_call_count]
-            stats['bound_time'] = \
-                [solve_info.total_bound_time]
-            stats['bound_call_count'] = \
-                [solve_info.bound_call_count]
-            stats['branch_time'] = \
-                [solve_info.total_branch_time]
-            stats['branch_call_count'] = \
-                [solve_info.branch_call_count]
-            stats['load_state_time'] = \
-                [solve_info.total_load_state_time]
-            stats['load_state_call_count'] = \
-                [solve_info.load_state_call_count]
-            stats['explored_nodes_count'] = \
-                [solve_info.explored_nodes_count]
+            stats["rank"] = [0]
+            stats["wall_time"] = [self._wall_time]
+            stats["queue_time"] = [solve_info.total_queue_time]
+            stats["queue_call_count"] = [solve_info.queue_call_count]
+            stats["objective_time"] = [solve_info.total_objective_time]
+            stats["objective_call_count"] = [solve_info.objective_call_count]
+            stats["bound_time"] = [solve_info.total_bound_time]
+            stats["bound_call_count"] = [solve_info.bound_call_count]
+            stats["branch_time"] = [solve_info.total_branch_time]
+            stats["branch_call_count"] = [solve_info.branch_call_count]
+            stats["load_state_time"] = [solve_info.total_load_state_time]
+            stats["load_state_call_count"] = [solve_info.load_state_call_count]
+            stats["explored_nodes_count"] = [solve_info.explored_nodes_count]
 
         return stats
 
@@ -559,29 +570,31 @@ class Solver(object):
             ret = self._disp.save_dispatcher_queue()
         return ret
 
-    def solve(self,
-              problem,
-              best_objective=None,
-              best_node=None,
-              disable_objective_call=False,
-              absolute_gap=0,
-              relative_gap=None,
-              scale_function=_default_scale,
-              queue_tolerance=_auto_queue_tolerance,
-              branch_tolerance=0,
-              comparison_tolerance=0,
-              objective_stop=None,
-              bound_stop=None,
-              node_limit=None,
-              time_limit=None,
-              queue_limit=None,
-              track_bound=True,
-              initialize_queue=None,
-              queue_strategy="bound",
-              log_interval_seconds=1.0,
-              log_new_incumbent=True,
-              log=_notset,
-              disable_signal_handlers=False):
+    def solve(
+        self,
+        problem,
+        best_objective=None,
+        best_node=None,
+        disable_objective_call=False,
+        absolute_gap=0,
+        relative_gap=None,
+        scale_function=_default_scale,
+        queue_tolerance=_auto_queue_tolerance,
+        branch_tolerance=0,
+        comparison_tolerance=0,
+        objective_stop=None,
+        bound_stop=None,
+        node_limit=None,
+        time_limit=None,
+        queue_limit=None,
+        track_bound=True,
+        initialize_queue=None,
+        queue_strategy="bound",
+        log_interval_seconds=1.0,
+        log_new_incumbent=True,
+        log=_notset,
+        disable_signal_handlers=False,
+    ):
         """Solve a problem using branch-and-bound.
 
         Note
@@ -816,11 +829,12 @@ class Solver(object):
         assert not math.isnan(best_objective)
 
         if best_node is not None:
-            if (best_node.objective is None) or \
-               math.isnan(best_node.objective):
-                raise ValueError("The best_node objective "
-                                 "attribute must be set to "
-                                 "a numeric value.")
+            if (best_node.objective is None) or math.isnan(best_node.objective):
+                raise ValueError(
+                    "The best_node objective "
+                    "attribute must be set to "
+                    "a numeric value."
+                )
             if best_node._uuid is None:
                 best_node._generate_uuid()
 
@@ -834,10 +848,9 @@ class Solver(object):
             branch_tolerance=branch_tolerance,
             comparison_tolerance=comparison_tolerance,
             objective_stop=objective_stop,
-            bound_stop=bound_stop)
-        problem.notify_solve_begins(self.comm,
-                                    self.worker_comm,
-                                    convergence_checker)
+            bound_stop=bound_stop,
+        )
+        problem.notify_solve_begins(self.comm, self.worker_comm, convergence_checker)
 
         orig = Node()
         problem.save_state(orig)
@@ -845,41 +858,37 @@ class Solver(object):
             if self.is_dispatcher:
                 if log is _notset:
                     log = get_simple_logger()
-                if not isinstance(queue_strategy,
-                                  (six.string_types,
-                                   QueueStrategy)):
-                    queue_strategy = tuple(qs.value \
-                        if isinstance(qs, QueueStrategy) else qs
-                        for qs in queue_strategy)
-                elif isinstance(queue_strategy,
-                                QueueStrategy):
-                    queue_strategy = \
-                        queue_strategy.value
+                if not isinstance(queue_strategy, (six.string_types, QueueStrategy)):
+                    queue_strategy = tuple(
+                        qs.value if isinstance(qs, QueueStrategy) else qs
+                        for qs in queue_strategy
+                    )
+                elif isinstance(queue_strategy, QueueStrategy):
+                    queue_strategy = queue_strategy.value
                 if log is not None:
                     changed = False
                     locals_ = locals()
                     for key_ in sorted(_solve_defaults):
-                        if key_ == 'log':
+                        if key_ == "log":
                             continue
                         default_ = _solve_defaults[key_]
                         val_ = locals_[key_]
-                        if key_ == 'best_objective':
+                        if key_ == "best_objective":
                             default_ = problem.infeasible_objective()
                         if val_ != default_:
                             if not changed:
-                                log.info('\nUsing non-default solver options:')
+                                log.info("\nUsing non-default solver options:")
                             changed = True
-                            if key_ == 'initialize_queue':
+                            if key_ == "initialize_queue":
                                 default_ = "<root>"
                                 val_ = "Queue(size=%s)" % (len(val_.nodes))
-                            elif key_ == 'best_node':
+                            elif key_ == "best_node":
                                 val_ = "Node(objective=%.7g)" % (val_.objective)
                             elif key_ == "queue_tolerance":
                                 default_ = "<absolute-gap>"
-                            log.info(' - %s: %s (default: %s)'
-                                     % (key_, val_, default_))
+                            log.info(" - %s: %s (default: %s)" % (key_, val_, default_))
                     if changed:
-                        log.info('')
+                        log.info("")
                 if initialize_queue is None:
                     root = Node()
                     root.tree_depth = 0
@@ -890,7 +899,8 @@ class Solver(object):
                     initialize_queue = DispatcherQueueData(
                         nodes=[root],
                         worst_terminal_bound=None,
-                        sense=convergence_checker.sense)
+                        sense=convergence_checker.sense,
+                    )
                 self._disp.initialize(
                     best_objective,
                     best_node,
@@ -903,47 +913,54 @@ class Solver(object):
                     track_bound,
                     log,
                     log_interval_seconds,
-                    log_new_incumbent)
+                    log_new_incumbent,
+                )
             if not self.is_worker:
-                def handler(signum, frame):       #pragma:nocover
-                    self._disp.termination_condition = \
-                        TerminationCondition.interrupted
+
+                def handler(signum, frame):  # pragma:nocover
+                    self._disp.termination_condition = TerminationCondition.interrupted
                     self._disp.log_warning(
                         "Solve interrupted by user. "
                         "Waiting for current worker "
                         "jobs to complete before "
-                        "terminating the solve.")
-                with MPI_InterruptHandler(
-                        handler,
-                        disable=disable_signal_handlers):
+                        "terminating the solve."
+                    )
+
+                with MPI_InterruptHandler(handler, disable=disable_signal_handlers):
                     tmp = self._disp.serve()
             else:
-                def handler(signum, frame):       #pragma:nocover
+
+                def handler(signum, frame):  # pragma:nocover
                     if self.is_dispatcher:
-                        self._disp.termination_condition = \
+                        self._disp.termination_condition = (
                             TerminationCondition.interrupted
+                        )
                         self._disp.log_warning(
                             "Solve interrupted by user. "
                             "Waiting for current worker "
                             "jobs to complete before "
-                            "terminating the solve.")
-                with MPI_InterruptHandler(
-                        handler,
-                        disable=disable_signal_handlers):
-                    tmp = self._solve(problem,
-                                      best_objective,
-                                      best_node,
-                                      disable_objective_call,
-                                      convergence_checker)
-            (results.objective,
-             results.best_node,
-             results.bound,
-             results.termination_condition,
-             self._global_solve_info) = tmp
+                            "terminating the solve."
+                        )
+
+                with MPI_InterruptHandler(handler, disable=disable_signal_handlers):
+                    tmp = self._solve(
+                        problem,
+                        best_objective,
+                        best_node,
+                        disable_objective_call,
+                        convergence_checker,
+                    )
+            (
+                results.objective,
+                results.best_node,
+                results.bound,
+                results.termination_condition,
+                self._global_solve_info,
+            ) = tmp
             results.nodes = self._global_solve_info.explored_nodes_count
             self._fill_results(results, convergence_checker)
-        except:                                        #pragma:nocover
-            sys.stderr.write("Exception caught: "+str(sys.exc_info()[1])+"\n")
+        except:  # pragma:nocover
+            sys.stderr.write("Exception caught: " + str(sys.exc_info()[1]) + "\n")
             sys.stderr.write("Attempting to shut down, but this may hang.\n")
             sys.stderr.flush()
             raise
@@ -952,10 +969,8 @@ class Solver(object):
         self._wall_time = self._time() - self._solve_start
         results.wall_time = self._wall_time
 
-        assert results.solution_status in SolutionStatus,\
-            str(results)
-        assert results.termination_condition in TerminationCondition,\
-            str(results)
+        assert results.solution_status in SolutionStatus, str(results)
+        assert results.termination_condition in TerminationCondition, str(results)
 
         # convert to simple string types
         results.solution_status = results.solution_status.value
@@ -965,34 +980,32 @@ class Solver(object):
         # should rarely crop up in practice (a problem that
         # returns an unbounded objective on a node other
         # than the root node)
-        if (results.objective == \
-            convergence_checker.unbounded_objective) and \
-           (results.best_node is not None):
+        if (results.objective == convergence_checker.unbounded_objective) and (
+            results.best_node is not None
+        ):
             assert not math.isinf(results.best_node.objective)
             results.best_node = None
 
-        problem.notify_solve_finished(self.comm,
-                                      self.worker_comm,
-                                      results)
-        if self.is_dispatcher and \
-           (log is not None) and \
-           (not log.disabled):
+        problem.notify_solve_finished(self.comm, self.worker_comm, results)
+        if self.is_dispatcher and (log is not None) and (not log.disabled):
             self._disp.log_info("")
             if results.solution_status in ("feasible", "optimal"):
                 agap = convergence_checker.compute_absolute_gap(
-                    results.bound,
-                    results.objective)
+                    results.bound, results.objective
+                )
                 rgap = convergence_checker.compute_relative_gap(
-                    results.bound,
-                    results.objective)
+                    results.bound, results.objective
+                )
                 if results.solution_status == "feasible":
                     self._disp.log_info("Feasible solution found")
                 else:
-                    if (convergence_checker.absolute_gap is not None) and \
-                       agap <= convergence_checker.absolute_gap:
+                    if (
+                        convergence_checker.absolute_gap is not None
+                    ) and agap <= convergence_checker.absolute_gap:
                         self._disp.log_info("Absolute optimality tolerance met")
-                    if (convergence_checker.relative_gap is not None) and \
-                       rgap <= convergence_checker.relative_gap:
+                    if (
+                        convergence_checker.relative_gap is not None
+                    ) and rgap <= convergence_checker.relative_gap:
                         self._disp.log_info("Relative optimality tolerance met")
                     assert results.solution_status == "optimal"
                     self._disp.log_info("Optimal solution found!")
@@ -1000,7 +1013,7 @@ class Solver(object):
                 self._disp.log_info("Problem is infeasible")
             elif results.solution_status == "unbounded":
                 self._disp.log_info("Problem is unbounded")
-            elif results.solution_status == "invalid":      #pragma:nocover
+            elif results.solution_status == "invalid":  # pragma:nocover
                 self._disp.log_info("Problem is invalid")
             else:
                 assert results.solution_status == "unknown"
@@ -1010,24 +1023,25 @@ class Solver(object):
 
         return results
 
+
 def _nonzero_avg(items, div=None):
     """Returns the average of a list of items, excluding
     zeros. The optional div argument can be set to a list of
     values to divide each item by when computing the
     average."""
-    assert (div is None) or \
-        (len(items) == len(div))
+    assert (div is None) or (len(items) == len(div))
     s = 0.0
     c = 0
     for i, val in enumerate(items):
         assert val >= 0
         if val != 0:
             div_i = 1 if (div is None) else div[i]
-            s += val/float(div_i)
+            s += val / float(div_i)
             c += 1
     if c == 0:
         return 0
-    return s/float(c)
+    return s / float(c)
+
 
 def summarize_worker_statistics(stats, stream=sys.stdout):
     """Writes a summary of workers statistics to an
@@ -1042,105 +1056,122 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
         A file-like object or a filename where results
         should be written to. (default: ``sys.stdout``)
     """
-    assert all(len(stats[key]) == len(stats['wall_time'])
-               for key in stats)
-    rank = stats['rank']
-    wall_time = stats['wall_time']
-    queue_time = stats['queue_time']
-    queue_count = stats['queue_call_count']
-    objective_time = stats['objective_time']
-    objective_count = stats['objective_call_count']
-    bound_time = stats['bound_time']
-    bound_count = stats['bound_call_count']
-    branch_time = stats['branch_time']
-    branch_count = stats['branch_call_count']
-    load_state_time = stats['load_state_time']
-    load_state_count = stats['load_state_call_count']
-    explored_nodes_count = stats['explored_nodes_count']
-    work_time = [wt-qt for wt,qt in zip(wall_time,queue_time)]
+    assert all(len(stats[key]) == len(stats["wall_time"]) for key in stats)
+    rank = stats["rank"]
+    wall_time = stats["wall_time"]
+    queue_time = stats["queue_time"]
+    queue_count = stats["queue_call_count"]
+    objective_time = stats["objective_time"]
+    objective_count = stats["objective_call_count"]
+    bound_time = stats["bound_time"]
+    bound_count = stats["bound_call_count"]
+    branch_time = stats["branch_time"]
+    branch_count = stats["branch_call_count"]
+    load_state_time = stats["load_state_time"]
+    load_state_count = stats["load_state_call_count"]
+    explored_nodes_count = stats["explored_nodes_count"]
+    work_time = [wt - qt for wt, qt in zip(wall_time, queue_time)]
     sum_enc = sum(explored_nodes_count)
     with as_stream(stream) as stream:
-        stream.write("Number of Workers:   %6d\n"
-                     % (len(wall_time)))
+        stream.write("Number of Workers:   %6d\n" % (len(wall_time)))
         if sum_enc == 0:
-            stream.write("Load Imbalance:     %6.2f%%\n"
-                         % (0.0))
+            stream.write("Load Imbalance:     %6.2f%%\n" % (0.0))
         else:
-            max_enc, max_enc_rank = max(zip(explored_nodes_count, rank),
-                                        key=lambda x: x[0])
-            min_enc, min_enc_rank = min(zip(explored_nodes_count, rank),
-                                        key=lambda x: x[0])
-            avg_enc = sum_enc/float(len(explored_nodes_count))
-            stream.write("Load Imbalance:     %6.2f%%\n"
-                         % ((max_enc-min_enc)/avg_enc*100.0))
-            stream.write(" - min: %d (proc rank=%d)\n" % (min_enc,
-                                                          min_enc_rank))
-            stream.write(" - max: %d (proc rank=%d)\n" % (max_enc,
-                                                          max_enc_rank))
+            max_enc, max_enc_rank = max(
+                zip(explored_nodes_count, rank), key=lambda x: x[0]
+            )
+            min_enc, min_enc_rank = min(
+                zip(explored_nodes_count, rank), key=lambda x: x[0]
+            )
+            avg_enc = sum_enc / float(len(explored_nodes_count))
+            stream.write(
+                "Load Imbalance:     %6.2f%%\n"
+                % ((max_enc - min_enc) / avg_enc * 100.0)
+            )
+            stream.write(" - min: %d (proc rank=%d)\n" % (min_enc, min_enc_rank))
+            stream.write(" - max: %d (proc rank=%d)\n" % (max_enc, max_enc_rank))
         stream.write("Average Worker Timing:\n")
         queue_count_str = "%d" % sum(queue_count)
-        tmp = "%"+str(len(queue_count_str))+"d"
+        tmp = "%" + str(len(queue_count_str)) + "d"
         bound_count_str = tmp % sum(bound_count)
         objective_count_str = tmp % sum(objective_count)
         branch_count_str = tmp % sum(branch_count)
         load_state_count_str = tmp % sum(load_state_count)
-        stream.write(" - queue:     %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (_nonzero_avg(queue_time,
-                                     div=wall_time)*100.0,
-                        time_format(_nonzero_avg(queue_time,
-                                                 div=queue_count),
-                                    align_unit=True),
-                        queue_count_str))
-        stream.write(" - load_state:%6.2f%% [avg time: %8s, count: %s]\n"
-                     % (_nonzero_avg(load_state_time,
-                                     div=wall_time)*100.0,
-                        time_format(_nonzero_avg(load_state_time,
-                                                 div=load_state_count),
-                                    align_unit=True),
-                        load_state_count_str))
-        stream.write(" - bound:     %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (_nonzero_avg(bound_time,
-                                     div=wall_time)*100.0,
-                        time_format(_nonzero_avg(bound_time,
-                                                 div=bound_count),
-                                    align_unit=True),
-                        bound_count_str))
-        stream.write(" - objective: %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (_nonzero_avg(objective_time,
-                                     div=wall_time)*100.0,
-                        time_format(_nonzero_avg(objective_time,
-                                                 div=objective_count),
-                                    align_unit=True),
-                        objective_count_str))
-        stream.write(" - branch:    %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (_nonzero_avg(branch_time,
-                                     div=wall_time)*100.0,
-                        time_format(_nonzero_avg(branch_time,
-                                                 div=branch_count),
-                                    align_unit=True),
-                        branch_count_str))
-        other_time = [wt-ot-bt-brt-lst if qc != 0 else 0
-                      for wt,ot,bt,brt,lst,qc in
-                      zip(work_time,
-                          objective_time,
-                          bound_time,
-                          branch_time,
-                          load_state_time,
-                          queue_count)]
-        stream.write(" - other:     %6.2f%% [avg time: %8s, count: %s]\n"
-                     % (_nonzero_avg(other_time,
-                                     div=wall_time)*100.0,
-                        time_format(_nonzero_avg(other_time,
-                                                 div=queue_count),
-                                    align_unit=True),
-                        queue_count_str))
+        stream.write(
+            " - queue:     %6.2f%% [avg time: %8s, count: %s]\n"
+            % (
+                _nonzero_avg(queue_time, div=wall_time) * 100.0,
+                time_format(_nonzero_avg(queue_time, div=queue_count), align_unit=True),
+                queue_count_str,
+            )
+        )
+        stream.write(
+            " - load_state:%6.2f%% [avg time: %8s, count: %s]\n"
+            % (
+                _nonzero_avg(load_state_time, div=wall_time) * 100.0,
+                time_format(
+                    _nonzero_avg(load_state_time, div=load_state_count), align_unit=True
+                ),
+                load_state_count_str,
+            )
+        )
+        stream.write(
+            " - bound:     %6.2f%% [avg time: %8s, count: %s]\n"
+            % (
+                _nonzero_avg(bound_time, div=wall_time) * 100.0,
+                time_format(_nonzero_avg(bound_time, div=bound_count), align_unit=True),
+                bound_count_str,
+            )
+        )
+        stream.write(
+            " - objective: %6.2f%% [avg time: %8s, count: %s]\n"
+            % (
+                _nonzero_avg(objective_time, div=wall_time) * 100.0,
+                time_format(
+                    _nonzero_avg(objective_time, div=objective_count), align_unit=True
+                ),
+                objective_count_str,
+            )
+        )
+        stream.write(
+            " - branch:    %6.2f%% [avg time: %8s, count: %s]\n"
+            % (
+                _nonzero_avg(branch_time, div=wall_time) * 100.0,
+                time_format(
+                    _nonzero_avg(branch_time, div=branch_count), align_unit=True
+                ),
+                branch_count_str,
+            )
+        )
+        other_time = [
+            wt - ot - bt - brt - lst if qc != 0 else 0
+            for wt, ot, bt, brt, lst, qc in zip(
+                work_time,
+                objective_time,
+                bound_time,
+                branch_time,
+                load_state_time,
+                queue_count,
+            )
+        ]
+        stream.write(
+            " - other:     %6.2f%% [avg time: %8s, count: %s]\n"
+            % (
+                _nonzero_avg(other_time, div=wall_time) * 100.0,
+                time_format(_nonzero_avg(other_time, div=queue_count), align_unit=True),
+                queue_count_str,
+            )
+        )
 
-def solve(problem,
-          comm=_notset,
-          dispatcher_rank=0,
-          log_filename=None,
-          results_filename=None,
-          **kwds):
+
+def solve(
+    problem,
+    comm=_notset,
+    dispatcher_rank=0,
+    log_filename=None,
+    results_filename=None,
+    **kwds
+):
     """Solves a branch-and-bound problem and returns the
     solution.
 
@@ -1186,14 +1217,10 @@ def solve(problem,
         An object storing information about the solve.
     """
 
-    opt = Solver(comm=comm,
-                 dispatcher_rank=dispatcher_rank)
+    opt = Solver(comm=comm, dispatcher_rank=dispatcher_rank)
 
-    if (opt.is_dispatcher) and \
-       ("log" not in kwds) and \
-       (log_filename is not None):
-        kwds["log"] = get_simple_logger(
-            filename=log_filename)
+    if (opt.is_dispatcher) and ("log" not in kwds) and (log_filename is not None):
+        kwds["log"] = get_simple_logger(filename=log_filename)
 
     results = opt.solve(problem, **kwds)
 
@@ -1207,5 +1234,6 @@ def solve(problem,
         results.write(results_filename)
 
     return results
+
 
 _solve_defaults = get_default_args(Solver.solve)

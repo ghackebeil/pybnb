@@ -1,11 +1,11 @@
 pybnb
 =====
 
-|PyPI-Status| |PyPI-Versions| |Codacy-Grade|
+|PyPI-Status| |PyPI-Versions| |PyPI-Downloads|
 
 |Travis-Status| |Appveyor-Status| |Coverage-Status| |Documentation-Status|
 
-|PyPI-Downloads|
+|Codacy-Grade| |Mypy| |Black|
 
 A parallel branch-and-bound engine for Python. (https://pybnb.readthedocs.io)
 
@@ -130,8 +130,12 @@ Quick Start
 .. |PyPI-Status| image:: https://img.shields.io/pypi/v/pybnb.svg
   :target: https://pypi.python.org/pypi/pybnb
 .. |PyPI-Versions| image:: https://img.shields.io/pypi/pyversions/pybnb.svg
-   :target: https://pypi.org/project/pybnb
+  :target: https://pypi.org/project/pybnb
 .. |Codacy-Grade| image:: https://img.shields.io/lgtm/grade/python/g/ghackebeil/pybnb.svg?logo=lgtm&logoWidth=18
-   :target: https://lgtm.com/projects/g/ghackebeil/pybnb/context:python
+  :target: https://lgtm.com/projects/g/ghackebeil/pybnb/context:python
 .. |PyPI-Downloads| image:: https://img.shields.io/pypi/dm/pybnb.svg
   :target: https://pypistats.org/packages/pybnb
+.. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+  :target: https://github.com/psf/black
+.. |Mypy| image:: http://www.mypy-lang.org/static/mypy_badge.svg
+  :target: https://mypy-lang.org

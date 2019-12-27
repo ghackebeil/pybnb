@@ -2,7 +2,7 @@
 mpi4py
 PyYAML
 pyomo
-coverage
+coverage==4.5.4
 pytest
 pytest-coverage
 pytest-doctestplus

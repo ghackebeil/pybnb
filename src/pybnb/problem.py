@@ -5,13 +5,13 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import array
 
-from pybnb.common import (minimize,
-                          maximize,
-                          inf)
+from pybnb.common import minimize, maximize, inf
+
 
 class Problem(object):
     """The abstract base class used for defining
     branch-and-bound problems."""
+
     __slots__ = ()
 
     def infeasible_objective(self):
@@ -40,7 +40,7 @@ class Problem(object):
     # Abstract Methods
     #
 
-    def sense(self):                              #pragma:nocover
+    def sense(self):  # pragma:nocover
         """Returns the objective sense for this problem.
 
         Note
@@ -50,7 +50,7 @@ class Problem(object):
         """
         raise NotImplementedError()
 
-    def objective(self):                          #pragma:nocover
+    def objective(self):  # pragma:nocover
         """Returns a feasible value for the objective of the
         current problem state or
         :func:`self.infeasible_objective()
@@ -64,7 +64,7 @@ class Problem(object):
         """
         raise NotImplementedError()
 
-    def bound(self):                              #pragma:nocover
+    def bound(self):  # pragma:nocover
         """Returns a value that is a bound on the objective
         of the current problem state or
         :func:`self.unbounded_objective()
@@ -78,7 +78,7 @@ class Problem(object):
         """
         raise NotImplementedError()
 
-    def branch(self):                #pragma:nocover
+    def branch(self):  # pragma:nocover
         """Returns a list of :class:`Node <pybnb.node.Node>`
         objects that partition the node state into zero or
         more children. This method can also be defined as a
@@ -91,7 +91,7 @@ class Problem(object):
         """
         raise NotImplementedError()
 
-    def save_state(self, node):                   #pragma:nocover
+    def save_state(self, node):  # pragma:nocover
         """Saves the current problem state into the given
         :class:`pybnb.node.Node` object.
 
@@ -109,7 +109,7 @@ class Problem(object):
         """
         raise NotImplementedError()
 
-    def load_state(self, node):                   #pragma:nocover
+    def load_state(self, node):  # pragma:nocover
         """Loads the problem state that is stored on the
         given :class:`pybnb.node.Node` object.
 
@@ -124,10 +124,7 @@ class Problem(object):
     # Optional Abstract Methods
     #
 
-    def notify_solve_begins(self,
-                            comm,
-                            worker_comm,
-                            convergence_checker):
+    def notify_solve_begins(self, comm, worker_comm, convergence_checker):
         """Called when a branch-and-bound solver
         begins as solve. The :class:`Problem
         <pybnb.problem.Problem>` base class provides a
@@ -150,9 +147,7 @@ class Problem(object):
         """
         pass
 
-    def notify_new_best_node(self,
-                             node,
-                             current):
+    def notify_new_best_node(self, node, current):
         """Called when a branch-and-bound solver receives a
         new best node from the dispatcher. The
         :class:`Problem <pybnb.problem.Problem>` base class
@@ -171,10 +166,7 @@ class Problem(object):
         """
         pass
 
-    def notify_solve_finished(self,
-                              comm,
-                              worker_comm,
-                              results):
+    def notify_solve_finished(self, comm, worker_comm, results):
         """Called when a branch-and-bound solver
         finishes. The :class:`Problem
         <pybnb.problem.Problem>` base class provides a
@@ -197,12 +189,13 @@ class Problem(object):
         """
         pass
 
+
 class _SolveInfo(object):
-    __slots__ = ("data")
+    __slots__ = "data"
     _data_size = 11
+
     def __init__(self):
-        self.data = array.array('d',[0]) * \
-                    _SolveInfo._data_size
+        self.data = array.array("d", [0]) * _SolveInfo._data_size
 
     def reset(self):
         """Resets all statistics to zero."""
@@ -211,9 +204,10 @@ class _SolveInfo(object):
 
     def add_from(self, other):
         if type(other) is not _SolveInfo:
-            raise TypeError("Type %s can not be added "
-                            "with a _SolveInfo object"
-                            % (other.__class__.__name__))
+            raise TypeError(
+                "Type %s can not be added "
+                "with a _SolveInfo object" % (other.__class__.__name__)
+            )
         assert len(self.data) == len(other.data)
         for i in range(_SolveInfo._data_size):
             self.data[i] += other.data[i]
@@ -221,6 +215,7 @@ class _SolveInfo(object):
     @property
     def total_queue_time(self):
         return float(self.data[0])
+
     @total_queue_time.setter
     def total_queue_time(self, val):
         self.data[0] = val
@@ -228,6 +223,7 @@ class _SolveInfo(object):
     @property
     def queue_call_count(self):
         return int(self.data[1])
+
     @queue_call_count.setter
     def queue_call_count(self, val):
         self.data[1] = val
@@ -239,6 +235,7 @@ class _SolveInfo(object):
     @property
     def total_objective_time(self):
         return float(self.data[2])
+
     @total_objective_time.setter
     def total_objective_time(self, val):
         self.data[2] = val
@@ -246,6 +243,7 @@ class _SolveInfo(object):
     @property
     def objective_call_count(self):
         return int(self.data[3])
+
     @objective_call_count.setter
     def objective_call_count(self, val):
         self.data[3] = val
@@ -257,6 +255,7 @@ class _SolveInfo(object):
     @property
     def total_bound_time(self):
         return float(self.data[4])
+
     @total_bound_time.setter
     def total_bound_time(self, val):
         self.data[4] = val
@@ -264,6 +263,7 @@ class _SolveInfo(object):
     @property
     def bound_call_count(self):
         return int(self.data[5])
+
     @bound_call_count.setter
     def bound_call_count(self, val):
         self.data[5] = val
@@ -275,6 +275,7 @@ class _SolveInfo(object):
     @property
     def total_branch_time(self):
         return float(self.data[6])
+
     @total_branch_time.setter
     def total_branch_time(self, val):
         self.data[6] = val
@@ -282,6 +283,7 @@ class _SolveInfo(object):
     @property
     def branch_call_count(self):
         return int(self.data[7])
+
     @branch_call_count.setter
     def branch_call_count(self, val):
         self.data[7] = val
@@ -293,6 +295,7 @@ class _SolveInfo(object):
     @property
     def total_load_state_time(self):
         return float(self.data[8])
+
     @total_load_state_time.setter
     def total_load_state_time(self, val):
         self.data[8] = val
@@ -300,6 +303,7 @@ class _SolveInfo(object):
     @property
     def load_state_call_count(self):
         return int(self.data[9])
+
     @load_state_call_count.setter
     def load_state_call_count(self, val):
         self.data[9] = val
@@ -311,6 +315,7 @@ class _SolveInfo(object):
     @property
     def explored_nodes_count(self):
         return int(self.data[10])
+
     @explored_nodes_count.setter
     def explored_nodes_count(self, val):
         self.data[10] = val
@@ -322,6 +327,7 @@ class _SolveInfo(object):
 class _ProblemWithSolveInfoCollection(Problem):
     """A Problem objects that keeps track of statistics used
     by the solver"""
+
     def __init__(self):
         self._clock = None
         self._solve_info = None
@@ -333,9 +339,11 @@ class _ProblemWithSolveInfoCollection(Problem):
         assert isinstance(solve_info, _SolveInfo)
         self._solve_info = solve_info
 
+
 class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
     """A wrapper for Problem objects that collects statistics
     on methods called during the solve."""
+
     def __init__(self, problem):
         self._problem = problem
         super(_SimpleSolveInfoCollector, self).__init__()
@@ -351,14 +359,14 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         start = self._clock()
         tmp = self._problem.objective()
         stop = self._clock()
-        self._solve_info._increment_objective_stat(stop-start, 1)
+        self._solve_info._increment_objective_stat(stop - start, 1)
         return tmp
 
     def bound(self):
         start = self._clock()
         tmp = self._problem.bound()
         stop = self._clock()
-        self._solve_info._increment_bound_stat(stop-start, 1)
+        self._solve_info._increment_bound_stat(stop - start, 1)
         return tmp
 
     def branch(self):
@@ -366,7 +374,7 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         for item in self._problem.branch():
             yield item
         stop = self._clock()
-        self._solve_info._increment_branch_stat(stop-start, 1)
+        self._solve_info._increment_branch_stat(stop - start, 1)
 
     def save_state(self, node):
         self._problem.save_state(node)
@@ -375,28 +383,13 @@ class _SimpleSolveInfoCollector(_ProblemWithSolveInfoCollection):
         start = self._clock()
         self._problem.load_state(node)
         stop = self._clock()
-        self._solve_info._increment_load_state_stat(stop-start, 1)
+        self._solve_info._increment_load_state_stat(stop - start, 1)
 
-    def notify_solve_begins(self,
-                            comm,
-                            worker_comm,
-                            convergence_checker):
-        self._problem.notify_solve_begins(
-            comm,
-            worker_comm,
-            convergence_checker)
+    def notify_solve_begins(self, comm, worker_comm, convergence_checker):
+        self._problem.notify_solve_begins(comm, worker_comm, convergence_checker)
 
-    def notify_new_best_node(self,
-                             node,
-                             current):
-        self._problem.notify_new_best_node(node,
-                                           current)
+    def notify_new_best_node(self, node, current):
+        self._problem.notify_new_best_node(node, current)
 
-    def notify_solve_finished(self,
-                              comm,
-                              worker_comm,
-                              results):
-        self._problem.notify_solve_finished(
-            comm,
-            worker_comm,
-            results)
+    def notify_solve_finished(self, comm, worker_comm, results):
+        self._problem.notify_solve_finished(comm, worker_comm, results)

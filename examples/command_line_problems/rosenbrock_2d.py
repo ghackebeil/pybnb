@@ -20,10 +20,12 @@ from pybnb.pyomo.problem import PyomoProblem
 
 import pyomo.kernel as pmo
 
+
 class McCormickEnvelope(pmo.constraint_tuple):
     """A class that stores constraints defining
     the convex envelope for the function: z = xy
     """
+
     def __init__(self, x, y, z):
         assert x.has_lb() and x.has_ub()
         assert y.has_lb() and y.has_ub()
@@ -31,10 +33,8 @@ class McCormickEnvelope(pmo.constraint_tuple):
         self.y = y
         self.z = z
         super(McCormickEnvelope, self).__init__(
-            (pmo.constraint(),
-             pmo.constraint(),
-             pmo.constraint(),
-             pmo.constraint()))
+            (pmo.constraint(), pmo.constraint(), pmo.constraint(), pmo.constraint())
+        )
         self.update_constraints()
 
     def update_constraints(self):
@@ -43,14 +43,15 @@ class McCormickEnvelope(pmo.constraint_tuple):
         x, y, z = self.x, self.y, self.z
         assert x.has_lb() and x.has_ub()
         assert y.has_lb() and y.has_ub()
-        self[0].body = z - y.lb*x - x.lb*y
-        self[0].lb = -x.lb*y.lb
-        self[1].body = z - y.ub*x - x.ub*y
-        self[1].lb = -x.ub*y.ub
-        self[2].body = z - y.ub*x - x.lb*y
-        self[2].ub = -x.lb*y.ub
-        self[3].body = z - y.lb*x - x.ub*y
-        self[3].ub = -x.ub*y.lb
+        self[0].body = z - y.lb * x - x.lb * y
+        self[0].lb = -x.lb * y.lb
+        self[1].body = z - y.ub * x - x.ub * y
+        self[1].lb = -x.ub * y.ub
+        self[2].body = z - y.ub * x - x.lb * y
+        self[2].ub = -x.lb * y.ub
+        self[3].body = z - y.lb * x - x.ub * y
+        self[3].ub = -x.ub * y.lb
+
 
 class SquaredEnvelope(pmo.constraint_tuple):
     """A class that stores constraints defining
@@ -60,10 +61,8 @@ class SquaredEnvelope(pmo.constraint_tuple):
         assert x.has_lb() and x.has_ub()
         self.x = x
         self.z = z
-        super(SquaredEnvelope, self).__init__(
-            (pmo.constraint(),
-             pmo.constraint()))
-        self[0].body = self.z - self.x**2
+        super(SquaredEnvelope, self).__init__((pmo.constraint(), pmo.constraint()))
+        self[0].body = self.z - self.x ** 2
         self[0].lb = 0
         self.update_constraints()
 
@@ -72,13 +71,13 @@ class SquaredEnvelope(pmo.constraint_tuple):
         bounds"""
         x, z = self.x, self.z
         assert x.has_lb() and x.has_ub()
-        self[1].body = z - (x.lb + x.ub)*x
-        self[1].ub = -x.lb*x.ub
+        self[1].body = z - (x.lb + x.ub) * x
+        self[1].ub = -x.lb * x.ub
 
     def derived_output_bounds(self):
         x = self.x
         assert x.has_lb() and x.has_ub()
-        vals = (x.lb**2, x.ub**2)
+        vals = (x.lb ** 2, x.ub ** 2)
         if (x.lb <= 0) and (x.ub >= 0):
             lb = 0.0
         else:
@@ -86,20 +85,16 @@ class SquaredEnvelope(pmo.constraint_tuple):
         ub = max(vals)
         return lb, ub
 
-class Rosenbrock2D(PyomoProblem):
 
+class Rosenbrock2D(PyomoProblem):
     def __init__(self, xL, xU, yL, yU):
         assert xL <= xU
         assert yL <= yU
         self._model = pmo.block()
         x = self._model.x = pmo.variable(lb=xL, ub=xU)
         y = self._model.y = pmo.variable(lb=yL, ub=yU)
-        x2 = self._model.x2 = pmo.variable(
-            lb=-pybnb.inf,
-            ub=pybnb.inf)
-        x2y = self._model.x2y = pmo.variable(
-            lb=-pybnb.inf,
-            ub=pybnb.inf)
+        x2 = self._model.x2 = pmo.variable(lb=-pybnb.inf, ub=pybnb.inf)
+        x2y = self._model.x2y = pmo.variable(lb=-pybnb.inf, ub=pybnb.inf)
         self._model.x2_c = SquaredEnvelope(x, x2)
         # Temporarily provide bounds to the x2 variable so
         # they can be used to build the McCormick
@@ -108,22 +103,19 @@ class Rosenbrock2D(PyomoProblem):
         # McCormickEnvelope constraints.
         x2.bounds = self._model.x2_c.derived_output_bounds()
         self._model.x2y_c = McCormickEnvelope(x2, y, x2y)
-        x2.bounds = (-pybnb.inf,
-                     pybnb.inf)
+        x2.bounds = (-pybnb.inf, pybnb.inf)
 
         # original objective
         self._model.f = pmo.expression(
-            (x**4 - 2*(x**2)*y + \
-             0.5*(x**2) - x + \
-             (y**2) + 0.5))
+            (x ** 4 - 2 * (x ** 2) * y + 0.5 * (x ** 2) - x + (y ** 2) + 0.5)
+        )
         # convex relaxation
         self._model.f_convex = pmo.expression(
-            (x**4 - 2*x2y + \
-             0.5*(x**2) - x + \
-             (y**2) + 0.5))
+            (x ** 4 - 2 * x2y + 0.5 * (x ** 2) - x + (y ** 2) + 0.5)
+        )
         self._model.objective = pmo.objective(sense=pmo.minimize)
         self._ipopt = pmo.SolverFactory("ipopt")
-        self._ipopt.options['tol'] = 1e-9
+        self._ipopt.options["tol"] = 1e-9
         self._last_bound_was_feasible = False
 
         # make sure the PyomoProblem initializer is called
@@ -139,13 +131,12 @@ class Rosenbrock2D(PyomoProblem):
         y = self._model.y
         resid = 0.0
         # x.lb <= x <= x.ub
-        resid += min(0,x.slack)**2
+        resid += min(0, x.slack) ** 2
         # y.lb <= y <= y.ub
-        resid += min(0,y.slack)**2
+        resid += min(0, y.slack) ** 2
         # x2y <= y(x^2)
-        resid += min(0, (x.value*x.value*y.value) - \
-                        self._model.x2y.value)**2
-        resid = resid**(0.5)
+        resid += min(0, (x.value * x.value * y.value) - self._model.x2y.value) ** 2
+        resid = resid ** (0.5)
         if resid < 1e-5:
             return True
         else:
@@ -168,11 +159,9 @@ class Rosenbrock2D(PyomoProblem):
         # constraints for x2y. After that, they are no
         # longer needed as they are enforced by the
         # SquaredEnvelope constraints.
-        self._model.x2.bounds = \
-            self._model.x2_c.derived_output_bounds()
+        self._model.x2.bounds = self._model.x2_c.derived_output_bounds()
         self._model.x2y_c.update_constraints()
-        self._model.x2.bounds = (-pybnb.inf,
-                                 pybnb.inf)
+        self._model.x2.bounds = (-pybnb.inf, pybnb.inf)
 
     #
     # Implement PyomoProblem abstract methods
@@ -190,17 +179,18 @@ class Rosenbrock2D(PyomoProblem):
     # Implement Problem abstract methods
     #
 
-    #def sense(self): # implemented by PyomoProblem base class
+    # def sense(self): # implemented by PyomoProblem base class
 
     def objective(self):
         self.setup_model_for_objective()
         results = self._ipopt.solve(self._model, load_solutions=False)
-        if (str(results.solver.status) == "ok") and \
-           (str(results.solver.termination_condition) == "optimal"):
+        if (str(results.solver.status) == "ok") and (
+            str(results.solver.termination_condition) == "optimal"
+        ):
             self._model.load_solution(results.solution(0))
             assert self._model.x2y.stale
             return round(self._model.objective(), 7)
-        else:                                     #pragma:nocover
+        else:  # pragma:nocover
             assert str(results.solver.status) == "warning"
             if str(results.solver.termination_condition) == "unbounded":
                 return self.unbounded_objective()
@@ -212,12 +202,13 @@ class Rosenbrock2D(PyomoProblem):
         self.setup_model_for_bound()
         self._last_bound_was_feasible = False
         results = self._ipopt.solve(self._model, load_solutions=False)
-        if (str(results.solver.status) == "ok") and \
-           (str(results.solver.termination_condition) == "optimal"):
+        if (str(results.solver.status) == "ok") and (
+            str(results.solver.termination_condition) == "optimal"
+        ):
             self._model.load_solution(results.solution(0))
             self._last_bound_was_feasible = self.check_feasible()
             return round(self._model.objective(), 7)
-        else:                                     #pragma:nocover
+        else:  # pragma:nocover
             assert str(results.solver.status) == "warning"
             if str(results.solver.termination_condition) == "unbounded":
                 return self.unbounded_objective()
@@ -226,8 +217,7 @@ class Rosenbrock2D(PyomoProblem):
                 return self.infeasible_objective()
 
     def save_state(self, node):
-        node.state = (self._model.x.bounds,
-                      self._model.y.bounds)
+        node.state = (self._model.x.bounds, self._model.y.bounds)
 
     def load_state(self, node):
         assert len(node.state) == 2
@@ -241,8 +231,8 @@ class Rosenbrock2D(PyomoProblem):
             return ()
         xL, xU = self._model.x.bounds
         yL, yU = self._model.y.bounds
-        xdist = float(xU-xL)
-        ydist = float(yU-yL)
+        xdist = float(xU - xL)
+        ydist = float(yU - yL)
         branch_var = None
         if xdist > ydist:
             branch_var = self._model.x
@@ -253,7 +243,7 @@ class Rosenbrock2D(PyomoProblem):
             L = yL
             U = yU
         # branch
-        mid = 0.5*(L + U)
+        mid = 0.5 * (L + U)
         left = pybnb.Node()
         branch_var.bounds = (L, mid)
         self.save_state(left)
@@ -264,9 +254,9 @@ class Rosenbrock2D(PyomoProblem):
         branch_var.bounds = (L, U)
         return [left, right]
 
+
 if __name__ == "__main__":
     import pybnb.misc
 
-    problem = Rosenbrock2D(xL=-25, xU=25,
-                           yL=-25 ,yU=25)
+    problem = Rosenbrock2D(xL=-25, xU=25, yL=-25, yU=25)
     pybnb.misc.create_command_line_solver(problem)

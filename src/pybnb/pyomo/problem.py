@@ -4,12 +4,11 @@ on a pyomo.kernel model.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-from pybnb import (minimize,
-                   maximize,
-                   Problem)
+from pybnb import minimize, maximize, Problem
 from pybnb.pyomo.misc import generate_cids
 
 import pyomo.kernel as pmo
+
 
 class PyomoProblem(Problem):
     """An extension of the :class:`pybnb.Problem
@@ -23,14 +22,13 @@ class PyomoProblem(Problem):
         self.update_pyomo_object_cids()
 
     def update_pyomo_object_cids(self):
-        (self.__pyomo_object_to_cid,
-         self.__cid_to_pyomo_object) = \
-            generate_cids(self.pyomo_model,
-                          active=None)
-        assert len(set(self.pyomo_object_to_cid.values())) == \
-            len(self.__pyomo_object_to_cid)
-        assert len(self.cid_to_pyomo_object) == \
-            len(self.__pyomo_object_to_cid)
+        (self.__pyomo_object_to_cid, self.__cid_to_pyomo_object) = generate_cids(
+            self.pyomo_model, active=None
+        )
+        assert len(set(self.pyomo_object_to_cid.values())) == len(
+            self.__pyomo_object_to_cid
+        )
+        assert len(self.cid_to_pyomo_object) == len(self.__pyomo_object_to_cid)
 
     @property
     def pyomo_object_to_cid(self):
@@ -55,7 +53,7 @@ class PyomoProblem(Problem):
         This method is abstract and must be defined by the
         user.
         """
-        raise NotImplementedError()               #pragma:nocover
+        raise NotImplementedError()  # pragma:nocover
 
     @property
     def pyomo_model_objective(self):
@@ -67,7 +65,7 @@ class PyomoProblem(Problem):
         This method is abstract and must be defined by the
         user.
         """
-        raise NotImplementedError()               #pragma:nocover
+        raise NotImplementedError()  # pragma:nocover
 
     #
     # Implements a few problem methods

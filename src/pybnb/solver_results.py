@@ -6,18 +6,17 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 
 # recognized pytest-doctestplus plugin,
 # not the standard doctest
-__doctest_requires__ = {'SolverResults.write': ['yaml']}
+__doctest_requires__ = {"SolverResults.write": ["yaml"]}
 
 import sys
 import base64
 
-from pybnb.common import (SolutionStatus,
-                          TerminationCondition)
-from pybnb.misc import (time_format,
-                        as_stream)
+from pybnb.common import SolutionStatus, TerminationCondition
+from pybnb.misc import time_format, as_stream
 from pybnb.node import dumps
 
 import six
+
 
 class SolverResults(object):
     """Stores the results of a branch-and-bound solve.
@@ -127,89 +126,85 @@ class SolverResults(object):
         with as_stream(stream) as stream:
             attrs = vars(self)
             names = sorted(list(attrs.keys()))
-            first = ('solution_status', 'termination_condition',
-                     'objective', 'bound',
-                     'absolute_gap', 'relative_gap',
-                     'nodes', 'wall_time', 'best_node')
+            first = (
+                "solution_status",
+                "termination_condition",
+                "objective",
+                "bound",
+                "absolute_gap",
+                "relative_gap",
+                "nodes",
+                "wall_time",
+                "best_node",
+            )
             for cnt, name in enumerate(first):
                 if not hasattr(self, name):
                     continue
                 names.remove(name)
                 val = getattr(self, name)
                 if val is not None:
-                    if name in ("solution_status",
-                                "termination_condition"):
-                        if type(val) in (SolutionStatus,
-                                         TerminationCondition):
+                    if name in ("solution_status", "termination_condition"):
+                        if type(val) in (SolutionStatus, TerminationCondition):
                             val = val.value
                     elif pretty:
-                        if name == 'wall_time':
-                            val = time_format(val,
-                                              digits=2)
-                        elif name in ('objective',
-                                      'bound',
-                                      'absolute_gap',
-                                      'relative_gap'):
+                        if name == "wall_time":
+                            val = time_format(val, digits=2)
+                        elif name in (
+                            "objective",
+                            "bound",
+                            "absolute_gap",
+                            "relative_gap",
+                        ):
                             val = "%.7g" % (val)
                         elif name == "best_node":
                             if val.objective is not None:
-                                val = ("Node(objective=%.7g)"
-                                       % (val.objective))
+                                val = "Node(objective=%.7g)" % (val.objective)
                             else:
                                 val = "Node(objective=None)"
                     else:
                         if name == "best_node":
                             val = dumps(val)
-                            if hasattr(base64, 'encodebytes'):
-                                val = base64.encodebytes(val).\
-                                    decode("ascii")
+                            if hasattr(base64, "encodebytes"):
+                                val = base64.encodebytes(val).decode("ascii")
                             else:
-                                val = base64.encodestring(val).\
-                                    decode("ascii")
-                            val = ('\n  '.join(
-                                val.splitlines()))
-                            val = ("!!binary |\n  %s"
-                                   % (val))
+                                val = base64.encodestring(val).decode("ascii")
+                            val = "\n  ".join(val.splitlines())
+                            val = "!!binary |\n  %s" % (val)
                         else:
                             val_ = "%r" % (val)
                             if type(val) is float:
-                                if val_ == 'inf':
-                                    val_ = '.inf'
-                                elif val_ == '-inf':
+                                if val_ == "inf":
+                                    val_ = ".inf"
+                                elif val_ == "-inf":
                                     val_ = "-.inf"
-                                elif val_ == 'nan':
+                                elif val_ == "nan":
                                     val_ = ".nan"
                             val = val_
                             del val_
                 if pretty or (val is not None):
-                    stream.write(prefix+'%s: %s\n'
-                                 % (name, val))
+                    stream.write(prefix + "%s: %s\n" % (name, val))
                 else:
                     assert val is None
-                    stream.write(prefix+'%s: null\n'
-                                 % (name))
+                    stream.write(prefix + "%s: null\n" % (name))
             for name in names:
                 val = getattr(self, name)
                 if pretty:
-                    stream.write(prefix+'%s: %r\n'
-                                 % (name, val))
+                    stream.write(prefix + "%s: %r\n" % (name, val))
                 else:
                     if val is None:
-                        stream.write(prefix+'%s: null\n'
-                                     % (name))
+                        stream.write(prefix + "%s: null\n" % (name))
                     else:
                         val_ = "%r" % (val)
                         if type(val) is float:
-                            if val_ == 'inf':
-                                val_ = '.inf'
-                            elif val_ == '-inf':
+                            if val_ == "inf":
+                                val_ = ".inf"
+                            elif val_ == "-inf":
                                 val_ = "-.inf"
-                            elif val_ == 'nan':
+                            elif val_ == "nan":
                                 val_ = ".nan"
                         val = val_
                         del val_
-                        stream.write(prefix+'%s: %s\n'
-                                     % (name, val))
+                        stream.write(prefix + "%s: %s\n" % (name, val))
 
     def __str__(self):
         """Represents the results as a string."""

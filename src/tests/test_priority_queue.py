@@ -2,26 +2,27 @@ import random
 
 import pytest
 
-from pybnb.common import (minimize,
-                          maximize,
-                          inf)
+from pybnb.common import minimize, maximize, inf
 from pybnb.node import Node
-from pybnb.priority_queue import \
-    (_NoThreadingMaxPriorityFirstQueue,
-     _NoThreadingFIFOQueue,
-     _NoThreadingLIFOQueue,
-     WorstBoundFirstPriorityQueue,
-     CustomPriorityQueue,
-     BestObjectiveFirstPriorityQueue,
-     BreadthFirstPriorityQueue,
-     DepthFirstPriorityQueue,
-     FIFOQueue,
-     LIFOQueue,
-     RandomPriorityQueue,
-     LocalGapPriorityQueue,
-     LexicographicPriorityQueue,
-     PriorityQueueFactory,
-     register_queue_type)
+from pybnb.priority_queue import (
+    _NoThreadingMaxPriorityFirstQueue,
+    _NoThreadingFIFOQueue,
+    _NoThreadingLIFOQueue,
+    WorstBoundFirstPriorityQueue,
+    CustomPriorityQueue,
+    BestObjectiveFirstPriorityQueue,
+    BreadthFirstPriorityQueue,
+    DepthFirstPriorityQueue,
+    FIFOQueue,
+    LIFOQueue,
+    RandomPriorityQueue,
+    LocalGapPriorityQueue,
+    LexicographicPriorityQueue,
+    _registered_queue_types,
+    PriorityQueueFactory,
+    register_queue_type,
+)
+
 
 def _new_child(node):
     child = Node()
@@ -32,103 +33,80 @@ def _new_child(node):
     assert child.state is None
     return child
 
+
 def assert_isheap(x):
     for k in range(len(x)):
-        if ((2*k) + 1) < len(x):
-            assert x[k] <= x[2*k+1]
-        if ((2*k) + 2) < len(x):
-            assert x[k] <= x[2*k+2]
+        if ((2 * k) + 1) < len(x):
+            assert x[k] <= x[2 * k + 1]
+        if ((2 * k) + 2) < len(x):
+            assert x[k] <= x[2 * k + 2]
+
 
 class TestFactory(object):
-
     def test_factory(self):
-        assert type(PriorityQueueFactory('bound',
-                                         minimize,
-                                         True)) is \
-            WorstBoundFirstPriorityQueue
-        assert type(PriorityQueueFactory('custom',
-                                         minimize,
-                                         True)) is \
-            CustomPriorityQueue
-        assert type(PriorityQueueFactory('objective',
-                                         minimize,
-                                         True)) is \
-            BestObjectiveFirstPriorityQueue
-        assert type(PriorityQueueFactory('breadth',
-                                         minimize,
-                                         True)) is \
-            BreadthFirstPriorityQueue
-        assert type(PriorityQueueFactory('depth',
-                                         minimize,
-                                         True)) is \
-            DepthFirstPriorityQueue
-        assert type(PriorityQueueFactory('fifo',
-                                         minimize,
-                                         True)) is \
-            FIFOQueue
-        assert type(PriorityQueueFactory('lifo',
-                                         minimize,
-                                         True)) is \
-            LIFOQueue
-        assert type(PriorityQueueFactory('random',
-                                         minimize,
-                                         True)) is \
-            RandomPriorityQueue
-        assert type(PriorityQueueFactory('local_gap',
-                                         minimize,
-                                         True)) is \
-            LocalGapPriorityQueue
+        assert (
+            type(PriorityQueueFactory("bound", minimize, True))
+            is WorstBoundFirstPriorityQueue
+        )
+        assert (
+            type(PriorityQueueFactory("custom", minimize, True)) is CustomPriorityQueue
+        )
+        assert (
+            type(PriorityQueueFactory("objective", minimize, True))
+            is BestObjectiveFirstPriorityQueue
+        )
+        assert (
+            type(PriorityQueueFactory("breadth", minimize, True))
+            is BreadthFirstPriorityQueue
+        )
+        assert (
+            type(PriorityQueueFactory("depth", minimize, True))
+            is DepthFirstPriorityQueue
+        )
+        assert type(PriorityQueueFactory("fifo", minimize, True)) is FIFOQueue
+        assert type(PriorityQueueFactory("lifo", minimize, True)) is LIFOQueue
+        assert (
+            type(PriorityQueueFactory("random", minimize, True)) is RandomPriorityQueue
+        )
+        assert (
+            type(PriorityQueueFactory("local_gap", minimize, True))
+            is LocalGapPriorityQueue
+        )
         with pytest.raises(ValueError):
-            PriorityQueueFactory('_not_a_type_',
-                                 minimize,
-                                 True)
+            PriorityQueueFactory("_not_a_type_", minimize, True)
         # test LexicographicPriorityQueue creation
-        assert type(PriorityQueueFactory(('bound','objective'),
-                                         minimize,
-                                         True)) is \
-            LexicographicPriorityQueue
+        assert (
+            type(PriorityQueueFactory(("bound", "objective"), minimize, True))
+            is LexicographicPriorityQueue
+        )
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('_not_a_type_',),
-                                 minimize,
-                                 True)
+            PriorityQueueFactory(("_not_a_type_",), minimize, True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('custom',),
-                                 minimize,
-                                 True)
+            PriorityQueueFactory(("custom",), minimize, True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('fifo','custom'),
-                                 minimize,
-                                 True)
+            PriorityQueueFactory(("fifo", "custom"), minimize, True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory(('custom','fifo'),
-                                 minimize,
-                                 True)
+            PriorityQueueFactory(("custom", "fifo"), minimize, True)
         with pytest.raises(ValueError):
-            PriorityQueueFactory((),
-                                 minimize,
-                                 True)
+            PriorityQueueFactory((), minimize, True)
 
     def test_register_queue_type(self):
-        assert PriorityQueueFactory._types['bound'] is \
-            WorstBoundFirstPriorityQueue
+        assert _registered_queue_types["bound"] is WorstBoundFirstPriorityQueue
         # its okay to re-register the exact same thing
-        register_queue_type('bound',
-                            WorstBoundFirstPriorityQueue)
-        assert PriorityQueueFactory._types['bound'] is \
-            WorstBoundFirstPriorityQueue
+        register_queue_type("bound", WorstBoundFirstPriorityQueue)
+        assert _registered_queue_types["bound"] is WorstBoundFirstPriorityQueue
         with pytest.raises(ValueError):
-            register_queue_type('bound', None)
-        assert PriorityQueueFactory._types['bound'] is \
-            WorstBoundFirstPriorityQueue
-        assert '_not_a_type_' not in PriorityQueueFactory._types
+            register_queue_type("bound", None)
+        assert _registered_queue_types["bound"] is WorstBoundFirstPriorityQueue
+        assert "_not_a_type_" not in _registered_queue_types
         try:
-            register_queue_type('_not_a_type_', None)
-            assert PriorityQueueFactory._types['_not_a_type_'] is None
+            register_queue_type("_not_a_type_", None)
+            assert _registered_queue_types["_not_a_type_"] is None
         finally:
-            PriorityQueueFactory._types.pop('_not_a_type_',None)
+            _registered_queue_types.pop("_not_a_type_", None)
+
 
 class Test_NoThreadingMaxPriorityFirstQueue(object):
-
     def test_size(self):
         q = _NoThreadingMaxPriorityFirstQueue()
         assert_isheap(q._heap)
@@ -137,8 +115,8 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             q.next()
         cntr = {}
         for i in range(10):
-            cntr[i] = q.put(i,0)
-            assert q.size() == i+1
+            cntr[i] = q.put(i, 0)
+            assert q.size() == i + 1
             assert_isheap(q._heap)
         for i in range(10):
             c_, x_ = q.next()
@@ -146,7 +124,7 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             x = q.get()
             assert x_ == x
             assert x == i
-            assert q.size() == 10-(i+1)
+            assert q.size() == 10 - (i + 1)
             assert_isheap(q._heap)
         assert q.size() == 0
         assert q.get() is None
@@ -162,25 +140,25 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             q.put_get(None, 0)
         assert sorted(q.items()) == []
         assert_isheap(q._heap)
-        assert q.put_get(1,1) == (0,1)
-        assert q.put_get(1,1) == (1,1)
+        assert q.put_get(1, 1) == (0, 1)
+        assert q.put_get(1, 1) == (1, 1)
         cntr = {}
-        cntr[1] = q.put(1,1)
+        cntr[1] = q.put(1, 1)
         assert sorted(q.items()) == [1]
         assert_isheap(q._heap)
-        cntr[2] = q.put(2,2)
-        assert sorted(q.items()) == [1,2]
+        cntr[2] = q.put(2, 2)
+        assert sorted(q.items()) == [1, 2]
         assert_isheap(q._heap)
-        cntr[3] = q.put(3,2)
-        assert sorted(q.items()) == [1,2,3]
+        cntr[3] = q.put(3, 2)
+        assert sorted(q.items()) == [1, 2, 3]
         assert_isheap(q._heap)
-        cntr[4], item_ = q.put_get(4,-4)
+        cntr[4], item_ = q.put_get(4, -4)
         assert item_ == 2
-        assert sorted(q.items()) == [1,3,4]
+        assert sorted(q.items()) == [1, 3, 4]
         assert_isheap(q._heap)
         assert q.next() == (cntr[q.next()[1]], 3)
         assert q.get() == 3
-        assert sorted(q.items()) == [1,4]
+        assert sorted(q.items()) == [1, 4]
         assert_isheap(q._heap)
         assert q.next() == (cntr[q.next()[1]], 1)
         assert q.get() == 1
@@ -194,12 +172,14 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             q.next()
 
     def test_filter(self):
-        for k in range(-10,11):
-            cutoff = k*11
+        for k in range(-10, 11):
+            cutoff = k * 11
+
             def _filter(item):
                 if item <= cutoff:
                     return True
-            items = list(range(-1000,1000))
+
+            items = list(range(-1000, 1000))
             random.shuffle(items)
             q = _NoThreadingMaxPriorityFirstQueue()
             for i in items:
@@ -207,7 +187,7 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             assert_isheap(q._heap)
             correct = []
             removed = []
-            for _,_,item in q._heap:
+            for _, _, item in q._heap:
                 if item <= cutoff:
                     correct.append(item)
                 else:
@@ -216,12 +196,12 @@ class Test_NoThreadingMaxPriorityFirstQueue(object):
             assert removed_ == removed
             assert_isheap(q._heap)
             check = []
-            for _,_,item in q._heap:
+            for _, _, item in q._heap:
                 check.append(item)
             assert sorted(correct) == sorted(check)
 
-class Test_NoThreadingFIFOQueue(object):
 
+class Test_NoThreadingFIFOQueue(object):
     def test_size(self):
         q = _NoThreadingFIFOQueue()
         assert q.size() == 0
@@ -230,14 +210,14 @@ class Test_NoThreadingFIFOQueue(object):
         cntr = {}
         for i in range(10):
             cntr[i] = q.put(i)
-            assert q.size() == i+1
+            assert q.size() == i + 1
         for i in range(10):
             c_, x_ = q.next()
             assert c_ == cntr[x_]
             x = q.get()
             assert x_ == x
             assert x == i
-            assert q.size() == 10-(i+1)
+            assert q.size() == 10 - (i + 1)
         assert q.size() == 0
         assert q.get() is None
         with pytest.raises(IndexError):
@@ -250,21 +230,21 @@ class Test_NoThreadingFIFOQueue(object):
         with pytest.raises(ValueError):
             q.put_get(None)
         assert list(q.items()) == []
-        assert q.put_get(1) == (0,1)
-        assert q.put_get(1) == (1,1)
+        assert q.put_get(1) == (0, 1)
+        assert q.put_get(1) == (1, 1)
         cntr = {}
         cntr[1] = q.put(1)
         assert list(q.items()) == [1]
         cntr[2] = q.put(2)
-        assert list(q.items()) == [1,2]
+        assert list(q.items()) == [1, 2]
         cntr[3] = q.put(3)
-        assert list(q.items()) == [1,2,3]
+        assert list(q.items()) == [1, 2, 3]
         cntr[4], item_ = q.put_get(4)
         assert item_ == 1
-        assert list(q.items()) == [2,3,4]
+        assert list(q.items()) == [2, 3, 4]
         assert q.next() == (cntr[q.next()[1]], 2)
         assert q.get() == 2
-        assert list(q.items()) == [3,4]
+        assert list(q.items()) == [3, 4]
         assert q.next() == (cntr[q.next()[1]], 3)
         assert q.get() == 3
         assert list(q.items()) == [4]
@@ -275,19 +255,21 @@ class Test_NoThreadingFIFOQueue(object):
             q.next()
 
     def test_filter(self):
-        for k in range(-10,11):
-            cutoff = k*11
+        for k in range(-10, 11):
+            cutoff = k * 11
+
             def _filter(item):
                 if item <= cutoff:
                     return True
-            items = list(range(-1000,1000))
+
+            items = list(range(-1000, 1000))
             random.shuffle(items)
             q = _NoThreadingFIFOQueue()
             for i in items:
                 q.put(i)
             correct = []
             removed = []
-            for _,item in q._deque:
+            for _, item in q._deque:
                 if item <= cutoff:
                     correct.append(item)
                 else:
@@ -295,35 +277,37 @@ class Test_NoThreadingFIFOQueue(object):
             removed_ = q.filter(_filter)
             assert removed_ == removed
             check = []
-            for _,item in q._deque:
+            for _, item in q._deque:
                 check.append(item)
             assert sorted(correct) == sorted(check)
-        for k in range(-10,11):
-            cutoff = k*11
+        for k in range(-10, 11):
+            cutoff = k * 11
+
             def _filter(item):
                 if item <= cutoff:
                     return True
-            items = list(range(-1000,1000))
+
+            items = list(range(-1000, 1000))
             random.shuffle(items)
             q = _NoThreadingFIFOQueue()
             for i in items:
                 q.put(i)
             correct = []
             removed = []
-            for cnt,item in q._deque:
+            for cnt, item in q._deque:
                 if item <= cutoff:
                     correct.append(item)
                 else:
-                    removed.append((cnt,item))
+                    removed.append((cnt, item))
             removed_ = q.filter(_filter, include_counters=True)
             assert removed_ == removed
             check = []
-            for _,item in q._deque:
+            for _, item in q._deque:
                 check.append(item)
             assert sorted(correct) == sorted(check)
 
-class Test_NoThreadingLIFOQueue(object):
 
+class Test_NoThreadingLIFOQueue(object):
     def test_size(self):
         q = _NoThreadingLIFOQueue()
         assert q.size() == 0
@@ -332,7 +316,7 @@ class Test_NoThreadingLIFOQueue(object):
         cntr = {}
         for i in range(10):
             cntr[i] = q.put(i)
-            assert q.size() == i+1
+            assert q.size() == i + 1
         for i in reversed(range(10)):
             c_, x_ = q.next()
             assert c_ == cntr[x_]
@@ -352,21 +336,21 @@ class Test_NoThreadingLIFOQueue(object):
         with pytest.raises(ValueError):
             q.put_get(None)
         assert list(q.items()) == []
-        assert q.put_get(1) == (0,1)
-        assert q.put_get(1) == (1,1)
+        assert q.put_get(1) == (0, 1)
+        assert q.put_get(1) == (1, 1)
         cntr = {}
         cntr[1] = q.put(1)
         assert list(q.items()) == [1]
         cntr[2] = q.put(2)
-        assert list(q.items()) == [1,2]
+        assert list(q.items()) == [1, 2]
         cntr[3] = q.put(3)
-        assert list(q.items()) == [1,2,3]
+        assert list(q.items()) == [1, 2, 3]
         cntr[4], item_ = q.put_get(4)
         assert item_ == 4
-        assert list(q.items()) == [1,2,3]
+        assert list(q.items()) == [1, 2, 3]
         assert q.next() == (cntr[q.next()[1]], 3)
         assert q.get() == 3
-        assert list(q.items()) == [1,2]
+        assert list(q.items()) == [1, 2]
         assert q.next() == (cntr[q.next()[1]], 2)
         assert q.get() == 2
         assert list(q.items()) == [1]
@@ -377,19 +361,21 @@ class Test_NoThreadingLIFOQueue(object):
             q.next()
 
     def test_filter(self):
-        for k in range(-10,11):
-            cutoff = k*11
+        for k in range(-10, 11):
+            cutoff = k * 11
+
             def _filter(item):
                 if item <= cutoff:
                     return True
-            items = list(range(-1000,1000))
+
+            items = list(range(-1000, 1000))
             random.shuffle(items)
             q = _NoThreadingLIFOQueue()
             for i in items:
                 q.put(i)
             correct = []
             removed = []
-            for _,item in q._items:
+            for _, item in q._items:
                 if item <= cutoff:
                     correct.append(item)
                 else:
@@ -397,36 +383,38 @@ class Test_NoThreadingLIFOQueue(object):
             removed_ = q.filter(_filter)
             assert removed_ == removed
             check = []
-            for _,item in q._items:
+            for _, item in q._items:
                 check.append(item)
             assert sorted(correct) == sorted(check)
-        for k in range(-10,11):
-            cutoff = k*11
+        for k in range(-10, 11):
+            cutoff = k * 11
+
             def _filter(item):
                 if item <= cutoff:
                     return True
-            items = list(range(-1000,1000))
+
+            items = list(range(-1000, 1000))
             random.shuffle(items)
             q = _NoThreadingLIFOQueue()
             for i in items:
                 q.put(i)
             correct = []
             removed = []
-            for cnt,item in q._items:
+            for cnt, item in q._items:
                 if item <= cutoff:
                     correct.append(item)
                 else:
-                    removed.append((cnt,item))
+                    removed.append((cnt, item))
             removed_ = q.filter(_filter, include_counters=True)
             assert removed_ == removed
             check = []
-            for _,item in q._items:
+            for _, item in q._items:
                 check.append(item)
             assert sorted(correct) == sorted(check)
 
+
 def _check_items(q, items):
-    found = dict((id(item), False)
-                 for item in items)
+    found = dict((id(item), False) for item in items)
     assert len(list(q.items())) == len(items)
     for queue_item in q.items():
         assert id(queue_item) in found
@@ -434,19 +422,17 @@ def _check_items(q, items):
         found[id(queue_item)] = True
     assert all(found.values())
 
-class TestWorstBoundFirstPriorityQueue(object):
 
+class TestWorstBoundFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
-        q = WorstBoundFirstPriorityQueue(sense=minimize,
-                                         track_bound=True)
+        q = WorstBoundFirstPriorityQueue(sense=minimize, track_bound=True)
         node = Node()
         node.bound = 1
         assert node.queue_priority is None
         q.put(node)
         assert node.queue_priority == -1
 
-        q = WorstBoundFirstPriorityQueue(sense=maximize,
-                                         track_bound=True)
+        q = WorstBoundFirstPriorityQueue(sense=maximize, track_bound=True)
         node = Node()
         node.bound = 1
         assert node.queue_priority is None
@@ -454,19 +440,18 @@ class TestWorstBoundFirstPriorityQueue(object):
         assert node.queue_priority == 1
 
     def test_usage_minimize(self):
-        q = WorstBoundFirstPriorityQueue(sense=minimize,
-                                         track_bound=True)
+        q = WorstBoundFirstPriorityQueue(sense=minimize, track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
         assert q.get() is None
         items = []
-        for i in range(1,11):
+        for i in range(1, 11):
             node = Node()
             node.bound = i
             assert node.queue_priority is None
             cnt_ = q.put(node)
-            assert cnt_ == i-1
+            assert cnt_ == i - 1
             assert node.queue_priority == -node.bound
             items.append(node)
             assert q.size() == i
@@ -485,7 +470,7 @@ class TestWorstBoundFirstPriorityQueue(object):
             assert node.bound == i
             assert node.queue_priority == -node.bound
             if i != 10:
-                assert q.bound() == i+1
+                assert q.bound() == i + 1
             else:
                 assert q.bound() is None
         assert q.size() == 0
@@ -518,19 +503,18 @@ class TestWorstBoundFirstPriorityQueue(object):
         assert q.size() == 1
 
     def test_usage_maximize(self):
-        q = WorstBoundFirstPriorityQueue(sense=maximize,
-                                         track_bound=True)
+        q = WorstBoundFirstPriorityQueue(sense=maximize, track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
         assert q.get() is None
         items = []
-        for i in range(1,11):
+        for i in range(1, 11):
             node = Node()
             node.bound = -i
             assert node.queue_priority is None
             cnt_ = q.put(node)
-            assert cnt_ == i-1
+            assert cnt_ == i - 1
             assert node.queue_priority == node.bound
             items.append(node)
             assert q.size() == i
@@ -549,7 +533,7 @@ class TestWorstBoundFirstPriorityQueue(object):
             assert node.bound == -i
             assert node.queue_priority == node.bound
             if i != 10:
-                assert q.bound() == -i-1
+                assert q.bound() == -i - 1
             else:
                 assert q.bound() is None
         assert q.size() == 0
@@ -581,11 +565,10 @@ class TestWorstBoundFirstPriorityQueue(object):
         assert node_ is node
         assert q.size() == 1
 
-class TestCustomPriorityQueue(object):
 
+class TestCustomPriorityQueue(object):
     def test_missing_queue_priority(self):
-        q = CustomPriorityQueue(sense=minimize,
-                                track_bound=True)
+        q = CustomPriorityQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -600,18 +583,17 @@ class TestCustomPriorityQueue(object):
             q.put(child)
 
     def test_usage_minimize(self):
-        q = CustomPriorityQueue(sense=minimize,
-                                track_bound=True)
+        q = CustomPriorityQueue(sense=minimize, track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
         assert q.get() is None
         items = []
-        for i in range(1,11):
+        for i in range(1, 11):
             node = Node()
             node.bound = i
             node.queue_priority = -i
-            assert q.put(node) == i-1
+            assert q.put(node) == i - 1
             assert node.queue_priority == -i
             items.append(node)
             assert q.size() == i
@@ -630,7 +612,7 @@ class TestCustomPriorityQueue(object):
             assert node.bound == i
             assert node.queue_priority == -i
             if i != 10:
-                assert q.bound() == i+1
+                assert q.bound() == i + 1
             else:
                 assert q.bound() is None
         assert q.size() == 0
@@ -666,18 +648,17 @@ class TestCustomPriorityQueue(object):
         assert q.size() == 1
         assert q.bound() == 1
         # no bound tracking
-        q = CustomPriorityQueue(sense=minimize,
-                                track_bound=False)
+        q = CustomPriorityQueue(sense=minimize, track_bound=False)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
         assert q.get() is None
         items = []
-        for i in range(1,11):
+        for i in range(1, 11):
             node = Node()
             node.bound = i
             node.queue_priority = -i
-            assert q.put(node) == i-1
+            assert q.put(node) == i - 1
             assert node.queue_priority == -i
             items.append(node)
             assert q.size() == i
@@ -702,18 +683,17 @@ class TestCustomPriorityQueue(object):
         assert q.size() == 0
 
     def test_usage_maximize(self):
-        q = CustomPriorityQueue(sense=maximize,
-                                track_bound=True)
+        q = CustomPriorityQueue(sense=maximize, track_bound=True)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
         assert q.get() is None
         items = []
-        for i in range(1,11):
+        for i in range(1, 11):
             node = Node()
             node.bound = -i
             node.queue_priority = i
-            assert q.put(node) == i-1
+            assert q.put(node) == i - 1
             assert node.queue_priority == i
             items.append(node)
             assert q.size() == i
@@ -768,18 +748,17 @@ class TestCustomPriorityQueue(object):
         assert q.size() == 1
         assert q.bound() == 1
         # no bound tracking
-        q = CustomPriorityQueue(sense=maximize,
-                                track_bound=False)
+        q = CustomPriorityQueue(sense=maximize, track_bound=False)
         assert q.size() == 0
         assert q.bound() is None
         assert len(list(q.items())) == 0
         assert q.get() is None
         items = []
-        for i in range(1,11):
+        for i in range(1, 11):
             node = Node()
             node.bound = -i
             node.queue_priority = i
-            assert q.put(node) == i-1
+            assert q.put(node) == i - 1
             assert node.queue_priority == i
             items.append(node)
             assert q.size() == i
@@ -803,11 +782,10 @@ class TestCustomPriorityQueue(object):
                 assert q.bound() is None
         assert q.size() == 0
 
-class TestBestObjectiveFirstPriorityQueue(object):
 
+class TestBestObjectiveFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
-        q = BestObjectiveFirstPriorityQueue(sense=minimize,
-                                            track_bound=True)
+        q = BestObjectiveFirstPriorityQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = -1
@@ -833,8 +811,7 @@ class TestBestObjectiveFirstPriorityQueue(object):
         assert node_ is node
         assert q.bound() == -1
 
-        q = BestObjectiveFirstPriorityQueue(sense=maximize,
-                                            track_bound=True)
+        q = BestObjectiveFirstPriorityQueue(sense=maximize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 3
@@ -860,11 +837,10 @@ class TestBestObjectiveFirstPriorityQueue(object):
         assert node_ is node
         assert q.bound() == 3
 
-class TestBreadthFirstPriorityQueue(object):
 
+class TestBreadthFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
-        q = BreadthFirstPriorityQueue(sense=minimize,
-                                      track_bound=True)
+        q = BreadthFirstPriorityQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -883,8 +859,7 @@ class TestBreadthFirstPriorityQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = BreadthFirstPriorityQueue(sense=minimize,
-                                      track_bound=True)
+        q = BreadthFirstPriorityQueue(sense=minimize, track_bound=True)
         q.put(l2)
         cnt = q.put(l1)
         node_ = q.get()
@@ -896,11 +871,10 @@ class TestBreadthFirstPriorityQueue(object):
         assert node_ is l2
         assert q.bound() == 1
 
-class TestDepthFirstPriorityQueue(object):
 
+class TestDepthFirstPriorityQueue(object):
     def test_overwrites_queue_priority(self):
-        q = DepthFirstPriorityQueue(sense=minimize,
-                                    track_bound=True)
+        q = DepthFirstPriorityQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -919,8 +893,7 @@ class TestDepthFirstPriorityQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = DepthFirstPriorityQueue(sense=minimize,
-                                    track_bound=True)
+        q = DepthFirstPriorityQueue(sense=minimize, track_bound=True)
         q.put(l2)
         cnt = q.put(l3)
         node_ = q.get()
@@ -932,11 +905,10 @@ class TestDepthFirstPriorityQueue(object):
         assert node_ is l2
         assert q.bound() == 1
 
-class TestFIFOQueue(object):
 
+class TestFIFOQueue(object):
     def test_overwrites_queue_priority(self):
-        q = FIFOQueue(sense=minimize,
-                      track_bound=True)
+        q = FIFOQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -953,8 +925,7 @@ class TestFIFOQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = FIFOQueue(sense=minimize,
-                      track_bound=True)
+        q = FIFOQueue(sense=minimize, track_bound=True)
         cnt = q.put(l2)
         node_ = q.get()
         assert cnt == 0
@@ -971,11 +942,10 @@ class TestFIFOQueue(object):
         assert node_ is l3
         assert q.bound() == 1
 
-class TestLIFOQueue(object):
 
+class TestLIFOQueue(object):
     def test_overwrites_queue_priority(self):
-        q = LIFOQueue(sense=minimize,
-                      track_bound=True)
+        q = LIFOQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -992,8 +962,7 @@ class TestLIFOQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = LIFOQueue(sense=minimize,
-                      track_bound=True)
+        q = LIFOQueue(sense=minimize, track_bound=True)
         cnt = q.put(l2)
         node_ = q.get()
         assert cnt == 0
@@ -1009,11 +978,10 @@ class TestLIFOQueue(object):
         assert node_ is l2
         assert q.bound() is None
 
-class TestRandomPriorityQueue(object):
 
+class TestRandomPriorityQueue(object):
     def test_overwrites_queue_priority(self):
-        q = RandomPriorityQueue(sense=minimize,
-                                track_bound=True)
+        q = RandomPriorityQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -1032,8 +1000,7 @@ class TestRandomPriorityQueue(object):
         l1.bound = 1
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = RandomPriorityQueue(sense=minimize,
-                                track_bound=True)
+        q = RandomPriorityQueue(sense=minimize, track_bound=True)
         assert l2.queue_priority is None
         cnt = q.put(l2)
         node_ = q.get()
@@ -1049,14 +1016,12 @@ class TestRandomPriorityQueue(object):
         assert cnt == 2
         assert l3.queue_priority is not None
         assert 0 <= l3.queue_priority <= 1
-        assert node_ is max([l2, l3],
-                            key=lambda x_: x_.queue_priority)
+        assert node_ is max([l2, l3], key=lambda x_: x_.queue_priority)
+
 
 class TestLocalGapPriorityQueue(object):
-
     def test_overwrites_queue_priority(self):
-        q = LocalGapPriorityQueue(sense=minimize,
-                                  track_bound=True)
+        q = LocalGapPriorityQueue(sense=minimize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = -inf
@@ -1088,8 +1053,7 @@ class TestLocalGapPriorityQueue(object):
         l1.objective = 5
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = LocalGapPriorityQueue(sense=minimize,
-                                  track_bound=True)
+        q = LocalGapPriorityQueue(sense=minimize, track_bound=True)
         assert l2.queue_priority is None
         cnt = q.put(l2)
         node_ = q.get()
@@ -1108,8 +1072,7 @@ class TestLocalGapPriorityQueue(object):
         assert l3.queue_priority == 5
         assert node_ is l3
 
-        q = LocalGapPriorityQueue(sense=maximize,
-                                  track_bound=True)
+        q = LocalGapPriorityQueue(sense=maximize, track_bound=True)
         node = Node()
         node.tree_depth = 0
         node.bound = inf
@@ -1141,8 +1104,7 @@ class TestLocalGapPriorityQueue(object):
         l1.objective = -5
         l2 = _new_child(l1)
         l3 = _new_child(l2)
-        q = LocalGapPriorityQueue(sense=maximize,
-                                  track_bound=True)
+        q = LocalGapPriorityQueue(sense=maximize, track_bound=True)
         assert l2.queue_priority is None
         cnt = q.put(l2)
         node_ = q.get()
@@ -1161,15 +1123,15 @@ class TestLocalGapPriorityQueue(object):
         assert l3.queue_priority == 5
         assert node_ is l3
 
-class TestLexicographicPriorityQueue(object):
 
+class TestLexicographicPriorityQueue(object):
     def test_overwrites_queue_priority(self):
         # min
         q = LexicographicPriorityQueue(
-            (WorstBoundFirstPriorityQueue,
-             BestObjectiveFirstPriorityQueue),
+            (WorstBoundFirstPriorityQueue, BestObjectiveFirstPriorityQueue),
             minimize,
-            True)
+            True,
+        )
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -1177,7 +1139,7 @@ class TestLexicographicPriorityQueue(object):
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority is not None
-        assert node.queue_priority == (0,-2)
+        assert node.queue_priority == (0, -2)
         c1 = child = _new_child(node)
         assert child.bound == 0
         assert child.objective == 2
@@ -1185,7 +1147,7 @@ class TestLexicographicPriorityQueue(object):
         assert child.queue_priority is None
         assert q.put(child) == 1
         assert child.queue_priority is not None
-        assert child.queue_priority == (0,-1)
+        assert child.queue_priority == (0, -1)
         c2 = child = _new_child(child)
         assert child.bound == 0
         assert child.objective == 1
@@ -1194,7 +1156,7 @@ class TestLexicographicPriorityQueue(object):
         assert child.queue_priority is None
         assert q.put(child) == 2
         assert child.queue_priority is not None
-        assert child.queue_priority == (1,-2)
+        assert child.queue_priority == (1, -2)
         c3 = child = _new_child(child)
         assert child.bound == -1
         assert child.objective == 2
@@ -1203,7 +1165,7 @@ class TestLexicographicPriorityQueue(object):
         assert child.queue_priority is None
         assert q.put(child) == 3
         assert child.queue_priority is not None
-        assert child.queue_priority == (-1,100)
+        assert child.queue_priority == (-1, 100)
         assert q.get() is c2
         assert q.get() is c1
         assert q.get() is node
@@ -1212,10 +1174,10 @@ class TestLexicographicPriorityQueue(object):
 
         # max
         q = LexicographicPriorityQueue(
-            (WorstBoundFirstPriorityQueue,
-             BestObjectiveFirstPriorityQueue),
+            (WorstBoundFirstPriorityQueue, BestObjectiveFirstPriorityQueue),
             maximize,
-            True)
+            True,
+        )
         node = Node()
         node.tree_depth = 0
         node.bound = 0
@@ -1223,7 +1185,7 @@ class TestLexicographicPriorityQueue(object):
         assert node.queue_priority is None
         assert q.put(node) == 0
         assert node.queue_priority is not None
-        assert node.queue_priority == (0,-2)
+        assert node.queue_priority == (0, -2)
         c1 = child = _new_child(node)
         assert child.bound == 0
         assert child.objective == -2
@@ -1231,7 +1193,7 @@ class TestLexicographicPriorityQueue(object):
         assert child.queue_priority is None
         assert q.put(child) == 1
         assert child.queue_priority is not None
-        assert child.queue_priority == (0,-1)
+        assert child.queue_priority == (0, -1)
         c2 = child = _new_child(child)
         assert child.bound == 0
         assert child.objective == -1
@@ -1240,7 +1202,7 @@ class TestLexicographicPriorityQueue(object):
         assert child.queue_priority is None
         assert q.put(child) == 2
         assert child.queue_priority is not None
-        assert child.queue_priority == (1,-2)
+        assert child.queue_priority == (1, -2)
         c3 = child = _new_child(child)
         assert child.bound == 1
         assert child.objective == -2
@@ -1249,7 +1211,7 @@ class TestLexicographicPriorityQueue(object):
         assert child.queue_priority is None
         assert q.put(child) == 3
         assert child.queue_priority is not None
-        assert child.queue_priority == (-1,100)
+        assert child.queue_priority == (-1, 100)
         assert q.get() is c2
         assert q.get() is c1
         assert q.get() is node
