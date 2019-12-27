@@ -44,7 +44,9 @@ class MPI_InterruptHandler(object):
     def __init__(self, handler, disable=False):
         # type: (Handler, bool) -> None
         self._released = True
-        self._original_handlers = [] # type: List[Tuple[int, Union[Handler, int, None]]]
+        self._original_handlers = (
+            []
+        )  # type: List[Tuple[int, Union[Handler, int, None]]]
         self._handler = handler
         self._disable = disable
 
