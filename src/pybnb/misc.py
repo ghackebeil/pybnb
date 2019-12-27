@@ -294,7 +294,6 @@ def get_keyword_docs(doc):
     """Parses a numpy-style docstring to summarize
     information in the 'Parameters' section into a dictionary."""
     import re
-    import yaml
 
     lines = doc.splitlines()
     for i_start, line in enumerate(lines):
@@ -518,7 +517,7 @@ def create_command_line_solver(problem, parser=None):
     import pybnb
 
     try:
-        import yaml
+        import yaml  # noqa: F401
     except ImportError:  # pragma:nocover
         raise ImportError(
             "The PyYAML module is required to run the command-line solver."
@@ -829,7 +828,7 @@ def create_command_line_solver(problem, parser=None):
     args = parser.parse_args()
 
     try:
-        import mpi4py
+        import mpi4py  # noqa: F401
     except ImportError:  # pragma:nocover
         if not args.disable_mpi:
             raise ImportError(

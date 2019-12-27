@@ -71,8 +71,8 @@ class TestSolverSimple(object):
         b = Solver(comm=None)
         assert b.comm is None
         assert b.worker_comm is None
-        assert b.is_worker == True
-        assert b.is_dispatcher == True
+        assert b.is_worker
+        assert b.is_dispatcher
         assert b.worker_count == 1
         b._reset_local_solve_stats()
         stats = b.collect_worker_statistics()

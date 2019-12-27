@@ -4,7 +4,7 @@ import pybnb
 
 is_pypy = False
 try:
-    import __pypy__
+    import __pypy__  # noqa: F401
 
     is_pypy = True
 except ImportError:

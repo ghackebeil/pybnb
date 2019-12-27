@@ -366,15 +366,15 @@ class Test_SolveInfo(object):
                 self.d["notify_solve_finished"] = True
 
         j = Junk()
-        assert j.d["sense"] == False
-        assert j.d["objective"] == False
-        assert j.d["bound"] == False
-        assert j.d["save_state"] == False
-        assert j.d["load_state"] == False
-        assert j.d["branch"] == False
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is False
+        assert j.d["objective"] is False
+        assert j.d["bound"] is False
+        assert j.d["save_state"] is False
+        assert j.d["load_state"] is False
+        assert j.d["branch"] is False
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         p = _SimpleSolveInfoCollector(j)
         p.set_clock(time.time)
         info = _SolveInfo()
@@ -388,15 +388,15 @@ class Test_SolveInfo(object):
         assert info.total_branch_time == 0
         assert info.branch_call_count == 0
         p.set_solve_info_object(info)
-        assert j.d["sense"] == False
-        assert j.d["objective"] == False
-        assert j.d["bound"] == False
-        assert j.d["save_state"] == False
-        assert j.d["load_state"] == False
-        assert j.d["branch"] == False
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is False
+        assert j.d["objective"] is False
+        assert j.d["bound"] is False
+        assert j.d["save_state"] is False
+        assert j.d["load_state"] is False
+        assert j.d["branch"] is False
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -409,15 +409,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time == 0
         assert info.load_state_call_count == 0
         p.sense()
-        assert j.d["sense"] == True
-        assert j.d["objective"] == False
-        assert j.d["bound"] == False
-        assert j.d["save_state"] == False
-        assert j.d["load_state"] == False
-        assert j.d["branch"] == False
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is False
+        assert j.d["bound"] is False
+        assert j.d["save_state"] is False
+        assert j.d["load_state"] is False
+        assert j.d["branch"] is False
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -430,15 +430,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time == 0
         assert info.load_state_call_count == 0
         p.objective()
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == False
-        assert j.d["save_state"] == False
-        assert j.d["load_state"] == False
-        assert j.d["branch"] == False
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is False
+        assert j.d["save_state"] is False
+        assert j.d["load_state"] is False
+        assert j.d["branch"] is False
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -451,15 +451,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time == 0
         assert info.load_state_call_count == 0
         p.bound()
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == True
-        assert j.d["save_state"] == False
-        assert j.d["load_state"] == False
-        assert j.d["branch"] == False
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is True
+        assert j.d["save_state"] is False
+        assert j.d["load_state"] is False
+        assert j.d["branch"] is False
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -472,15 +472,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time == 0
         assert info.load_state_call_count == 0
         p.save_state(None)
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == True
-        assert j.d["save_state"] == True
-        assert j.d["load_state"] == False
-        assert j.d["branch"] == False
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is True
+        assert j.d["save_state"] is True
+        assert j.d["load_state"] is False
+        assert j.d["branch"] is False
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -493,15 +493,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time == 0
         assert info.load_state_call_count == 0
         p.load_state(None)
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == True
-        assert j.d["save_state"] == True
-        assert j.d["load_state"] == True
-        assert j.d["branch"] == False
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is True
+        assert j.d["save_state"] is True
+        assert j.d["load_state"] is True
+        assert j.d["branch"] is False
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -514,15 +514,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time > 0
         assert info.load_state_call_count == 1
         list(p.branch())
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == True
-        assert j.d["save_state"] == True
-        assert j.d["load_state"] == True
-        assert j.d["branch"] == True
-        assert j.d["notify_solve_begins"] == False
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is True
+        assert j.d["save_state"] is True
+        assert j.d["load_state"] is True
+        assert j.d["branch"] is True
+        assert j.d["notify_solve_begins"] is False
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -535,15 +535,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time > 0
         assert info.load_state_call_count == 1
         p.notify_solve_begins(None, None, None)
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == True
-        assert j.d["save_state"] == True
-        assert j.d["load_state"] == True
-        assert j.d["branch"] == True
-        assert j.d["notify_solve_begins"] == True
-        assert j.d["notify_new_best_node"] == False
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is True
+        assert j.d["save_state"] is True
+        assert j.d["load_state"] is True
+        assert j.d["branch"] is True
+        assert j.d["notify_solve_begins"] is True
+        assert j.d["notify_new_best_node"] is False
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -556,15 +556,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time > 0
         assert info.load_state_call_count == 1
         p.notify_new_best_node(None, None)
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == True
-        assert j.d["save_state"] == True
-        assert j.d["load_state"] == True
-        assert j.d["branch"] == True
-        assert j.d["notify_solve_begins"] == True
-        assert j.d["notify_new_best_node"] == True
-        assert j.d["notify_solve_finished"] == False
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is True
+        assert j.d["save_state"] is True
+        assert j.d["load_state"] is True
+        assert j.d["branch"] is True
+        assert j.d["notify_solve_begins"] is True
+        assert j.d["notify_new_best_node"] is True
+        assert j.d["notify_solve_finished"] is False
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0
@@ -577,15 +577,15 @@ class Test_SolveInfo(object):
         assert info.total_load_state_time > 0
         assert info.load_state_call_count == 1
         p.notify_solve_finished(None, None, None)
-        assert j.d["sense"] == True
-        assert j.d["objective"] == True
-        assert j.d["bound"] == True
-        assert j.d["save_state"] == True
-        assert j.d["load_state"] == True
-        assert j.d["branch"] == True
-        assert j.d["notify_solve_begins"] == True
-        assert j.d["notify_new_best_node"] == True
-        assert j.d["notify_solve_finished"] == True
+        assert j.d["sense"] is True
+        assert j.d["objective"] is True
+        assert j.d["bound"] is True
+        assert j.d["save_state"] is True
+        assert j.d["load_state"] is True
+        assert j.d["branch"] is True
+        assert j.d["notify_solve_begins"] is True
+        assert j.d["notify_new_best_node"] is True
+        assert j.d["notify_solve_finished"] is True
         assert info.explored_nodes_count == 0
         assert info.total_queue_time == 0
         assert info.queue_call_count == 0

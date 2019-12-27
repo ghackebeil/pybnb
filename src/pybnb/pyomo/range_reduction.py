@@ -42,7 +42,7 @@ class RangeReductionProblem(Problem):
         assert not math.isnan(self._best_objective)
         self._comm = comm
         if self._comm is not None:
-            import mpi4py.MPI
+            import mpi4py.MPI  # noqa: F401
         self._current_node = None
 
     def _notify_continue_listen(self, node):

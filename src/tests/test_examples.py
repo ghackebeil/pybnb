@@ -7,7 +7,7 @@ import pytest
 
 mpi4py_available = False
 try:
-    import mpi4py
+    import mpi4py  # noqa: F401
 
     mpi4py_available = True
 except ImportError:
@@ -15,7 +15,7 @@ except ImportError:
 
 numpy_available = False
 try:
-    import numpy
+    import numpy  # noqa: F401
 
     numpy_available = True
 except ImportError:

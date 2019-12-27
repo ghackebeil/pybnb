@@ -22,7 +22,7 @@ from six import StringIO
 
 yaml_available = False
 try:
-    import yaml
+    import yaml  # noqa: F401
 
     yaml_available = True
 except ImportError:
@@ -30,7 +30,7 @@ except ImportError:
 
 numpy_available = False
 try:
-    import numpy
+    import numpy  # noqa: F401
 
     numpy_available = True
 except ImportError:
