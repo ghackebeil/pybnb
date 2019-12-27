@@ -3,13 +3,19 @@ Miscellaneous utilities used for development.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+from types import FrameType
+from typing import Union, Callable, Dict, List, Tuple, Any, Optional
 import logging
 import signal
 import numbers
 import math
 
 
+Handler = Callable[[int, FrameType], None]
+
+
 def _cast_to_float_or_int(x):
+    # type: (Union[int, float],) -> Union[int, float]
     """Casts a number to a float or int built-in type. Makes
     a reasonable attempt to preserve integrality."""
     if type(x) in (float, int):
@@ -36,12 +42,14 @@ class MPI_InterruptHandler(object):
     __slots__ = ("_released", "_original_handlers", "_handler", "_disable")
 
     def __init__(self, handler, disable=False):
+        # type: (Handler, bool) -> None
         self._released = True
-        self._original_handlers = None
+        self._original_handlers = [] # type: List[Tuple[int, Union[Handler, int, None]]]
         self._handler = handler
         self._disable = disable
 
     def __enter__(self):
+        # type: () -> MPI_InterruptHandler
         if self._disable:
             return self
         self._released = False
@@ -50,6 +58,7 @@ class MPI_InterruptHandler(object):
         ]
 
         def handler(signum, frame):
+            # type: (int, FrameType) -> None
             self._handler(signum, frame)
             self.release()
 
@@ -58,16 +67,20 @@ class MPI_InterruptHandler(object):
         return self
 
     def __exit__(self, type, value, tb):
+        # type: (Any, Any, Any) -> None
         self.release()
 
     def release(self):
+        # type: () -> None
         if not self._released:
             for signum, handler in self._original_handlers:
-                signal.signal(signum, handler)
+                if handler is not None:
+                    signal.signal(signum, handler)
             self._released = True
 
 
 def metric_format(num, unit="s", digits=1, align_unit=False):
+    # type: (float, str, int, bool) -> str
     """Format and scale output with metric prefixes.
 
     Example
@@ -110,6 +123,7 @@ def metric_format(num, unit="s", digits=1, align_unit=False):
 
 
 def time_format(num, digits=1, align_unit=False):
+    # type: (float, int, bool) -> str
     """Format and scale output according to standard time
     units.
 
@@ -155,6 +169,7 @@ def time_format(num, digits=1, align_unit=False):
 
 
 def get_gap_labels(gap, key="gap", format="f"):
+    # type: (float, str, str) -> Tuple[int, str, str]
     """Get format strings with enough size and precision to print
     a given gap tolerance."""
     gap_length = 10
@@ -178,16 +193,20 @@ class _NullCM(object):
     """A context manager that does nothing"""
 
     def __init__(self, obj):
+        # type: (Any,) -> None
         self.obj = obj
 
     def __enter__(self):
+        # type: () -> Any
         return self.obj
 
     def __exit__(self, *args):
+        # type: (Any,) -> None
         pass
 
 
 def as_stream(stream, mode="w", **kwds):
+    # type: (Any, str, Any) -> Any
     """A utility for handling function arguments that can be
     a filename or a file object. This function is meant to be
     used in the context of a with statement.
@@ -238,6 +257,7 @@ def as_stream(stream, mode="w", **kwds):
 
 
 def get_default_args(func):
+    # type: (Callable[..., Any],) -> Dict[str, Any]
     """Get the default arguments for a function as a
     dictionary mapping argument name to default value.
 
@@ -268,6 +288,7 @@ def get_default_args(func):
 
 
 def get_keyword_docs(doc):
+    # type: (str,) -> Dict[str, Dict[str, Any]]
     """Parses a numpy-style docstring to summarize
     information in the 'Parameters' section into a dictionary."""
     import re
@@ -293,37 +314,39 @@ def get_keyword_docs(doc):
     args = {}
     choices = {}
     i = i_start
+    last = None
     while i != i_stop:
         if i == i_start:
             assert re.match(r".+ : .+(, optional)?", lines[i])
         if re.match(r".+ : .+(, optional)?", lines[i]):
             if i != i_start:
+                assert last is not None
                 args[last] = args[last].strip()
             last = lines[i].split(" : ")[0].strip()
             if re.match(r".+ : \{.+\}(, optional)?", lines[i]):
                 assert lines[i].count("{") == 1
                 assert lines[i].count("}") == 1
                 opts = lines[i].split("{")[1].split("}")[0]
-                opts = [eval(c.strip()) for c in opts.split(",")]
-                choices[last] = opts
+                choices[last] = [eval(c.strip()) for c in opts.split(",")]
             args[last] = ""
         else:
+            assert last is not None
             args[last] += lines[i].strip() + " "
         i += 1
+    assert last is not None
     args[last] = args[last].strip()
-    data = {}
+    data = {}  # type: Dict[str, Dict[str, Any]]
     for key, val in args.items():
         data[key] = {"doc": val}
         default_ = re.search(r"\(default: .*\)", val)
         if default_ is not None:
-            default_ = default_.group(0)[1:-1].split(": ")
-            assert len(default_) == 2
-            default_ = eval(default_[1])
-            data[key]["default"] = default_
-            doc = re.split(r"\(default: .*\)", val)
-            assert len(doc) == 2
-            assert doc[1].strip() == ""
-            data[key]["doc"] = doc[0].strip()
+            split_ = default_.group(0)[1:-1].split(": ")
+            assert len(split_) == 2
+            data[key]["default"] = eval(split_[1])
+            key_doc = re.split(r"\(default: .*\)", val)
+            assert len(key_doc) == 2
+            assert key_doc[1].strip() == ""
+            data[key]["doc"] = key_doc[0].strip()
         if key in choices:
             data[key]["choices"] = choices[key]
 
@@ -332,19 +355,22 @@ def get_keyword_docs(doc):
 
 class _simple_stdout_filter(object):
     def filter(self, record):
+        # type: (Any,) -> bool
         # only show WARNING or below
-        return record.levelno <= logging.WARNING
+        return bool(record.levelno <= logging.WARNING)
 
 
 class _simple_stderr_filter(object):
     def filter(self, record):
+        # type: (Any,) -> bool
         # only show ERROR or above
-        return record.levelno >= logging.ERROR
+        return bool(record.levelno >= logging.ERROR)
 
 
 def get_simple_logger(
     filename=None, stream=None, console=True, level=logging.INFO, formatter=None
 ):
+    # type: (Optional[str], Any, bool, int, Optional[logging.Formatter]) -> logging.Logger
     """Creates a logging object configured to write to any
     combination of a file, a stream, and the console, or
     hide all output.
@@ -369,7 +395,7 @@ def get_simple_logger(
     ``logging.Logger``
         A logging object
     """
-    log = logging.Logger(None, level=level)
+    log = logging.Logger(None, level=level)  # type: ignore
     if filename is not None:
         # create file handler which logs even debug messages
         fh = logging.FileHandler(filename)
@@ -384,11 +410,11 @@ def get_simple_logger(
 
         cout = logging.StreamHandler(sys.stdout)
         cout.setLevel(level)
-        cout.addFilter(_simple_stdout_filter())
+        cout.addFilter(_simple_stdout_filter())  # type: ignore
         log.addHandler(cout)
         cerr = logging.StreamHandler(sys.stderr)
         cerr.setLevel(level)
-        cerr.addFilter(_simple_stderr_filter())
+        cerr.addFilter(_simple_stderr_filter())  # type: ignore
         log.addHandler(cerr)
     if formatter is not None:
         for h in log.handlers:

@@ -5,7 +5,6 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import array
 import time
-import array
 import collections
 import os
 import socket

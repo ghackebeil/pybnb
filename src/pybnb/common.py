@@ -7,11 +7,16 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 from typing import List, Dict
 import enum
 
-minimize = 1  # type: int
-"""The objective sense defining a minimization problem."""
+@enum.unique
+class ProblemSense(enum.IntEnum):
+    minimize = 1  # type: int
+    """The objective sense defining a minimization problem."""
 
-maximize = -1  # type: int
-"""The objective sense defining a maximization problem."""
+    maximize = -1  # type: int
+    """The objective sense defining a maximization problem."""
+
+minimize = ProblemSense.minimize
+maximize = ProblemSense.maximize
 
 inf = float("inf")  # type: float
 """A floating point constant set to ``float('inf')``."""

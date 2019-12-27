@@ -10,6 +10,7 @@ import array
 # initialization is delayed to avoid early mpi4py import
 _nothing = None  # type: Optional[List[Any]]
 
+
 # avoids generating a deprecation warning in python 3.7
 def _array_to_string(out):
     """converts an array of bytes to a string"""
