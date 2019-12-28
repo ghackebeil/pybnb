@@ -22,6 +22,8 @@ with open(os.path.join(here, "requirements.txt")) as f:
 if sys.version_info < (3, 4):
     # Backport of Python 3.4 enums to earlier versions
     install_requires.append('enum34')
+    # Type annotations used by mypy
+    install_requires.append('typing')
 
 tests_require = []
 with open(os.path.join(here, "test_requirements.txt")) as f:
