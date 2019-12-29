@@ -138,4 +138,4 @@ Quick Start
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
   :target: https://github.com/psf/black
 .. |Mypy| image:: http://www.mypy-lang.org/static/mypy_badge.svg
-  :target: https://mypy-lang.org
+  :target: http://mypy-lang.org
