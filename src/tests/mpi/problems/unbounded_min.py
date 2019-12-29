@@ -22,5 +22,5 @@ class UnboundedMin(pybnb.Problem):
     def load_state(self, node):
         pass
 
-    def branch(self):
+    def branch(self):  # pragma:nocover
         raise NotImplementedError()

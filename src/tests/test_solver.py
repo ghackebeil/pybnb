@@ -13,22 +13,22 @@ from six import StringIO
 
 
 class BadBranchSignatureProblem(Problem):
-    def sense(self):
-        return minimize
+    def sense(self):  # pragma:nocover
+        raise NotImplementedError()
 
-    def objective(self):
-        return 0
+    def objective(self):  # pragma:nocover
+        raise NotImplementedError()
 
-    def bound(self):
-        return 0
+    def bound(self):  # pragma:nocover
+        raise NotImplementedError()
 
-    def save_state(self, node):
-        pass
+    def save_state(self, node):  # pragma:nocover
+        raise NotImplementedError()
 
-    def load_state(self, node):
-        pass
+    def load_state(self, node):  # pragma:nocover
+        raise NotImplementedError()
 
-    def branch(self, node):
+    def branch(self, node):  # pragma:nocover
         raise NotImplementedError()
 
 
@@ -48,7 +48,7 @@ class DummyProblem(Problem):
     def load_state(self, node):
         pass
 
-    def branch(self):
+    def branch(self):  # pragma:nocover
         raise NotImplementedError()
 
 

@@ -41,20 +41,20 @@ class DummyProblem(Problem):
     def sense(self):
         return minimize
 
-    def objective(self):
-        return 0.0
+    def objective(self):  # pragma:nocover
+        raise NotImplementedError()
 
-    def bound(self):
-        return 0.0
+    def bound(self):  # pragma:nocover
+        raise NotImplementedError()
 
     def save_state(self, node):
         pass
 
-    def load_state(self, node):
-        pass
+    def load_state(self, node):  # pragma:nocover
+        raise NotImplementedError()
 
-    def branch(self):
-        return ()
+    def branch(self):  # pragma:nocover
+        raise NotImplementedError()
 
 
 def _logging_check(comm):

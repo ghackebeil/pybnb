@@ -10,8 +10,8 @@ class RootInfeasibleMax(pybnb.Problem):
     def sense(self):
         return pybnb.maximize
 
-    def objective(self):
-        return self.infeasible_objective()
+    def objective(self):  # pragma:nocover
+        raise NotImplementedError()
 
     def bound(self):
         return self.infeasible_objective()
@@ -22,5 +22,5 @@ class RootInfeasibleMax(pybnb.Problem):
     def load_state(self, node):
         pass
 
-    def branch(self):
+    def branch(self):  # pragma:nocover
         raise NotImplementedError()
