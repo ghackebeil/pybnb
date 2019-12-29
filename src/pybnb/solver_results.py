@@ -8,12 +8,13 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 # not the standard doctest
 __doctest_requires__ = {"SolverResults.write": ["yaml"]}
 
+from typing import Union, IO, Optional
 import sys
 import base64
 
 from pybnb.common import SolutionStatus, TerminationCondition
 from pybnb.misc import time_format, as_stream
-from pybnb.node import dumps
+from pybnb.node import dumps, Node
 
 import six
 
@@ -61,17 +62,19 @@ class SolverResults(object):
     """
 
     def __init__(self):
-        self.solution_status = None
-        self.termination_condition = None
-        self.objective = None
-        self.bound = None
-        self.absolute_gap = None
-        self.relative_gap = None
-        self.nodes = None
-        self.wall_time = None
-        self.best_node = None
+        # type: () -> None
+        self.solution_status = None  # type: Optional[SolutionStatus]
+        self.termination_condition = None  # type: Optional[TerminationCondition]
+        self.objective = None  # type: Optional[Union[int, float]]
+        self.bound = None  # type: Optional[Union[int, float]]
+        self.absolute_gap = None  # type: Optional[Union[int, float]]
+        self.relative_gap = None  # type: Optional[Union[int, float]]
+        self.nodes = None  # type: Optional[int]
+        self.wall_time = None  # type: Optional[float]
+        self.best_node = None  # type: Optional[Node]
 
     def pprint(self, stream=sys.stdout):
+        # type: (Union[IO, str],) -> None
         """Prints a nicely formatted representation of the
         results.
 
@@ -81,11 +84,12 @@ class SolverResults(object):
             A file-like object or a filename where results
             should be written to. (default: ``sys.stdout``)
         """
-        with as_stream(stream) as stream:
-            stream.write("solver results:\n")
-            self.write(stream, prefix=" - ", pretty=True)
+        with as_stream(stream) as out:
+            out.write("solver results:\n")
+            self.write(out, prefix=" - ", pretty=True)
 
     def write(self, stream, prefix="", pretty=False):
+        # type: (Union[IO, str], str, bool) -> None
         """Writes results in YAML format to a stream or
         file. Changing the parameter values from their
         defaults may result in the output becoming
@@ -123,7 +127,7 @@ class SolverResults(object):
         >>> assert best_node.objective == 123
 
         """
-        with as_stream(stream) as stream:
+        with as_stream(stream) as out:
             attrs = vars(self)
             names = sorted(list(attrs.keys()))
             first = (
@@ -157,6 +161,7 @@ class SolverResults(object):
                         ):
                             val = "%.7g" % (val)
                         elif name == "best_node":
+                            assert isinstance(val, Node)
                             if val.objective is not None:
                                 val = "Node(objective=%.7g)" % (val.objective)
                             else:
@@ -182,17 +187,17 @@ class SolverResults(object):
                             val = val_
                             del val_
                 if pretty or (val is not None):
-                    stream.write(prefix + "%s: %s\n" % (name, val))
+                    out.write(prefix + "%s: %s\n" % (name, val))
                 else:
                     assert val is None
-                    stream.write(prefix + "%s: null\n" % (name))
+                    out.write(prefix + "%s: null\n" % (name))
             for name in names:
                 val = getattr(self, name)
                 if pretty:
-                    stream.write(prefix + "%s: %r\n" % (name, val))
+                    out.write(prefix + "%s: %r\n" % (name, val))
                 else:
                     if val is None:
-                        stream.write(prefix + "%s: null\n" % (name))
+                        out.write(prefix + "%s: null\n" % (name))
                     else:
                         val_ = "%r" % (val)
                         if type(val) is float:
@@ -204,9 +209,10 @@ class SolverResults(object):
                                 val_ = ".nan"
                         val = val_
                         del val_
-                        stream.write(prefix + "%s: %s\n" % (name, val))
+                        out.write(prefix + "%s: %s\n" % (name, val))
 
     def __str__(self):
+        # type: () -> str
         """Represents the results as a string."""
         tmp = six.StringIO()
         self.pprint(stream=tmp)

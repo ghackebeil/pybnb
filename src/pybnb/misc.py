@@ -4,7 +4,7 @@ Miscellaneous utilities used for development.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 from types import FrameType
-from typing import Union, Callable, Dict, List, Tuple, Any, Optional
+from typing import Union, Callable, Dict, List, Tuple, Any, Optional, IO, ContextManager
 import logging
 import signal
 import numbers
@@ -208,7 +208,7 @@ class _NullCM(object):
 
 
 def as_stream(stream, mode="w", **kwds):
-    # type: (Any, str, Any) -> Any
+    # type: (Union[IO, str], str, Any) -> ContextManager[IO]
     """A utility for handling function arguments that can be
     a filename or a file object. This function is meant to be
     used in the context of a with statement.
