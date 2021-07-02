@@ -118,8 +118,8 @@ jobs:
     - name: pycodestyle
       run:  pycodestyle src/pybnb
 
-    - name: pydocstyle
-      run:  pydocstyle src/pybnb
+#    - name: pydocstyle
+#      run:  pydocstyle src/pybnb
 
     - name: flake8
       run:  flake8 src/pybnb
@@ -129,4 +129,3 @@ jobs:
 
     - name: mypy (typecheck)
       run:  mypy -p pybnb
-              --config-file=conf/mypy.ini
