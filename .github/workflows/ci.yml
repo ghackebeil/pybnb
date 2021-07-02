@@ -128,4 +128,4 @@ jobs:
 #      run:  pylint pybnb
 
     - name: mypy (typecheck)
-      run:  mypy -p pybnb
+      run:  mypy src/pybnb
