@@ -25,9 +25,9 @@ jobs:
           - openmpi
           - msmpi
         os:
-          - ubuntu-18.04
-          - macos-10.15
-          - windows-2019
+          - ubuntu
+          - macos
+          - windows
     steps:
 
     - name: Configure hostname
@@ -82,7 +82,7 @@ jobs:
       run:  python -m pip uninstall --yes pybnb
 
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu
 
     steps:
 
