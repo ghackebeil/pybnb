@@ -124,8 +124,8 @@ jobs:
     - name: flake8
       run:  flake8 src/pybnb
 
-    - name: pylint
-      run:  pylint pybnb
+#    - name: pylint
+#      run:  pylint pybnb
 
     - name: mypy (typecheck)
       run:  mypy -p pybnb
