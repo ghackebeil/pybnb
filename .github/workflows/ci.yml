@@ -114,6 +114,8 @@ jobs:
               flake8
               pylint
               mypy
+              types-PyYAML
+              types-six
 
     - name: pycodestyle
       run:  pycodestyle src/pybnb
