@@ -25,9 +25,29 @@ jobs:
           - openmpi
           - msmpi
         os:
-          - ubuntu
-          - macos
-          - windows
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        exclude:
+          - os: ubuntu-latest
+            py-arch: x86
+          - os: ubuntu-latest
+            mpi: msmpi
+          - os: macos-latest
+            py-version: pypy2
+          - os: macos-latest
+            py-version: pypy3
+          - os: macos-latest
+            py-arch: x86
+          - os: macos-latest
+            mpi: msmpi
+          - os: windows-latest
+            mpi: mpich
+          - os: windows-latest
+            mpi: openmpi
+          - os: windows-latest
+            py-version: pypy2
+
     steps:
 
     - name: Configure hostname
@@ -82,7 +102,7 @@ jobs:
       run:  python -m pip uninstall --yes pybnb
 
   lint:
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
 
     steps:
 
