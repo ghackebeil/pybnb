@@ -74,7 +74,7 @@ class SolverResults(object):
         self.best_node = None  # type: Optional[Node]
 
     def pprint(self, stream=sys.stdout):
-        # type: (Union[IO, str],) -> None
+        # type: (Union[IO, str]) -> None
         """Prints a nicely formatted representation of the
         results.
 
@@ -169,7 +169,7 @@ class SolverResults(object):
                     else:
                         if name == "best_node":
                             val = dumps(val)
-                            if hasattr(base64, "encodebytes"):
+                            if not six.PY2:
                                 val = base64.encodebytes(val).decode("ascii")
                             else:
                                 val = base64.encodestring(val).decode("ascii")

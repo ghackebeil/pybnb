@@ -15,7 +15,7 @@ Handler = Callable[[int, FrameType], None]
 
 
 def _cast_to_float_or_int(x):
-    # type: (Union[int, float],) -> Union[int, float]
+    # type: (Union[int, float]) -> Union[int, float]
     """Casts a number to a float or int built-in type. Makes
     a reasonable attempt to preserve integrality."""
     if type(x) in (float, int):
@@ -44,9 +44,7 @@ class MPI_InterruptHandler(object):
     def __init__(self, handler, disable=False):
         # type: (Handler, bool) -> None
         self._released = True
-        self._original_handlers = (
-            []
-        )  # type: List[Tuple[int, Union[Handler, int, None]]]
+        self._original_handlers = []  # type: List[Tuple[int, Any]]
         self._handler = handler
         self._disable = disable
 
@@ -195,7 +193,7 @@ class _NullCM(object):
     """A context manager that does nothing"""
 
     def __init__(self, obj):
-        # type: (Any,) -> None
+        # type: (Any) -> None
         self.obj = obj
 
     def __enter__(self):
@@ -203,7 +201,7 @@ class _NullCM(object):
         return self.obj
 
     def __exit__(self, *args):
-        # type: (Any,) -> None
+        # type: (Any) -> None
         pass
 
 
@@ -259,7 +257,7 @@ def as_stream(stream, mode="w", **kwds):
 
 
 def get_default_args(func):
-    # type: (Callable[..., Any],) -> Dict[str, Any]
+    # type: (Callable[..., Any]) -> Dict[str, Any]
     """Get the default arguments for a function as a
     dictionary mapping argument name to default value.
 
@@ -290,7 +288,7 @@ def get_default_args(func):
 
 
 def get_keyword_docs(doc):
-    # type: (str,) -> Dict[str, Dict[str, Any]]
+    # type: (str) -> Dict[str, Dict[str, Any]]
     """Parses a numpy-style docstring to summarize
     information in the 'Parameters' section into a dictionary."""
     import re
@@ -355,29 +353,37 @@ def get_keyword_docs(doc):
 
 
 class _simple_stdout_filter(object):
-    def filter(self, record):
-        # type: (Any,) -> bool
+    def __call__(self, record):
+        # type: (logging.LogRecord) -> int
         # only show WARNING or below
-        return bool(record.levelno <= logging.WARNING)
+        return int(record.levelno <= logging.WARNING)
 
 
 class _simple_stderr_filter(object):
-    def filter(self, record):
-        # type: (Any,) -> bool
+    def __call__(self, record):
+        # type: (logging.LogRecord) -> int
         # only show ERROR or above
-        return bool(record.levelno >= logging.ERROR)
+        return int(record.levelno >= logging.ERROR)
 
 
 def get_simple_logger(
-    filename=None, stream=None, console=True, level=logging.INFO, formatter=None
+    name="<local>",
+    filename=None,
+    stream=None,
+    console=True,
+    level=logging.INFO,
+    formatter=None,
 ):
-    # type: (Optional[str], Any, bool, int, Optional[logging.Formatter]) -> logging.Logger
+    # type: (str, Optional[str], Any, bool, int, Optional[logging.Formatter]) -> logging.Logger
     """Creates a logging object configured to write to any
     combination of a file, a stream, and the console, or
     hide all output.
 
     Parameters
     ----------
+    name : string
+        The name assigned to the ``logging.Logger``
+        instance. (default: "<local>")
     filename : string, optional
         The name of a file to write to. (default: None)
     stream : file-like object, optional
@@ -396,7 +402,7 @@ def get_simple_logger(
     ``logging.Logger``
         A logging object
     """
-    log = logging.Logger(None, level=level)  # type: ignore
+    log = logging.Logger(name, level=level)
     if filename is not None:
         # create file handler which logs even debug messages
         fh = logging.FileHandler(filename)
@@ -411,11 +417,11 @@ def get_simple_logger(
 
         cout = logging.StreamHandler(sys.stdout)
         cout.setLevel(level)
-        cout.addFilter(_simple_stdout_filter())  # type: ignore
+        cout.addFilter(_simple_stdout_filter())
         log.addHandler(cout)
         cerr = logging.StreamHandler(sys.stderr)
         cerr.setLevel(level)
-        cerr.addFilter(_simple_stderr_filter())  # type: ignore
+        cerr.addFilter(_simple_stderr_filter())
         log.addHandler(cerr)
     if formatter is not None:
         for h in log.handlers:

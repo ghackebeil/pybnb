@@ -4,7 +4,7 @@ Branch-and-bound node implementation.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 from types import ModuleType
-from typing import Dict, Optional
+from typing import Dict, Optional, Union, Any, Tuple, cast
 import uuid
 import zlib
 
@@ -23,6 +23,7 @@ _serializer_modules["dill"] = None
 
 
 def _get_dill():
+    # type: () -> ModuleType
     assert config.SERIALIZER == "dill"
     import dill
 
@@ -31,9 +32,11 @@ def _get_dill():
 
 
 def dumps(obj):
+    # type: (Any) -> bytes
     """Return the serialized representation of the object as
     a bytes object, using the serialization module set in
     the current configuration."""
+    mod = None  # type: Optional[ModuleType]
     try:
         mod = _serializer_modules[config.SERIALIZER]
     except KeyError:
@@ -43,13 +46,16 @@ def dumps(obj):
         )
     if mod is None:
         mod = _get_dill()
-    data = mod.dumps(obj, protocol=config.SERIALIZER_PROTOCOL_VERSION)
+    data = mod.dumps(obj, protocol=config.SERIALIZER_PROTOCOL_VERSION)  # type: ignore
     if config.COMPRESSION:
         data = zlib.compress(data)
-    return data
+    # mypy ugliness
+    assert type(data) is bytes
+    return cast(bytes, data)
 
 
 def loads(data):
+    # type: (bytes) -> Any
     """Read and return an object from the given serialized
     data, using the serialization module set in the current
     configuration."""
@@ -64,7 +70,7 @@ def loads(data):
         mod = _get_dill()
     if config.COMPRESSION:
         data = zlib.decompress(data)
-    return mod.loads(data)
+    return mod.loads(data)  # type: ignore
 
 
 class _SerializedNode(object):
@@ -127,6 +133,9 @@ class _SerializedNode(object):
         return node
 
 
+PriorityType = Union[int, float, Tuple[Union[int, float], ...]]
+
+
 class Node(object):
     """A branch-and-bound node that stores problem state.
 
@@ -147,14 +156,16 @@ class Node(object):
     __slots__ = ("objective", "bound", "tree_depth", "queue_priority", "_uuid", "state")
 
     def __init__(self):
-        self.objective = None
-        self.bound = None
-        self.tree_depth = None
-        self.queue_priority = None
-        self._uuid = None
-        self.state = None
+        # type: () -> None
+        self.objective = None  # type: Optional[Union[int, float]]
+        self.bound = None  # type: Optional[Union[int, float]]
+        self.tree_depth = None  # type: Optional[int]
+        self.queue_priority = None  # type: Optional[PriorityType]
+        self._uuid = None  # type: Optional[str]
+        self.state = None  # type: Optional[Any]
 
     def _generate_uuid(self):
+        # type() -> None
         self._uuid = uuid.uuid4().hex
 
     def resize(self, *args, **kwds):
@@ -169,6 +180,7 @@ class Node(object):
         )
 
     def __str__(self):
+        # type: () -> str
         out = (
             "Node(objective=%s,\n"
             "     bound=%s,\n"
@@ -177,9 +189,11 @@ class Node(object):
         return out
 
     def new_child(self):
+        # type: () -> Node
         child = Node()
         child.objective = self.objective
         child.bound = self.bound
+        assert self.tree_depth is not None
         child.tree_depth = self.tree_depth + 1
         assert child.queue_priority is None
         assert child.state is None

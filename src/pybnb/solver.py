@@ -3,6 +3,7 @@ Branch-and-bound solver implementation.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
+from typing import Optional, Union, Type, Callable, List
 import sys
 import time
 import array
@@ -16,6 +17,7 @@ from pybnb.common import (
     SolutionStatus,
 )
 from pybnb.problem import (
+    Problem,
     _SolveInfo,
     _SimpleSolveInfoCollector,
     _ProblemWithSolveInfoCollection,
@@ -47,7 +49,7 @@ except ImportError:  # pragma:nocover
 import six
 
 
-class _notset(object):
+class _NoArgumentGiven(object):
     pass
 
 
@@ -75,13 +77,14 @@ class Solver(object):
     """
 
     def _check_for_old_branch_signature(self, problem):
+        # type: (Problem) -> None
         if not self.is_dispatcher:
             return
         import inspect
 
-        argname = None
+        argname = None  # type: Optional[str]
         if not six.PY2:
-            # py3 does not include selse argument of class methods
+            # py3 does not include self argument of class methods
             sig = inspect.signature(problem.branch)
             if len(sig.parameters) == 1:
                 argname = list(sig.parameters.keys())[0]
@@ -103,21 +106,24 @@ class Solver(object):
                 "'pybnb.Node()'." % (argname, argname)
             )
 
-    def __init__(self, comm=_notset, dispatcher_rank=0):
+    def __init__(self, comm=_NoArgumentGiven, dispatcher_rank=0):
+        # type: (Union[Type[_NoArgumentGiven], mpi4py.MPI.Comm, None], int) -> None
         mpi = True
         if comm is None:
             mpi = False
-        self._comm = None
-        self._worker_flag = None
-        self._dispatcher_flag = None
-        self._disp = None
-        self._time = None
+        self._comm = None  # type: Optional[mpi4py.MPI.Comm]
+        self._worker_flag = False  # type: bool
+        self._dispatcher_flag = False  # type: bool
+        self._disp = (
+            None
+        )  # type: Optional[Union[DispatcherLocal, DispatcherDistributed, DispatcherProxy]]
+        self._time = None  # type: Optional[Callable[[], float]]
         if mpi:
             import mpi4py.MPI
 
             assert mpi4py.MPI.Is_initialized()
             assert comm is not None
-            if comm is _notset:
+            if comm is _NoArgumentGiven:
                 comm = mpi4py.MPI.COMM_WORLD
             if (
                 (int(dispatcher_rank) != dispatcher_rank)
@@ -158,19 +164,22 @@ class Solver(object):
             self._worker_flag = True
             self._dispatcher_flag = True
             self._time = time.time
-        assert self._worker_flag in (True, False)
-        assert self._dispatcher_flag in (True, False)
+        # exactly one is true or both are true
+        assert (self._worker_flag ^ self._dispatcher_flag) or (
+            self._worker_flag and self._dispatcher_flag
+        )
         assert self._disp is not None
         assert self._time is not None
         self._solve_start = None
         self._wall_time = 0.0
-        self._best_objective = None
-        self._best_node = None
-        self._best_node_updated = False
+        self._best_objective = None  # type: Optional[Union[int, float]]
+        self._best_node = None  # type: Optional[Node]
+        self._best_node_updated = False  # type: bool
         self._local_solve_info = _SolveInfo()
         self._global_solve_info = None
 
     def _reset_local_solve_stats(self):
+        # () -> None
         self._solve_start = None
         self._wall_time = 0.0
         self._best_objective = None
@@ -180,6 +189,7 @@ class Solver(object):
         self._global_solve_info = None
 
     def _check_update_best_node(self, convergence_checker, node):
+        # type: (ConvergenceChecker, Node) -> bool
         objective = node.objective
         assert objective is not None
         assert not math.isnan(objective)
@@ -202,6 +212,7 @@ class Solver(object):
         return updated
 
     def _fill_results(self, results, convergence_checker):
+        # type: (SolverResults, ConvergenceChecker) -> None
         infeasible_objective = convergence_checker.infeasible_objective
         unbounded_objective = convergence_checker.unbounded_objective
         if results.bound == infeasible_objective:
@@ -218,6 +229,8 @@ class Solver(object):
             if convergence_checker.objective_is_optimal(
                 results.objective, results.bound
             ):
+                assert results.objective is not None
+                assert results.bound is not None
                 results.solution_status = SolutionStatus.invalid
                 if (convergence_checker.sense == minimize) and (
                     results.bound <= results.objective
@@ -418,18 +431,21 @@ class Solver(object):
 
     @property
     def is_worker(self):
+        # type: () -> bool
         """Indicates if this process has been designated as
         a worker."""
         return self._worker_flag
 
     @property
     def is_dispatcher(self):
+        # type: () -> bool
         """Indicates if this process has been designated as
         the dispatcher."""
         return self._dispatcher_flag
 
     @property
     def comm(self):
+        # type: () -> Optional[mpi4py.MPI.Comm]
         """The full MPI communicator that includes the
         dispatcher and all workers. Will be None if MPI
         functionality has been disabled."""
@@ -437,24 +453,26 @@ class Solver(object):
 
     @property
     def worker_comm(self):
+        # type: () -> Optional[mpi4py.MPI.Comm]
         """The worker MPI communicator. Will be None on any
         processes for which :attr:`Solver.is_worker` is
         False, or if MPI functionality has been disabled."""
         if (self._comm is None) or (self._comm.size == 1):
             return self._comm
         elif not self.is_dispatcher:
-            return self._disp.worker_comm
+            return self._disp.worker_comm  # type: ignore
         return None
 
     @property
     def worker_count(self):
+        # type: () -> int
         """The number of worker processes associated with this solver."""
         if (self._comm is None) or (self._comm.size == 1):
             return 1
         elif not self.is_dispatcher:
-            return self._disp.worker_comm.size
+            return self._disp.worker_comm.size  # type: ignore
         else:
-            return len(self._disp.worker_ranks)
+            return len(self._disp.worker_ranks)  # type: ignore
 
     def collect_worker_statistics(self):
         """Collect individual worker statistics about the
@@ -501,7 +519,7 @@ class Solver(object):
                 if self.worker_comm.rank == 0:
                     self.comm.Send(
                         [gathered, mpi4py.MPI.DOUBLE],
-                        self._disp.dispatcher_rank,
+                        self._disp.dispatcher_rank,  # type: ignore
                         tag=11112111,
                     )
             else:
@@ -550,6 +568,7 @@ class Solver(object):
         return stats
 
     def save_dispatcher_queue(self):
+        # type: () -> Optional[DispatcherQueueData]
         """Saves the dispatcher queue.
 
         Returns
@@ -567,7 +586,7 @@ class Solver(object):
         """
         ret = None
         if self.is_dispatcher:
-            ret = self._disp.save_dispatcher_queue()
+            ret = self._disp.save_dispatcher_queue()  # type: ignore
         return ret
 
     def solve(
@@ -592,7 +611,7 @@ class Solver(object):
         queue_strategy="bound",
         log_interval_seconds=1.0,
         log_new_incumbent=True,
-        log=_notset,
+        log=_NoArgumentGiven,
         disable_signal_handlers=False,
     ):
         """Solve a problem using branch-and-bound.
@@ -856,7 +875,7 @@ class Solver(object):
         problem.save_state(orig)
         try:
             if self.is_dispatcher:
-                if log is _notset:
+                if log is _NoArgumentGiven:
                     log = get_simple_logger()
                 if not isinstance(queue_strategy, (six.string_types, QueueStrategy)):
                     queue_strategy = tuple(
@@ -1025,6 +1044,7 @@ class Solver(object):
 
 
 def _nonzero_avg(items, div=None):
+    # type: (List[Union[int, float]], Optional[List[Union[int, float]]]) -> float
     """Returns the average of a list of items, excluding
     zeros. The optional div argument can be set to a list of
     values to divide each item by when computing the
@@ -1166,7 +1186,7 @@ def summarize_worker_statistics(stats, stream=sys.stdout):
 
 def solve(
     problem,
-    comm=_notset,
+    comm=_NoArgumentGiven,
     dispatcher_rank=0,
     log_filename=None,
     results_filename=None,

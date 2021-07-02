@@ -4,19 +4,36 @@ used by the dispatcher.
 
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
-from typing import Type, Dict, Any
+from typing import (
+    Type,
+    Dict,
+    Any,
+    Optional,
+    Tuple,
+    Callable,
+    List,
+    Iterator,
+    Iterable,
+    Union,
+    TypeVar,
+    Generic,
+    cast,
+)
 import random
 import collections
 import heapq
 import math
 
-from pybnb.common import minimize, maximize, inf
-
 from sortedcontainers import SortedList
 import six
 
+from pybnb.common import minimize, maximize, ProblemSense, inf
+from pybnb.node import Node, PriorityType
 
-class _NoThreadingMaxPriorityFirstQueue(object):
+T = TypeVar("T")
+
+
+class _NoThreadingMaxPriorityFirstQueue(Generic[T]):
     """A simple priority queue implementation that is not
     thread safe. When the queue is not empty, the item with
     the highest priority is next.
@@ -24,23 +41,27 @@ class _NoThreadingMaxPriorityFirstQueue(object):
     This queue implementation is not allowed to store None.
     """
 
-    requires_priority = True
+    requires_priority = True  # type: bool
 
     def __init__(self):
-        self._count = 0
-        self._heap = []
+        # type: () -> None
+        self._count = 0  # type: int
+        self._heap = []  # type: List[Tuple[PriorityType, int, T]]
 
     def _negate(self, priority):
-        if hasattr(priority, "__neg__"):
-            return -priority
+        # type: (PriorityType) -> PriorityType
+        if not hasattr(priority, "__iter__"):
+            return -priority  # type: ignore
         else:
-            return tuple(-v for v in priority)
+            return tuple(-v for v in priority)  # type: ignore
 
     def size(self):
+        # type: () -> int
         """Returns the size of the queue."""
         return len(self._heap)
 
     def put(self, item, priority, _push_=heapq.heappush):
+        # type: (T, PriorityType, Any) -> int
         """Puts an item into the queue with the given
         priority. Items placed in the queue may not be
         None. This method returns a unique counter associated
@@ -53,6 +74,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         return cnt
 
     def get(self, _pop_=heapq.heappop):
+        # type: (Any) -> Optional[T]
         """Removes and returns the highest priority item in
         the queue, where ties are broken by the order items
         were placed in the queue. If the queue is empty,
@@ -63,6 +85,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
             return None
 
     def put_get(self, item, priority, _push_pop_=heapq.heappushpop):
+        # type: (T, PriorityType, Any) -> Tuple[int, T]
         """Combines a put and get call, which can be more
         efficient than two separate put and get
         calls. Returns a tuple containing the put and get
@@ -78,6 +101,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
             return cnt, item
 
     def next(self):
+        # type: () -> Tuple[int, T]
         """Returns, without modifying the queue, a tuple of
         the form (cnt, item), where item is highest priority
         entry in the queue and cnt is the unique counter
@@ -94,6 +118,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
             raise IndexError("The queue is empty")
 
     def filter(self, func, include_counters=False):
+        # type: (Callable[[T], bool], bool) -> List[Union[T, Tuple[int, T]]]
         """Removes items from the queue for which
         `func(item)` returns False. The list of items
         removed is returned. If `include_counters` is set to
@@ -102,7 +127,7 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         created for the item when it was added to the
         queue."""
         heap_new = []
-        removed = []
+        removed = []  # type: List[Union[T, Tuple[int, T]]]
         for priority, cnt, item in self._heap:
             if func(item):
                 heap_new.append((priority, cnt, item))
@@ -115,30 +140,34 @@ class _NoThreadingMaxPriorityFirstQueue(object):
         return removed
 
     def items(self):
+        # type: () -> Iterator[T]
         """Iterates over the queued items in arbitrary order
         without modifying the queue."""
         for _, _, item in self._heap:
             yield item
 
 
-class _NoThreadingFIFOQueue(object):
+class _NoThreadingFIFOQueue(Generic[T]):
     """A simple first-in, first-out queue implementation
     that is not thread safe.
 
     This queue implementation is not allowed to store None.
     """
 
-    requires_priority = False
+    requires_priority = False  # type: bool
 
     def __init__(self):
-        self._count = 0
-        self._deque = collections.deque()
+        # type: () -> None
+        self._count = 0  # type: int
+        self._deque = collections.deque()  # type: collections.deque
 
     def size(self):
+        # type: () -> int
         """Returns the size of the queue."""
         return len(self._deque)
 
     def put(self, item):
+        # type: (T) -> int
         """Puts an item into the queue. Items placed in the
         queue may not be None. This method returns a unique
         counter associated with each put."""
@@ -150,6 +179,7 @@ class _NoThreadingFIFOQueue(object):
         return cnt
 
     def get(self):
+        # type: () -> Optional[T]
         """Removes and returns the next item in the
         queue. If the queue is empty, returns None."""
         if len(self._deque) > 0:
@@ -158,6 +188,7 @@ class _NoThreadingFIFOQueue(object):
             return None
 
     def put_get(self, item):
+        # type: (T) -> Tuple[int, T]
         """Combines a put and get call, which can be more
         efficient than two separate put and get
         calls. Returns a tuple containing the put and get
@@ -175,6 +206,7 @@ class _NoThreadingFIFOQueue(object):
             return cnt, item
 
     def next(self):
+        # type: () -> Tuple[int, T]
         """Returns, without modifying the queue, a tuple of
         the form (cnt, item), where item is highest priority
         entry in the queue and cnt is the unique counter
@@ -191,6 +223,7 @@ class _NoThreadingFIFOQueue(object):
             raise IndexError("The queue is empty")
 
     def filter(self, func, include_counters=False):
+        # type: (Callable[[T], bool], bool) -> List[T]
         """Removes items from the queue for which
         `func(item)` returns False. The list of items
         removed is returned. If `include_counters` is set to
@@ -198,7 +231,7 @@ class _NoThreadingFIFOQueue(object):
         (cnt, item), where cnt is a unique counter that was
         created for the item when it was added to the
         queue."""
-        deque_new = collections.deque()
+        deque_new = collections.deque()  # type: collections.deque
         removed = []
         for cnt, item in self._deque:
             if func(item):
@@ -211,30 +244,34 @@ class _NoThreadingFIFOQueue(object):
         return removed
 
     def items(self):
+        # type: () -> Iterator[T]
         """Iterates over the queued items in arbitrary order
         without modifying the queue."""
         for _, item in self._deque:
             yield item
 
 
-class _NoThreadingLIFOQueue(object):
+class _NoThreadingLIFOQueue(Generic[T]):
     """A simple last-in, first-out queue implementation
     that is not thread safe.
 
     This queue implementation is not allowed to store None.
     """
 
-    requires_priority = False
+    requires_priority = False  # type: bool
 
     def __init__(self):
-        self._count = 0
-        self._items = []
+        # type: () -> None
+        self._count = 0  # type: int
+        self._items = []  # type: List[Tuple[int, T]]
 
     def size(self):
+        # type: () -> int
         """Returns the size of the queue."""
         return len(self._items)
 
     def put(self, item):
+        # type: (T) -> int
         """Puts an item into the queue. Items placed in the
         queue may not be None. This method returns a unique
         counter associated with each put."""
@@ -246,6 +283,7 @@ class _NoThreadingLIFOQueue(object):
         return cnt
 
     def get(self):
+        # type: () -> Optional[T]
         """Removes and returns the next item in the
         queue. If the queue is empty, returns None."""
         if len(self._items) > 0:
@@ -254,6 +292,7 @@ class _NoThreadingLIFOQueue(object):
             return None
 
     def put_get(self, item):
+        # type: (T) -> Tuple[int, T]
         """Combines a put and get call, which can be more
         efficient than two separate put and get
         calls. Returns a tuple containing the put and get
@@ -265,6 +304,7 @@ class _NoThreadingLIFOQueue(object):
         return cnt, item
 
     def next(self):
+        # type: () -> Tuple[int, T]
         """Returns, without modifying the queue, a tuple of
         the form (cnt, item), where item is highest priority
         entry in the queue and cnt is the unique counter
@@ -281,6 +321,7 @@ class _NoThreadingLIFOQueue(object):
             raise IndexError("The queue is empty")
 
     def filter(self, func, include_counters=False):
+        # type: (Callable[[T], bool], bool) -> List[Union[T, Tuple[int, T]]]
         """Removes items from the queue for which
         `func(item)` returns False. The list of items
         removed is returned. If `include_counters` is set to
@@ -289,7 +330,7 @@ class _NoThreadingLIFOQueue(object):
         created for the item when it was added to the
         queue."""
         items_new = []
-        removed = []
+        removed = []  # type: List[Union[T, Tuple[int, T]]]
         for cnt, item in self._items:
             if func(item):
                 items_new.append((cnt, item))
@@ -301,10 +342,18 @@ class _NoThreadingLIFOQueue(object):
         return removed
 
     def items(self):
+        # type: () -> Iterator[T]
         """Iterates over the queued items in arbitrary order
         without modifying the queue."""
         for _, item in self._items:
             yield item
+
+
+SimpleQueueType = Union[
+    Type[_NoThreadingMaxPriorityFirstQueue[Node]],
+    Type[_NoThreadingFIFOQueue[Node]],
+    Type[_NoThreadingLIFOQueue[Node]],
+]
 
 
 class IPriorityQueue(object):
@@ -314,40 +363,51 @@ class IPriorityQueue(object):
     def __init__(self, *args, **kwds):
         raise NotImplementedError  # pragma:nocover
 
-    def size(self):  # pragma:nocover
-        """Returns the size of the queue."""
-        raise NotImplementedError
+    @staticmethod
+    def generate_priority(node, sense, queue):
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
+        raise NotImplementedError()  # pragma:nocover
 
-    def put(self, node):  # pragma:nocover
+    def size(self):
+        # type: () -> int
+        """Returns the size of the queue."""
+        raise NotImplementedError()  # pragma:nocover
+
+    def put(self, node):
+        # type: (Node) -> int
         """Puts an node in the queue, possibly updating the
         value of :attr:`queue_priority <pybnb.node.Node.queue_priority>`,
         depending on the queue implementation. This method
         returns a unique counter associated with each
         put."""
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma:nocover
 
-    def get(self):  # pragma:nocover
+    def get(self):
+        # type: () -> Optional[Node]
         """Returns the next node in the queue. If the queue
         is empty, returns None."""
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma:nocover
 
-    def bound(self):  # pragma:nocover
+    def bound(self):
+        # type: () -> Optional[Union[int, float]]
         """Returns the weakest bound of all nodes in the
         queue. If the queue is empty, returns None."""
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma:nocover
 
-    def filter(self, func):  # pragma:nocover
+    def filter(self, func):
+        # type: (Callable[[Node], bool]) -> List[Node]
         """Removes nodes from the queue for which
         `func(node)` returns False. The list of nodes
         removed is returned. If the queue is empty or no
         nodes are removed, the returned list will be
         empty."""
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma:nocover
 
-    def items(self):  # pragma:nocover
+    def items(self):
+        # type: () -> Iterator[Node]
         """Iterates over the queued nodes in arbitrary order
         without modifying the queue."""
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma:nocover
 
 
 class WorstBoundFirstPriorityQueue(IPriorityQueue):
@@ -366,13 +426,16 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
     """
 
     def __init__(self, sense, track_bound):
-        assert sense in (minimize, maximize)
-        self._sense = sense
-        self._queue = _NoThreadingMaxPriorityFirstQueue()
+        # type: (ProblemSense, bool) -> None
+        assert sense in ProblemSense
+        self._sense = sense  # type: ProblemSense
+        self._queue = _NoThreadingMaxPriorityFirstQueue[Node]()
 
     @staticmethod
     def generate_priority(node, sense, queue):
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
         bound = node.bound
+        assert bound is not None
         assert not math.isnan(bound)
         if sense == minimize:
             return -bound
@@ -381,25 +444,31 @@ class WorstBoundFirstPriorityQueue(IPriorityQueue):
             return bound
 
     def size(self):
+        # type: () -> int
         return self._queue.size()
 
     def put(self, node):
+        # type: (Node) -> int
         node.queue_priority = self.generate_priority(node, self._sense, None)
         return self._queue.put(node, node.queue_priority)
 
     def get(self):
+        # type: () -> Optional[Node]
         return self._queue.get()
 
     def bound(self):
+        # type: () -> Optional[Union[int, float]]
         try:
             return self._queue.next()[1].bound
         except IndexError:
             return None
 
     def filter(self, func):
-        return self._queue.filter(func)
+        # type: (Callable[[Node], bool]) -> List[Node]
+        return cast(List[Node], self._queue.filter(func))
 
     def items(self):
+        # type: () -> Iterator[Node]
         return self._queue.items()
 
 
@@ -419,9 +488,10 @@ class CustomPriorityQueue(IPriorityQueue):
     """
 
     def __init__(
-        self, sense, track_bound, _queue_type_=_NoThreadingMaxPriorityFirstQueue
+        self, sense, track_bound, _queue_type_=_NoThreadingMaxPriorityFirstQueue[Node]
     ):
-        assert sense in (minimize, maximize)
+        # type: (ProblemSense, bool, SimpleQueueType) -> None
+        assert sense in ProblemSense
         self._sense = sense
         self._queue = _queue_type_()
         self._sorted_by_bound = None
@@ -429,18 +499,21 @@ class CustomPriorityQueue(IPriorityQueue):
             self._sorted_by_bound = SortedList()
 
     def size(self):
+        # type: () -> int
         return self._queue.size()
 
     def put(self, node):
+        # type: (Node) -> int
         if self._queue.requires_priority:
             priority = node.queue_priority
             if priority is None:
                 raise ValueError("A node queue priority is required")
-            cnt = self._queue.put(node, priority)
+            cnt = self._queue.put(node, priority)  # type: ignore
         else:
-            cnt = self._queue.put(node)
+            cnt = self._queue.put(node)  # type: ignore
         if self._sorted_by_bound is not None:
             bound = node.bound
+            assert bound is not None
             assert not math.isnan(bound)
             if self._sense == maximize:
                 self._sorted_by_bound.add((-bound, cnt, node))
@@ -449,13 +522,15 @@ class CustomPriorityQueue(IPriorityQueue):
         return cnt
 
     def get(self):
+        # type: () -> Optional[Node]
         if self._queue.size() > 0:
             cnt, tmp_ = self._queue.next()
-            assert type(cnt) is int
             node = self._queue.get()
+            assert node is not None
             assert tmp_ is node
             if self._sorted_by_bound is not None:
                 bound = node.bound
+                assert bound is not None
                 if self._sense == maximize:
                     self._sorted_by_bound.remove((-bound, cnt, node))
                 else:
@@ -465,6 +540,7 @@ class CustomPriorityQueue(IPriorityQueue):
             return None
 
     def bound(self):
+        # type: () -> Optional[Union[int, float]]
         if self._sorted_by_bound is not None:
             try:
                 return self._sorted_by_bound[0][2].bound
@@ -480,21 +556,26 @@ class CustomPriorityQueue(IPriorityQueue):
                 return None
 
     def filter(self, func):
+        # type: (Callable[[Node], bool]) -> List[Node]
         removed = []
         if self._sorted_by_bound is not None:
-            for cnt, node in self._queue.filter(func, include_counters=True):
+            for item in self._queue.filter(func, include_counters=True):
+                cnt, node = cast(Tuple[int, Node], item)
                 removed.append(node)
                 bound = node.bound
+                assert bound is not None
                 if self._sense == maximize:
                     self._sorted_by_bound.remove((-bound, cnt, node))
                 else:
                     self._sorted_by_bound.remove((bound, cnt, node))
         else:
-            for cnt, node in self._queue.filter(func, include_counters=True):
-                removed.append(node)
+            removed.extend(
+                cast(List[Node], self._queue.filter(func, include_counters=False))
+            )
         return removed
 
     def items(self):
+        # type: () -> Iterator[Node]
         return self._queue.items()
 
 
@@ -508,7 +589,9 @@ class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
 
     @staticmethod
     def generate_priority(node, sense, queue):
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
         objective = node.objective
+        assert objective is not None
         assert not math.isnan(objective)
         if sense == minimize:
             return -objective
@@ -517,6 +600,7 @@ class BestObjectiveFirstPriorityQueue(CustomPriorityQueue):
             return objective
 
     def put(self, node):
+        # type: (Node) -> int
         node.queue_priority = self.generate_priority(node, self._sense, None)
         return super(BestObjectiveFirstPriorityQueue, self).put(node)
 
@@ -531,11 +615,15 @@ class BreadthFirstPriorityQueue(CustomPriorityQueue):
 
     @staticmethod
     def generate_priority(node, sense, queue):
-        assert node.tree_depth >= 0
-        return -node.tree_depth
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
+        tree_depth = node.tree_depth
+        assert tree_depth is not None
+        assert tree_depth >= 0
+        return -tree_depth
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, None, None)
+        # type: (Node) -> int
+        node.queue_priority = self.generate_priority(node, self._sense, None)
         return super(BreadthFirstPriorityQueue, self).put(node)
 
 
@@ -549,11 +637,15 @@ class DepthFirstPriorityQueue(CustomPriorityQueue):
 
     @staticmethod
     def generate_priority(node, sense, queue):
-        assert node.tree_depth >= 0
-        return node.tree_depth
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
+        tree_depth = node.tree_depth
+        assert tree_depth is not None
+        assert tree_depth >= 0
+        return tree_depth
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(node, None, None)
+        # type: (Node) -> int
+        node.queue_priority = self.generate_priority(node, self._sense, None)
         return super(DepthFirstPriorityQueue, self).put(node)
 
 
@@ -566,16 +658,19 @@ class FIFOQueue(CustomPriorityQueue):
     """
 
     def __init__(self, sense, track_bound):
+        # type: (ProblemSense, bool) -> None
         super(FIFOQueue, self).__init__(
-            sense, track_bound, _queue_type_=_NoThreadingFIFOQueue
+            sense, track_bound, _queue_type_=_NoThreadingFIFOQueue[Node]
         )
 
     @staticmethod
     def generate_priority(node, sense, queue):
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
         return -queue._count
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(None, None, self._queue)
+        # type: (Node) -> int
+        node.queue_priority = self.generate_priority(node, self._sense, self._queue)
         cnt = super(FIFOQueue, self).put(node)
         assert node.queue_priority == -cnt
         return cnt
@@ -590,16 +685,19 @@ class LIFOQueue(CustomPriorityQueue):
     """
 
     def __init__(self, sense, track_bound):
+        # type: (ProblemSense, bool) -> None
         super(LIFOQueue, self).__init__(
-            sense, track_bound, _queue_type_=_NoThreadingLIFOQueue
+            sense, track_bound, _queue_type_=_NoThreadingLIFOQueue[Node]
         )
 
     @staticmethod
     def generate_priority(node, sense, queue):
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
         return queue._count
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(None, None, self._queue)
+        # type: (Node) -> int
+        node.queue_priority = self.generate_priority(node, self._sense, self._queue)
         cnt = super(LIFOQueue, self).put(node)
         assert node.queue_priority == cnt
         return cnt
@@ -615,10 +713,12 @@ class RandomPriorityQueue(CustomPriorityQueue):
 
     @staticmethod
     def generate_priority(node, sense, queue):
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
         return random.random()
 
     def put(self, node):
-        node.queue_priority = self.generate_priority(None, None, None)
+        # type: (Node) -> int
+        node.queue_priority = self.generate_priority(node, self._sense, None)
         return super(RandomPriorityQueue, self).put(node)
 
 
@@ -633,8 +733,11 @@ class LocalGapPriorityQueue(CustomPriorityQueue):
 
     @staticmethod
     def generate_priority(node, sense, queue):
+        # type: (Node, ProblemSense, Any) -> Union[int, float]
         objective = node.objective
         bound = node.bound
+        assert objective is not None
+        assert bound is not None
         if sense == minimize:
             gap = objective - bound
         else:
@@ -644,6 +747,7 @@ class LocalGapPriorityQueue(CustomPriorityQueue):
         return gap
 
     def put(self, node):
+        # type: (Node) -> int
         node.queue_priority = self.generate_priority(node, self._sense, None)
         return super(LocalGapPriorityQueue, self).put(node)
 
@@ -658,17 +762,20 @@ class LexicographicPriorityQueue(CustomPriorityQueue):
     """
 
     def __init__(self, queue_types, sense, track_bound):
-        self._queue_types = tuple(queue_types)
+        # type: (Iterable[Type[IPriorityQueue]], ProblemSense, bool) -> None
+        self._queue_types = tuple(queue_types)  # Tuple[Type[IPriorityQueue], ...]
         assert len(self._queue_types)
         super(LexicographicPriorityQueue, self).__init__(sense, track_bound)
 
     def _generate_priority(self, node):
+        # type: (Node) -> Tuple[Union[int, float], ...]
         return tuple(
             qt.generate_priority(node, self._sense, self._queue)
             for qt in self._queue_types
         )
 
     def put(self, node):
+        # type: (Node) -> int
         node.queue_priority = self._generate_priority(node)
         return super(LexicographicPriorityQueue, self).put(node)
 

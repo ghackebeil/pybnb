@@ -18,7 +18,7 @@ class Problem(object):
         """Returns the value that represents an infeasible
         objective (i.e., +inf or -inf depending on the
         sense). The :class:`Problem <pybnb.problem.Problem>`
-        base class implements this method. """
+        base class implements this method."""
         if self.sense() == minimize:
             return inf
         else:
