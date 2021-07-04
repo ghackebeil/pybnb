@@ -87,6 +87,11 @@ jobs:
       run:  python -m pip install --no-index --find-links=dist pybnb
     - name: Sanity test
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
+    - name: Parallel tests
+      run: |
+        find . -name "*coverage*"
+        python run-mpitests.py --no-build --with-coverage -v
+        find . -name "*coverage*"
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
 
