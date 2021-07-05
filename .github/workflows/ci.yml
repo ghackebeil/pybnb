@@ -82,11 +82,11 @@ jobs:
       run:  python -m pip install --upgrade cython
     - name: Build package
       run:  python -m pip wheel -vvv --wheel-dir=dist .
-    - name: Upload package artifacts
-      uses: actions/upload-artifact@v1
-      with:
-        name: pybnb-py${{matrix.py-version}}-${{matrix.py-arch}}-${{matrix.mpi}}-${{matrix.os}}
-        path: dist
+#    - name: Upload package artifacts
+#      uses: actions/upload-artifact@v1
+#      with:
+#        name: pybnb-py${{matrix.py-version}}-${{matrix.py-arch}}-${{matrix.mpi}}-${{matrix.os}}
+#        path: dist
 
     - name: Install test dependencies
       run:  python -m pip install --upgrade -r ./test_requirements.txt
@@ -96,7 +96,15 @@ jobs:
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Parallel tests
       run: |
-        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build --with-coverage -v
+        pytest -v --doctest-plus src/pybnb
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
+        mv .coverage coverage.parallel.1
+#        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build --with-coverage -v
+        python run-mpitests.py --single --no-build --with-coverage -v
+        mv .coverage coverage.parallel.2
+        mv coverage.parallel.1 .coverage.parallel.1
+        mv coverage.parallel.1 .coverage.parallel.1
+        coverage combine
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
