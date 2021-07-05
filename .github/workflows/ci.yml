@@ -88,22 +88,19 @@ jobs:
       run: |
         pytest -v --doctest-plus src/pybnb
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
-        mv .coverage coverage.pybnb.serial
+        mv .coverage .coverage.pybnb.serial
     - name: Parallel tests (no coverage)
       run: python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build -v
     - name: Parallel tests (coverage)
       if: matrix.os != 'windows-latest'
       run: |
         python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build --with-coverage -v
-        mv .coverage coverage.pybnb.parallel
+        mv .coverage .coverage.pybnb.parallel
     - name: Upload Coverage
       run: |
         ls
-        for file in coverage.pybnb.*; do
-          mv $file .$file
-        done
-        ls
         coverage combine
+        ls
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
