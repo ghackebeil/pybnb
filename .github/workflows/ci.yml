@@ -89,8 +89,8 @@ jobs:
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Parallel tests
       run: |
-        which mpiexec
-        python run-mpitests.py --mpirun='`which mpiexec`' --no-build --with-coverage -v
+        which mpiexec.exe
+        python run-mpitests.py --mpirun="mpiexec.exe" --no-build --with-coverage -v
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
