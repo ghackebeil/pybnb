@@ -19,11 +19,11 @@ jobs:
           - "pypy2"
           - "pypy3"
         py-arch:
-          - x86
+#          - x86
           - x64
         mpi:
           - mpich
-          - openmpi
+#          - openmpi
           - msmpi
         os:
           - ubuntu-latest
@@ -90,7 +90,7 @@ jobs:
     - name: Parallel tests
       run: |
         find . -name "*coverage*"
-        python run-mpitests.py --no-build --with-coverage -v
+        python run-mpitests.py --mpirun="mpirun" --no-build --with-coverage -v
         find . -name "*coverage*"
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
