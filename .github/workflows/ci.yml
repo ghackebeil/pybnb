@@ -92,12 +92,12 @@ jobs:
     - name: Parallel tests
 #      if: matrix.os != 'windows-latest'
       run: |
-        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build --with-coverage -v
-        mv .coverage coverage.pybnb.parallel
-    - name: Coverage
-      run: |
-        coverage combine coverage.pybnb.serial coverage.pybnb.parallel
-        coverage report
+        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build -v
+#        mv .coverage coverage.pybnb.parallel
+#    - name: Coverage
+#      run: |
+#        coverage combine coverage.pybnb.serial coverage.pybnb.parallel
+#        coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
 
