@@ -90,8 +90,7 @@ jobs:
     - name: Parallel tests
       run: |
         which mpiexec
-        python run-mpitests.py --mpirun="`which mpiexec`" --no-build --with-coverage -v
-        coverage combine
+        python run-mpitests.py --mpirun=\"`which mpiexec`\" --no-build --with-coverage -v
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
