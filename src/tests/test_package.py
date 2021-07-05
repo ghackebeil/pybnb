@@ -29,6 +29,8 @@ class Test(object):
                     print(sys.version_info)
                 elif sys.version_info.minor == 8:
                     print(sys.version_info)
+                elif sys.version_info.minor == 9:
+                    print(sys.version_info)
         if is_pypy:
             if sys.version_info.major == 2:
                 print(sys.version_info)
