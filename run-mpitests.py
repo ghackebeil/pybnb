@@ -5,6 +5,6 @@ import os.path
 # executed when imported during doctests
 if __name__ == "__main__":
     tester = Tester(os.path.join(os.path.abspath(__file__)),
-                "../../src", # tests are executed from within ./build/tests
-                extra_path=None)
+                    "../../src", # tests are executed from within ./build/tests
+                    extra_path=[])
     tester.main(sys.argv[1:])
