@@ -19,7 +19,7 @@ jobs:
 #          - "pypy2"
 #          - "pypy3"
         py-arch:
-#          - x86
+          - x86
           - x64
         mpi:
           - mpich
