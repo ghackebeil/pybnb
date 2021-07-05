@@ -22,13 +22,20 @@ jobs:
 #          - x86
           - x64
         mpi:
-#          - mpich
-#          - openmpi
+          - mpich
+          - openmpi
           - msmpi
         os:
-#          - ubuntu-latest
-#          - macos-latest
+          - ubuntu-latest
+          - macos-latest
           - windows-latest
+        include:
+        - os: ubuntu-latest
+          mpicmd: "mpirun -np 4"
+        - os: macos-latest
+          mpicmd: "mpirun -np 4"
+        - os: windows-latest
+          mpicmd: "mpiexec.exe -np 1"
         exclude:
           - os: ubuntu-latest
             py-arch: x86
@@ -89,8 +96,7 @@ jobs:
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Parallel tests
       run: |
-        which mpiexec.exe
-        python run-mpitests.py --mpirun="mpiexec.exe" --no-build --with-coverage -v
+        python run-mpitests.py --mpirun=${{matrix.mpicmd}} --no-build --with-coverage -v
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
