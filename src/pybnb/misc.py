@@ -352,18 +352,18 @@ def get_keyword_docs(doc):
     return data
 
 
-class _simple_stdout_filter(object):
-    def __call__(self, record):
-        # type: (logging.LogRecord) -> int
+class _simple_stdout_filter(logging.Filter):
+    def filter(self, record):
+        # type: (logging.LogRecord) -> bool
         # only show WARNING or below
-        return int(record.levelno <= logging.WARNING)
+        return bool(record.levelno <= logging.WARNING)
 
 
-class _simple_stderr_filter(object):
-    def __call__(self, record):
-        # type: (logging.LogRecord) -> int
+class _simple_stderr_filter(logging.Filter):
+    def filter(self, record):
+        # type: (logging.LogRecord) -> bool
         # only show ERROR or above
-        return int(record.levelno >= logging.ERROR)
+        return bool(record.levelno >= logging.ERROR)
 
 
 def get_simple_logger(
