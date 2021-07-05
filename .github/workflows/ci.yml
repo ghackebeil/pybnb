@@ -98,7 +98,12 @@ jobs:
         mv .coverage coverage.pybnb.parallel
     - name: Upload Coverage
       run: |
-        coverage combine `ls coverage.pybnb.*`
+        ls
+        for file in coverage.pybnb.*; do
+          mv $file .$file
+        done
+        ls
+        coverage combine
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
