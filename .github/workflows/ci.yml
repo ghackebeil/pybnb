@@ -90,7 +90,7 @@ jobs:
     - name: Parallel tests
       run: |
         which mpiexec
-        python run-mpitests.py --mpirun=`which mpiexec` --no-build --with-coverage -v
+        python run-mpitests.py --no-build --with-coverage -v
         coverage combine
         coverage report
     - name: Uninstall package after testing
