@@ -99,12 +99,9 @@ jobs:
         pytest -v --doctest-plus src/pybnb
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
         mv .coverage coverage.parallel.1
-#        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build --with-coverage -v
         python run-mpitests.py --single --no-build --with-coverage -v
         mv .coverage coverage.parallel.2
-        mv coverage.parallel.1 .coverage.parallel.1
-        mv coverage.parallel.1 .coverage.parallel.1
-        coverage combine
+        coverage combine coverage.parallel.*
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
