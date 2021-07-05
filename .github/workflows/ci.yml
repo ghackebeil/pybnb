@@ -96,7 +96,7 @@ jobs:
         mv .coverage coverage.pybnb.parallel
     - name: Coverage
       run: |
-        coverage combine coverage.pybnb.*
+        coverage combine coverage.pybnb.serial coverage.pybnb.parallel
         coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
