@@ -86,20 +86,20 @@ jobs:
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests
       run: |
-        ls
         pytest -v --doctest-plus src/pybnb
-        ls
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
-        ls
         mv .coverage coverage.pybnb.serial
-    - name: Parallel tests
-#      if: matrix.os != 'windows-latest'
+    - name: Parallel tests (no coverage)
+      run: python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build -v
+    - name: Parallel tests (coverage)
+      if: matrix.os != 'windows-latest'
       run: |
-        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build -v
-#        mv .coverage coverage.pybnb.parallel
-#    - name: Upload Coverage
-#      run: |
-#        coverage report
+        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build --with-coverage -v
+        mv .coverage coverage.pybnb.parallel
+    - name: Upload Coverage
+      run: |
+        coverage combine `ls coverage.pybnb.*`
+        coverage report
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
 
