@@ -10,16 +10,16 @@ jobs:
       fail-fast: false
       matrix:
         py-version:
-          - "2.7"
-          - "3.5"
-          - "3.6"
-          - "3.7"
-          - "3.8"
+#          - "2.7"
+#          - "3.5"
+#          - "3.6"
+#          - "3.7"
+#          - "3.8"
           - "3.9"
-          - "pypy2"
-          - "pypy3"
+#          - "pypy2"
+#          - "pypy3"
         py-arch:
-          - x86
+#          - x86
           - x64
         mpi:
           - mpich
@@ -27,8 +27,8 @@ jobs:
           - msmpi
         os:
           - ubuntu-latest
-          - macos-latest
-          - windows-latest
+#          - macos-latest
+#          - windows-latest
         include:
           - os: ubuntu-latest
             mpicmd: "mpirun -n 4"
@@ -58,6 +58,8 @@ jobs:
             mpi: openmpi
           - os: windows-latest
             py-version: pypy2
+          - os: windows-latest
+            py-version: pypy3
 
     steps:
 
@@ -76,14 +78,15 @@ jobs:
         python-version: ${{ matrix.py-version }}
         architecture: ${{ matrix.py-arch }}
     - name: Install packaging tools
-      run:  python -m pip install --upgrade setuptools pip wheel
+      run:  python -m pip install -U setuptools pip wheel
     - name: Install test dependencies
-      run:  python -m pip install --upgrade -r ./test_requirements.txt
+      run:  python -m pip install -U -r ./test_requirements.txt
     - name: Install package for testing
-      run:  python setup.py develop
-    - name: Sanity test
-      run:  |
+      run: |
+        python setup.py develop
         python -m pip list
+    - name: Sanity tests
+      run:  |
         mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests (slim)
       run: |
@@ -91,11 +94,11 @@ jobs:
         mv .coverage .coverage.pybnb.slim_serial
     - name: Install extras
       run: |
-        pip install --no-cache-dir PyYAML || echo failed to install yaml
-        pip install --no-cache-dir pyomo || echo failed to install pyomo
-        pip install --no-cache-dir numpy || echo failed to install numpy
-        pip install --no-cache-dir numba || echo failed to install numba
-        pip install --no-cache-dir dill || echo failed to install dill
+        python -m pip install PyYAML || echo failed to install yaml
+        python -m pip install pyomo || echo failed to install pyomo
+        python -m pip install numpy || echo failed to install numpy
+        python -m pip install numba || echo failed to install numba
+        python -m pip install dill || echo failed to install dill
     - name: Serial tests
       run: |
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
@@ -116,6 +119,90 @@ jobs:
       uses: codecov/codecov-action@v1
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes pybnb
+
+  no_mpi:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Use Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3
+    - name: Install packaging tools
+      run:  python -m pip install -U setuptools pip wheel
+    - name: Install base dependencies
+      run:  python -m pip install -U -r ./requirements.txt
+    - name: Install serial test dependencies
+      run: |
+        python -m pip install -U coverage pytest pytest-coverage
+        python -m pip install -U -r ./example_requirements.txt
+    - name: Install package
+      run:  |
+        python -m pip install .
+        python -m pip list
+    - name: Serial tests
+      run: |
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+    - name: Coverage report
+      run: |
+        coverage combine
+        coverage report
+    - name: Coverage upload
+      uses: codecov/codecov-action@v1
+
+  examples_full:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Use Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3
+    - name: Install packaging tools
+      run:  python -m pip install -U setuptools pip wheel
+    - name: Install base dependencies
+      run:  python -m pip install -U -r ./requirements.txt
+    - name: Install test dependencies
+      run: python -m pip install -U -r ./test_requirements.txt
+    - name: Install test dependencies
+      run: python -m pip install -U -r ./example_requirements.txt
+    - name: Install package
+      run:  |
+        python -m pip install .
+        python -m pip list
+    - name: Install Ipopt
+      if: ${{ ! matrix.slim }}
+      run: |
+        IPOPT_DIR="${GITHUB_WORKSPACE}/ipopt"
+        echo "$IPOPT_DIR" >> $GITHUB_PATH
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
+        mkdir -p $IPOPT_DIR
+        echo "...downloading Ipopt"
+        URL=https://github.com/IDAES/idaes-ext
+        RELEASE=$(curl --max-time 150 --retry 8 \
+          -L -s -H 'Accept: application/json' ${URL}/releases/latest)
+        VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+        URL=${URL}/releases/download/$VER
+        curl --max-time 150 --retry 8 \
+          -L $URL/idaes-solvers-ubuntu2004-64.tar.gz \
+          > $IPOPT_TAR
+        cd $IPOPT_DIR
+        tar -xzi < $IPOPT_TAR
+        echo ""
+        echo "$IPOPT_DIR"
+        ls -l $IPOPT_DIR
+        ipopt -v
+    - name: Serial tests
+      run: |
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+    - name: Coverage report
+      run: |
+        coverage combine
+        coverage report
+    - name: Coverage upload
+      uses: codecov/codecov-action@v1
 
   lint:
     runs-on: ubuntu-latest
