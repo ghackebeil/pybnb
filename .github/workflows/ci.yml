@@ -33,14 +33,13 @@ jobs:
           - os: ubuntu-latest
             mpicmd: "mpirun -n 4"
             examples_arg: "--run-examples"
-            ideas_ipopt_tarname: "idaes-solvers-ubuntu2004-64.tar.gz"
+            ideas_ipopt: "2.4.3/idaes-solvers-ubuntu2004-64.tar.gz"
           - os: macos-latest
             mpicmd: "mpirun -n 4"
             examples_arg: "--run-examples"
           - os: windows-latest
             mpicmd: "mpiexec.exe -n 4"
             examples_arg: ""
-            ideas_ipopt_tarname: "idaes-solvers-windows-64.tar.gz"
         exclude:
           - os: ubuntu-latest
             py-arch: x86
@@ -88,20 +87,14 @@ jobs:
         python setup.py develop
         python -m pip list
     - name: Install Ipopt
-      if: startsWith(matrix.os,'ubuntu') || startsWith(matrix.os,'windows')
+      if: startsWith(matrix.os,'ubuntu')
       run: |
         IPOPT_DIR="${GITHUB_WORKSPACE}/ipopt"
         echo "$IPOPT_DIR" >> $GITHUB_PATH
-        echo "LD_LIBRARY_PATH=${env:LD_LIBRARY_PATH}:$IPOPT_DIR" >> $GITHUB_ENV
+#        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
         mkdir -p $IPOPT_DIR
-        echo "...downloading Ipopt"
-        URL=https://github.com/IDAES/idaes-ext
-        RELEASE=$(curl --max-time 150 --retry 8 \
-          -L -s -H 'Accept: application/json' ${URL}/releases/latest)
-        VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
-        URL=${URL}/releases/download/$VER
         curl --max-time 150 --retry 8 \
-          -L $URL/${{ matrix.ideas_ipopt_tarname }} \
+          -L https://github.com/IDAES/idaes-ext/releases/download/${{ matrix.ideas_ipopt }} \
           > $IPOPT_DIR/ipopt.tar.gz
         cd $IPOPT_DIR
         tar -xvf ipopt.tar.gz
