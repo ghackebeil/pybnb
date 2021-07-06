@@ -95,6 +95,7 @@ jobs:
         pip install --no-cache-dir dill || echo failed to install dill
     - name: Serial tests (slim)
       run: |
+        pytest -v --doctest-plus src/pybnb
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --with-examples -v
         mv .coverage .coverage.pybnb.serial
     - name: Parallel tests (no coverage)
