@@ -104,6 +104,7 @@ jobs:
       run: |
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
         mv .coverage .coverage.pybnb.slim_serial
+        ls -al
     - name: Install extras
       run: |
         python -m pip install PyYAML || echo failed to install yaml
@@ -115,16 +116,29 @@ jobs:
       run: |
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
         mv .coverage .coverage.pybnb.serial
+        ls -al
     - name: Parallel tests (no coverage)
-      run: python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
+      run: |
+        python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
+        ls -al
     - name: Parallel tests (coverage)
       if: matrix.os != 'windows-latest'
       run: |
         python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build --with-coverage -v
-        mv .coverage .coverage.pybnb.parallel
-        ls .coverage*
+        mv .coverage .coverage.pybnb.parallel.1
+        ls -al
+    - name: Parallel tests with serialization config (coverage)
+      if: matrix.os != 'windows-latest'
+      env:
+        PYBNB_COMPRESSION: 1
+        PYBNB_SERIALIZER: dill
+      run: |
+        python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build --with-coverage -v
+        mv .coverage .coverage.pybnb.parallel.2
+        ls -al
     - name: Coverage report
       run: |
+        ls -al
         coverage combine
         coverage report
     - name: Coverage upload
