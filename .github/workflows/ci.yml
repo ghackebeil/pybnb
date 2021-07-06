@@ -103,14 +103,6 @@ jobs:
           > $IPOPT_DIR/ipopt.tar.gz
         cd $IPOPT_DIR
         tar -xzi < ipopt.tar.gz
-        echo ""
-        echo "$IPOPT_DIR"
-        pwd
-        echo $GITHUB_PATH
-        ls -l $IPOPT_DIR
-        ls -l .
-        cd -
-        ipopt -v
     - name: Sanity tests
       run:  |
         mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
