@@ -4,7 +4,7 @@ Branch-and-bound solver results object.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 
-# recognized pytest-doctestplus plugin,
+# recognized by the pytest-doctestplus plugin,
 # not the standard doctest
 __doctest_requires__ = {"SolverResults.write": ["yaml"]}
 
