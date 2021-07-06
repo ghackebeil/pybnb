@@ -3,5 +3,4 @@ mpi4py
 coverage
 pytest
 pytest-coverage
-pytest-doctestplus
 runtests

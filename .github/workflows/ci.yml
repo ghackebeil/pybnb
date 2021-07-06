@@ -137,6 +137,7 @@ jobs:
               types-PyYAML
               types-six
               pytest
+              pytest-doctestplus
     - name: doctest
       run: pytest -v --doctest-plus --doctest-ignore-import-errors src/pybnb
     - name: pycodestyle
