@@ -6,6 +6,8 @@ Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 from typing import Optional, List, Any
 import array
 
+from six.moves import xrange as range
+
 # used in various places where we are receiving an empty message,
 # initialization is delayed to avoid early mpi4py import
 _nothing = None  # type: Optional[List[Any]]

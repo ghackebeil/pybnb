@@ -4,14 +4,12 @@ Miscellaneous utilities used for development.
 Copyright by Gabriel A. Hackebeil (gabe.hackebeil@gmail.com).
 """
 import math
-import array
 import collections
 import hashlib
 
 import pybnb
 
 import six
-from six.moves import xrange as range
 
 import pyomo.kernel as pmo
 
