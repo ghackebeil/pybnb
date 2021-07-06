@@ -83,7 +83,7 @@ jobs:
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests (slim)
       run: |
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
         mv .coverage .coverage.pybnb.slim_serial
     - name: Install extras
       run: |
@@ -92,7 +92,7 @@ jobs:
         pip install --no-cache-dir numpy || echo failed to install numpy
         pip install --no-cache-dir numba || echo failed to install numba
         pip install --no-cache-dir dill || echo failed to install dill
-    - name: Serial tests (slim)
+    - name: Serial tests
       run: |
         pytest -v --doctest-plus src/pybnb
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
