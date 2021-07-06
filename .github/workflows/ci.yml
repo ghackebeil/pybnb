@@ -10,16 +10,16 @@ jobs:
       fail-fast: false
       matrix:
         py-version:
-#          - "2.7"
-#          - "3.5"
-#          - "3.6"
-#          - "3.7"
-#          - "3.8"
+          - "2.7"
+          - "3.5"
+          - "3.6"
+          - "3.7"
+          - "3.8"
           - "3.9"
-#          - "pypy2"
-#          - "pypy3"
+          - "pypy2"
+          - "pypy3"
         py-arch:
-#          - x86
+          - x86
           - x64
         mpi:
           - mpich
@@ -98,10 +98,8 @@ jobs:
           > $IPOPT_DIR/ipopt.tar.gz
         cd $IPOPT_DIR
         tar -xvf ipopt.tar.gz
-    - name: Sanity tests
-      run:  |
-        ipopt -v || echo no ipopt installed
-        mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
+    - name: MPI Sanity tests
+      run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests (slim)
       run: |
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
