@@ -10,14 +10,14 @@ jobs:
       fail-fast: false
       matrix:
         py-version:
-#          - "2.7"
-#          - "3.5"
-#          - "3.6"
-#          - "3.7"
+          - "2.7"
+          - "3.5"
+          - "3.6"
+          - "3.7"
           - "3.8"
-#          - "3.9"
-#          - "pypy2"
-#          - "pypy3"
+          - "3.9"
+          - "pypy2"
+          - "pypy3"
         py-arch:
           - x86
           - x64
@@ -81,18 +81,30 @@ jobs:
       run:  python setup.py develop
     - name: Sanity test
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
-    - name: Serial tests
+    - name: Serial tests (slim)
       run: |
         pytest -v --doctest-plus src/pybnb
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --with-examples -v
+        mv .coverage .coverage.pybnb.slim_serial
+    - name: Install extras
+      run: |
+        pip install --no-cache-dir PyYAML || echo failed to install yaml
+        pip install --no-cache-dir pyomo || echo failed to install pyomo
+        pip install --no-cache-dir numpy || echo failed to install numpy
+        pip install --no-cache-dir numba || echo failed to install numba
+        pip install --no-cache-dir dill || echo failed to install dill
+    - name: Serial tests (slim)
+      run: |
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --with-examples -v
         mv .coverage .coverage.pybnb.serial
     - name: Parallel tests (no coverage)
-      run: python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build -v
+      run: python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
     - name: Parallel tests (coverage)
       if: matrix.os != 'windows-latest'
       run: |
-        python run-mpitests.py --mpirun="${{matrix.mpicmd}}" --no-build --with-coverage -v
+        python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build --with-coverage -v
         mv .coverage .coverage.pybnb.parallel
+        ls .coverage*
     - name: Coverage report
       run: |
         coverage combine
@@ -105,7 +117,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkou
+    - name: Checkout
       uses: actions/checkout@v2
     - name: Use Python
       uses: actions/setup-python@v2
