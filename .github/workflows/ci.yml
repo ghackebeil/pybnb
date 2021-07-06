@@ -86,7 +86,7 @@ jobs:
         python setup.py develop
         python -m pip list
     - name: Install Ipopt
-      if: ${{ matrix.os }} == ubuntu-latest
+      if: startsWith(matrix.os,'ubuntu')
       run: |
         IPOPT_DIR="${GITHUB_WORKSPACE}/ipopt"
         echo "$IPOPT_DIR" >> $GITHUB_PATH
@@ -100,12 +100,13 @@ jobs:
         URL=${URL}/releases/download/$VER
         curl --max-time 150 --retry 8 \
           -L $URL/idaes-solvers-ubuntu2004-64.tar.gz \
-          > $IPOPT_TAR
+          > $IPOPT_DIR/ipopt.tar.gz
         cd $IPOPT_DIR
-        tar -xzi < $IPOPT_TAR
+        tar -xzi < ipopt.tar.gz
         echo ""
         echo "$IPOPT_DIR"
         ls -l $IPOPT_DIR
+        cd -
         ipopt -v
     - name: Sanity tests
       run:  |
