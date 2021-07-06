@@ -104,7 +104,7 @@ jobs:
           -L $URL/${{ matrix.ideas_ipopt_tarname }} \
           > $IPOPT_DIR/ipopt.tar.gz
         cd $IPOPT_DIR
-        tar -xzi < ipopt.tar.gz
+        tar -xvf ipopt.tar.gz
     - name: Sanity tests
       run:  |
         ipopt -v || echo no ipopt installed
