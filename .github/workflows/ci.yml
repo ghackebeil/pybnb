@@ -92,7 +92,7 @@ jobs:
       run: |
         IPOPT_DIR="${GITHUB_WORKSPACE}/ipopt"
         echo "$IPOPT_DIR" >> $GITHUB_PATH
-        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=${env:LD_LIBRARY_PATH}:$IPOPT_DIR" >> $GITHUB_ENV
         mkdir -p $IPOPT_DIR
         echo "...downloading Ipopt"
         URL=https://github.com/IDAES/idaes-ext
@@ -100,8 +100,6 @@ jobs:
           -L -s -H 'Accept: application/json' ${URL}/releases/latest)
         VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
         URL=${URL}/releases/download/$VER
-                    $URL/idaes-lib-windows-64.tar.gz > $IPOPT_TAR
-
         curl --max-time 150 --retry 8 \
           -L $URL/${{ matrix.ideas_ipopt_tarname }} \
           > $IPOPT_DIR/ipopt.tar.gz
