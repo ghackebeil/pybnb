@@ -37,63 +37,6 @@ def add_tmp_component(model, name, obj):
     return name
 
 
-def mpi_partition(comm, items, root=0):
-    """A generator that partitions the list of items across
-    processes in the communicator. If the communicator size
-    is greater than 1, the root process iterates over no
-    items, but rather serves them dynamically after
-    receiving requests from workers. This function assumes
-    each process has an identical copy of the items
-    list. Therefore, items in the list are not transferred
-    (only indices)."""
-    assert root >= 0
-    N = len(items)
-    if N > 0:
-        if (comm is None) or (comm.size == 1):
-            assert root == 0
-            for x in items:
-                yield x
-        else:
-            import mpi4py.MPI
-
-            # it would be pretty easy to refactor this
-            # code to avoid this limitation
-            assert N <= mpi4py.MPI.COMM_WORLD.Get_attr(mpi4py.MPI.TAG_UB)
-            _null = [array.array("b", []), mpi4py.MPI.CHAR]
-            last_tag = {}
-            if comm.rank == root:
-                i = 0
-                requests = []
-                for dest in range(comm.size):
-                    if dest == root:
-                        continue
-                    last_tag[dest] = i
-                    requests.append(comm.Isend(_null, dest, tag=i))
-                    i += 1
-                status = mpi4py.MPI.Status()
-                while i < N:
-                    comm.Recv(_null, status=status)
-                    last_tag[status.Get_source()] = i
-                    requests.append(comm.Isend(_null, status.Get_source(), tag=i))
-                    i += 1
-                for dest in last_tag:
-                    if last_tag[dest] < N:
-                        requests.append(comm.Isend(_null, dest, tag=N))
-                    requests.append(comm.Irecv(_null, dest))
-                mpi4py.MPI.Request.Waitall(requests)
-            else:
-                status = mpi4py.MPI.Status()
-                comm.Recv(_null, source=root, status=status)
-                if status.Get_tag() >= N:
-                    comm.Send(_null, root)
-                else:
-                    while status.Get_tag() < N:
-                        yield items[status.Get_tag()]
-                        comm.Sendrecv(
-                            _null, root, recvbuf=_null, source=root, status=status
-                        )
-
-
 def correct_integer_lb(lb, integer_tolerance):
     """Converts a lower bound for an integer optimization
     variable to an integer equal to `ceil(ub)`, taking care

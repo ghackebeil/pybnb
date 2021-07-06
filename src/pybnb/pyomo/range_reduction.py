@@ -9,10 +9,10 @@ import array
 
 from pybnb import inf, Problem
 from pybnb.node import Node
+from pybnb.mpi_utils import dispatched_partition
 from pybnb.pyomo.misc import (
     hash_joblist,
     add_tmp_component,
-    mpi_partition,
     create_optimality_bound,
 )
 from pybnb.pyomo.problem import PyomoProblem
@@ -128,7 +128,7 @@ class RangeReductionProblem(Problem):
             my_joblist_hash = hash_joblist(joblist)
             joblist_hash = self._comm.bcast(my_joblist_hash, root=0)
             assert joblist_hash == my_joblist_hash
-        for i, cid, which in mpi_partition(self._comm, joblist):
+        for i, cid, which in dispatched_partition(self._comm, joblist):
             obj = self.problem.cid_to_pyomo_object[cid]
             tmp_objective.expr = obj
             if which == "L":
