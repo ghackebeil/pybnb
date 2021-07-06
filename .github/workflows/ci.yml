@@ -83,7 +83,6 @@ jobs:
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests (slim)
       run: |
-        pytest -v --doctest-plus --doctest-ignore-import-errors src/pybnb
         pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
         mv .coverage .coverage.pybnb.slim_serial
     - name: Install extras
@@ -95,8 +94,7 @@ jobs:
         pip install --no-cache-dir dill || echo failed to install dill
     - name: Serial tests
       run: |
-        pytest -v --doctest-plus --doctest-ignore-import-errors src/pybnb
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
         mv .coverage .coverage.pybnb.serial
     - name: Parallel tests (no coverage)
       run: python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
@@ -135,8 +133,12 @@ jobs:
               flake8
               pylint
               mypy
+              PyYAML
               types-PyYAML
               types-six
+              pytest
+    - name: doctest
+      run: pytest -v --doctest-plus --doctest-ignore-import-errors src/pybnb
     - name: pycodestyle
       run:  pycodestyle src/pybnb
 #    - name: pydocstyle
