@@ -91,7 +91,7 @@ jobs:
       run: |
         IPOPT_DIR="${GITHUB_WORKSPACE}/ipopt"
         echo "$IPOPT_DIR" >> $GITHUB_PATH
-#        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
         mkdir -p $IPOPT_DIR
         curl --max-time 150 --retry 8 \
           -L https://github.com/IDAES/idaes-ext/releases/download/${{ matrix.ideas_ipopt }} \
