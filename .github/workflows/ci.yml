@@ -30,12 +30,15 @@ jobs:
           - macos-latest
           - windows-latest
         include:
-        - os: ubuntu-latest
-          mpicmd: "mpirun -n 4"
-        - os: macos-latest
-          mpicmd: "mpirun -n 4"
-        - os: windows-latest
-          mpicmd: "mpiexec.exe -n 4"
+          - os: ubuntu-latest
+            mpicmd: "mpirun -n 4"
+            examples_arg: "--run-examples"
+          - os: macos-latest
+            mpicmd: "mpirun -n 4"
+            examples_arg: "--run-examples"
+          - os: windows-latest
+            mpicmd: "mpiexec.exe -n 4"
+            examples_arg: ""
         exclude:
           - os: ubuntu-latest
             py-arch: x86
@@ -72,7 +75,6 @@ jobs:
       with:
         python-version: ${{ matrix.py-version }}
         architecture: ${{ matrix.py-arch }}
-
     - name: Install packaging tools
       run:  python -m pip install --upgrade setuptools pip wheel
     - name: Install test dependencies
@@ -80,10 +82,12 @@ jobs:
     - name: Install package for testing
       run:  python setup.py develop
     - name: Sanity test
-      run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
+      run:  |
+        python -m pip list
+        mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests (slim)
       run: |
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
         mv .coverage .coverage.pybnb.slim_serial
     - name: Install extras
       run: |
@@ -94,7 +98,7 @@ jobs:
         pip install --no-cache-dir dill || echo failed to install dill
     - name: Serial tests
       run: |
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" -v
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
         mv .coverage .coverage.pybnb.serial
     - name: Parallel tests (no coverage)
       run: python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
