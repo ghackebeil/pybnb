@@ -83,8 +83,7 @@ jobs:
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests (slim)
       run: |
-        pytest -v --doctest-plus src/pybnb
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --with-examples -v
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
         mv .coverage .coverage.pybnb.slim_serial
     - name: Install extras
       run: |
@@ -96,7 +95,7 @@ jobs:
     - name: Serial tests (slim)
       run: |
         pytest -v --doctest-plus src/pybnb
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --with-examples -v
+        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
         mv .coverage .coverage.pybnb.serial
     - name: Parallel tests (no coverage)
       run: python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
