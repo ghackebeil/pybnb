@@ -117,7 +117,7 @@ jobs:
     - name: Serial tests (no coverage)
       run: pytest ${{ matrix.examples_arg }} -v
     - name: Serial tests (coverage)
-      if: !startsWith(matrix.py-version,'pypy')
+      if: startsWith(matrix.py-version,'pypy') != true
       run: |
         pytest --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
         mv .coverage coverage_cache/.coverage.pybnb.serial
