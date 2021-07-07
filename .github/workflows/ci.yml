@@ -2,6 +2,9 @@ name: ci
 
 on: [push]
 
+env:
+  IDEAS_IPOPT: "2.4.3/idaes-solvers-ubuntu2004-64.tar.gz"
+
 jobs:
 
   build:
@@ -33,7 +36,6 @@ jobs:
           - os: ubuntu-latest
             mpicmd: "mpirun -n 4"
             examples_arg: "--run-examples"
-            ideas_ipopt: "2.4.3/idaes-solvers-ubuntu2004-64.tar.gz"
           - os: macos-latest
             mpicmd: "mpirun -n 4"
             examples_arg: "--run-examples"
@@ -90,20 +92,20 @@ jobs:
     - name: Install Ipopt
       if: startsWith(matrix.os,'ubuntu')
       run: |
-        IPOPT_DIR="${GITHUB_WORKSPACE}/ipopt"
-        echo "$IPOPT_DIR" >> $GITHUB_PATH
-        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
-        mkdir -p $IPOPT_DIR
+        ipopt_dir="${GITHUB_WORKSPACE}/ipopt"
+        echo "$ipopt_dir" >> $GITHUB_PATH
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ipopt_dir" >> $GITHUB_ENV
+        mkdir -p $ipopt_dir
         curl --max-time 150 --retry 8 \
-          -L https://github.com/IDAES/idaes-ext/releases/download/${{ matrix.ideas_ipopt }} \
-          > $IPOPT_DIR/ipopt.tar.gz
-        cd $IPOPT_DIR
+          -L https://github.com/IDAES/idaes-ext/releases/download/$IDEAS_IPOPT \
+          > $ipopt_dir/ipopt.tar.gz
+        cd $ipopt_dir
         tar -xvf ipopt.tar.gz
     - name: MPI Sanity tests
       run:  mpiexec python -c "import mpi4py.MPI; print(mpi4py.MPI.COMM_WORLD.rank)"
     - name: Serial tests (slim)
       run: |
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
+        pytest --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
         mv .coverage coverage_cache/.coverage.pybnb.slim_serial
     - name: Install extras
       run: |
@@ -112,18 +114,25 @@ jobs:
         python -m pip install numpy || echo failed to install numpy
         python -m pip install numba || echo failed to install numba
         python -m pip install dill || echo failed to install dill
-    - name: Serial tests
+    - name: Serial tests (no coverage)
+      run: pytest ${{ matrix.examples_arg }} -v
+    - name: Serial tests (coverage)
+      if: !startsWith(matrix.py-version,'pypy')
       run: |
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
+        pytest --cov=pybnb --cov=examples --cov=src/tests --cov-report="" ${{ matrix.examples_arg }} -v
         mv .coverage coverage_cache/.coverage.pybnb.serial
     - name: Parallel tests (no coverage)
-      run: |
-        python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
+      run: python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
     - name: Parallel tests (coverage)
       if: matrix.os != 'windows-latest'
       run: |
         python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build --with-coverage -v
         mv .coverage coverage_cache/.coverage.pybnb.parallel.1
+    - name: Parallel tests with serialization config (no coverage)
+      env:
+        PYBNB_COMPRESSION: 1
+        PYBNB_SERIALIZER: dill
+      run: python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
     - name: Parallel tests with serialization config (coverage)
       if: matrix.os != 'windows-latest'
       env:
@@ -132,12 +141,6 @@ jobs:
       run: |
         python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build --with-coverage -v
         mv .coverage coverage_cache/.coverage.pybnb.parallel.2
-    - name: Parallel tests with serialization config (no coverage)
-      env:
-        PYBNB_COMPRESSION: 1
-        PYBNB_SERIALIZER: dill
-      run: |
-        python run-mpitests.py --mpirun="${{ matrix.mpicmd }}" --no-build -v
     - name: Coverage report
       run: |
         coverage combine coverage_cache
@@ -162,17 +165,41 @@ jobs:
       run:  python -m pip install -U -r ./requirements.txt
     - name: Install serial test dependencies
       run: |
-        python -m pip install -U coverage pytest pytest-coverage
-        python -m pip install -U -r ./example_requirements.txt
+        python -m pip install -U coverage pytest pytest-coverage PyYAML numba
     - name: Install package
       run:  |
         python -m pip install -e .
         python -m pip list
-    - name: Serial tests
+        mkdir coverage_cache
+    - name: Serial tests 1
       run: |
-        pytest -v --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+        pytest --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+        mv .coverage coverage_cache/.coverage.pybnb.no_mpi.1
+    - name: Install more serial test dependencies
+      run: python -m pip install -U pyomo numpy
+    - name: Serial tests 2
+      run: |
+        pytest --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+        mv .coverage coverage_cache/.coverage.pybnb.no_mpi.2
+    - name: Install Ipopt
+      run: |
+        ipopt_dir="${GITHUB_WORKSPACE}/ipopt"
+        echo "$ipopt_dir" >> $GITHUB_PATH
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ipopt_dir" >> $GITHUB_ENV
+        mkdir -p $ipopt_dir
+        curl --max-time 150 --retry 8 \
+          -L https://github.com/IDAES/idaes-ext/releases/download/$IDEAS_IPOPT \
+          > $ipopt_dir/ipopt.tar.gz
+        cd $ipopt_dir
+        tar -xvf ipopt.tar.gz
+    - name: Serial tests 3
+      run: |
+        pytest --cov=pybnb --cov=examples --cov=src/tests --cov-report="" --run-examples -v
+        mv .coverage coverage_cache/.coverage.pybnb.no_mpi.3
     - name: Coverage report
-      run: coverage report
+      run: |
+        coverage combine coverage_cache
+        coverage report
     - name: Coverage upload
       uses: codecov/codecov-action@v1
 
@@ -202,7 +229,7 @@ jobs:
               pytest
               pytest-doctestplus
     - name: doctest
-      run: pytest -v --doctest-plus --doctest-ignore-import-errors src/pybnb
+      run: pytest --doctest-plus --doctest-ignore-import-errors src/pybnb -v
     - name: pycodestyle
       run:  pycodestyle src/pybnb
 #    - name: pydocstyle

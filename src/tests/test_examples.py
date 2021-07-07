@@ -25,13 +25,13 @@ pyomo_available = False
 try:
     import pyomo.kernel as pmo
 
-    if getattr(pmo, "version_info", (0,) * 3) >= (5, 4, 3):  # pragma:nocover
+    if getattr(pmo, "version_info", (0,) * 3) >= (5, 4, 3):
         pyomo_available = True
-except:  # pragma:nocover
+except:
     pass
 
 ipopt_available = False
-if pyomo_available:  # pragma:nocover
+if pyomo_available:
     from pyomo.opt.base import UnknownSolver
 
     ipopt = pmo.SolverFactory("ipopt")
