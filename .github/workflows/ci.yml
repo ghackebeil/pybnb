@@ -166,7 +166,7 @@ jobs:
         python -m pip install -U -r ./example_requirements.txt
     - name: Install package
       run:  |
-        python -m pip install .
+        python -m pip install -e .
         python -m pip list
     - name: Serial tests
       run: |
