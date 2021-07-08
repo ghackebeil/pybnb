@@ -389,8 +389,7 @@ class Solver(object):
                 ) and convergence_checker.eligible_to_branch(
                     working_node.bound, working_node.objective
                 ):
-                    clist = problem.branch()
-                    for child in clist:
+                    for child in problem.branch():
                         children.append(child)
                         assert child.tree_depth is None
                         child.tree_depth = working_node.tree_depth + 1

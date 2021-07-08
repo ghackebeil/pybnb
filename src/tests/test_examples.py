@@ -35,7 +35,7 @@ if pyomo_available:
     from pyomo.opt.base import UnknownSolver
 
     ipopt = pmo.SolverFactory("ipopt")
-    if ipopt is None or isinstance(ipopt, UnknownSolver):
+    if ipopt is None or isinstance(ipopt, UnknownSolver):  # pragma:nocover
         ipopt_available = False
     else:
         ipopt_available = (ipopt.available(exception_flag=False)) and (

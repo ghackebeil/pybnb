@@ -3,7 +3,7 @@ pybnb
 
 |PyPI-Status| |PyPI-Versions| |PyPI-Downloads|
 
-|Travis-Status| |Appveyor-Status| |Coverage-Status| |Documentation-Status|
+|Testing-Status| |Coverage-Status| |Documentation-Status|
 
 |Codacy-Grade| |Mypy| |Black|
 
@@ -119,10 +119,8 @@ Quick Start
    - other:      11.31% [avg time:  15.3 us, count: 65537]
 
 
-.. |Travis-Status| image:: https://travis-ci.org/ghackebeil/pybnb.svg?branch=master
-  :target: https://travis-ci.org/ghackebeil/pybnb
-.. |Appveyor-Status| image::  https://ci.appveyor.com/api/projects/status/gfbrxja9v08rm7a2?svg=true
-  :target: https://ci.appveyor.com/project/ghackebeil/pybnb
+.. |Testing-Status| image:: https://github.com/ghackebeil/pybnb/actions/workflows/ci.yml/badge.svg)
+  :target: https://github.com/ghackebeil/pybnb/actions/workflows/ci.yml
 .. |Coverage-Status| image:: https://codecov.io/gh/ghackebeil/pybnb/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/ghackebeil/pybnb
 .. |Documentation-Status| image:: https://readthedocs.org/projects/pybnb/badge/?version=latest
