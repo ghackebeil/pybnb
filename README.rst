@@ -119,7 +119,7 @@ Quick Start
    - other:      11.31% [avg time:  15.3 us, count: 65537]
 
 
-.. |Testing-Status| image:: https://github.com/ghackebeil/pybnb/actions/workflows/ci.yml/badge.svg)
+.. |Testing-Status| image:: https://github.com/ghackebeil/pybnb/actions/workflows/ci.yml/badge.svg
   :target: https://github.com/ghackebeil/pybnb/actions/workflows/ci.yml
 .. |Coverage-Status| image:: https://codecov.io/gh/ghackebeil/pybnb/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/ghackebeil/pybnb
